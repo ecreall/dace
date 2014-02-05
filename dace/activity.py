@@ -185,3 +185,99 @@ class Action(Persistent):
 
     def validate(self, obj):                                                            # a enlever si l'indexation 'context-id' marche
         return obj.__provides__(self.context) and self.__parent__.validate() and self.condition.im_func(self.process, obj)
+
+    def execut(self, wi, context, appstruct):
+        pass
+
+
+class LoopAction(Action):
+
+    loopMaximum = None
+    loopCondition = None
+    testBefore = False
+    
+
+    def _executBefore(self, context, appstruct):
+        nbloop = 0        
+        while loopCondition(context, self.process, appstruct) and nbloop < loopMaximum:
+            self.start(context, appstruct)
+            nbloop += 1
+
+    def _executAfter(self, context, appstruct):
+        nbloop = 0        
+        while nbloop < loopMaximum:
+            self.start(context, appstruct)
+            nbloop += 1
+            if loopCondition(context, self.process, appstruct):
+                break
+            
+
+    def execut(self, wi, context, appstruct):
+        if testBefore:
+            self._executBefore(context, appstruct)
+        else:
+            self._executAfter(context, appstruct)
+
+        wi.node.workItemFinished(wi)
+
+
+class MultiInstanceActionCardinality(Action):
+    
+    loopCardinality = None
+    isSequential = False 
+
+    def __init__(self, parent):
+        super(MultiInstanceActionCardinality, self).__init__(parent)
+        self.numberOfInstances = 0
+        self.numberOfTerminatedInstances = 0
+        self.started = False
+
+    def execut(self, wi, context, appstruct):
+        if isSequential:
+            # bloquer le wi
+
+        if not self.started:
+            self.started = True
+            self.numberOfInstances = loopCardinality(context, self.process, appstruct)
+        
+        if self.numberOfTerminatedInstances <= self.numberOfInstances:
+            self.start(context, appstruct)
+            self.numberOfTerminatedInstances += 1
+
+        if isSequential:
+            # débloquer le wi
+        
+        if self.numberOfTerminatedInstances > self.numberOfInstances:
+            wi.node.workItemFinished(wi)        
+
+
+# il faut voir si nous pouvons travailler sur l'instanciation d el'action elle même.
+# Dans ce cas il faut voir avec les autre actions.
+class MultiInstanceActionInstances(Action):
+
+    loopDataInputRef = None
+    isSequential = False 
+
+    def __init__(self, parent):
+        super(MultiInstanceActionCardinality, self).__init__(parent)
+        self.started = False
+        self.instances = []
+
+    def execut(self, wi, context, appstruct):
+        if isSequential:
+            # bloquer le wi
+
+        if not self.started:
+            self.started = True
+            self.instances = loopCardinality(context, self.process, appstruct)
+        
+        #self.start(context, appstruct)
+
+
+        if isSequential:
+            # débloquer le wi
+        
+        if self.numberOfTerminatedInstances > self.numberOfInstances:
+            wi.node.workItemFinished(wi)
+
+
