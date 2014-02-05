@@ -1,0 +1,264 @@
+import transaction
+from persistent.list import PersistentList
+from zope.component import getUtility
+from zope.component.hooks import getSite
+from zope.event import notify
+from zope.intid.interfaces import IIntIds
+
+from persistent import Persistent
+
+from dolmen.content import Content, nofactory, schema
+
+from zope.catalog.interfaces import ICatalog as ISearchCatalog
+
+from .entity import Entity
+from .relations import RelationValue, ICatalog, any
+
+from .interfaces import IProcess, IProcessDefinition, IWorkItem
+from .activity import SubProcess
+from .gateway import ExclusiveGateway
+from .core import ProcessStarted
+from .transition import Transition
+
+
+
+class WorkflowData(Persistent):
+    """Container for workflow-relevant and application-relevant data
+    """
+
+
+class Process(Entity, Content):
+    schema(IProcess)
+    nofactory()
+    _started = False
+    _finished = False
+    # l'instance d'activite (SubProcess) le manipulant
+    attachedTo = None
+    def __init__(self, definition, startTransition, **kwargs):
+        super(Process, self).__init__(**kwargs)
+        self.id = definition.id
+        self.startTransition = startTransition
+        self.nodes = {}
+        for nodedef in definition.activities.values():
+            node = nodedef.create(self)
+            self.nodes[nodedef.id] = node
+        self._p_changed = True
+
+        self.workflowRelevantData = WorkflowData()
+        self.workflowRelevantData.__parent__ = self
+        if not self.title:
+            self.title = definition.id
+
+        # do a commit so all events have a _p_oid
+        # mail delivery doesn't support savepoint
+        transaction.commit()
+
+    def definition(self):
+        return getUtility(
+            IProcessDefinition,
+            self.id,
+            )
+    definition = property(definition)
+
+    @property
+    def isSubProcess(self):
+        return self.definition.isSubProcess
+
+    def getWorkItems(self):
+        catalog = getUtility(ISearchCatalog)
+        intids = getUtility(IIntIds)
+        p_uid = intids.queryId(self)
+        query = {
+            'object_provides': {'any_of': (IWorkItem.__identifier__,)},
+            'process_inst_uid': {'any_of': (int(p_uid),)},
+        }
+        results = catalog.apply(query)
+
+        workitems = [intids.getObject(r) for r in results]
+        d = {}
+        for w in workitems:
+            if isinstance(w.node, SubProcess):
+                d.update(w.node.subProcess.getWorkItems())
+            if w.node.id in d:
+                raise Exception("We have several workitems for %s" % w.node.id)
+            d[w.node.id] = w
+
+        return d
+
+#        return dict([(w.node.id, w) for w in workitems])
+
+#    def start(self, *arguments):
+    def start(self):
+        if self._started:
+            raise TypeError("Already started")
+
+        self._started = True
+#        definition = self.definition
+#        data = self.workflowRelevantData
+#        args = arguments
+#        for parameter in definition.parameters:
+#            if parameter.input:
+#                arg, args = args[0], args[1:]
+#                setattr(data, parameter.__name__, arg)
+#        if args:
+#            raise TypeError("Too many arguments. Expected %s. got %s" %
+#                            (len(definition.parameters), len(arguments)))
+
+        notify(ProcessStarted(self))
+        self.transition(None, (self.startTransition, ))
+
+    def refreshXorGateways(self):
+        for node in self.nodes:
+            if isinstance(node, ExclusiveGateway):
+                node._refreshWorkItems()
+
+    def transition(self, node, transitions):
+        if transitions:
+            for transition in transitions:
+                next = self.nodes[transition.to]
+                notify(Transition(node, next))
+                next.prepare()
+
+            for transition in transitions:
+                next = self.nodes[transition.to]
+                next(transition)
+                if self._finished:
+                    break
+
+    def __repr__(self):
+        return "Process(%r)" % self.id
+
+    def getLastIndex(self, tag):
+        if not hasattr(self.workflowRelevantData, tag + u"_index"):
+            setattr(self.workflowRelevantData, tag + u"_index", 0)
+
+        return self.getData(tag+u"_index")
+
+    def nextIndex(self, tag):
+        index = self.getLastIndex(tag)
+        index = index + 1
+        self.addData(tag + u"_index", index)
+        return index
+
+    def addData(self, key, data, loop=False):
+        if self.isSubProcess:
+            self.attachedTo.process.addData(key, data, loop)
+        else:
+            if not loop:
+                setattr(self.workflowRelevantData, key, data)
+            else:
+                if not hasattr(self.workflowRelevantData, key):
+                    setattr(self.workflowRelevantData, key, PersistentList())
+                getattr(self.workflowRelevantData, key).append(data)
+
+    def getData(self, key, loop=False, index=-1):
+        if self.isSubProcess:
+            return self.attachedTo.process.getData(key, loop, index)
+        else:
+            if not loop:
+                return getattr(self.workflowRelevantData, key, None)
+            else:
+                return getattr(self.workflowRelevantData, key)[index]
+
+    def _addRelation(self, entities, tags):
+        if not isinstance(entities, (list, tuple)):
+            entities = [entities]
+
+        ids = getUtility(IIntIds)
+        source_id = ids.getId(self)
+        relation_container = getSite()[u'_relations']
+        for entity in entities:
+            target_id = ids.getId(entity)
+            relation_container[(source_id, target_id)] = RelationValue(
+                source_id, target_id, tags=tags)
+
+    def addCreatedEntities(self, entities, tag, index=-1):
+        if self.isSubProcess:
+            self.attachedTo.process.addCreatedEntities(entities, tag, index)
+        else:
+            i = index
+            if index < 0:
+                i = self.getLastIndex(tag)
+            allTags = [u"created", u"involved"]
+            allTags.extend([t + tag for t in allTags])
+            allTags.extend([t + unicode(i) for t in allTags])
+            self._addRelation(entities, tags=allTags)
+
+    def addInvolvedEntities(self, entities, tag, index=-1):
+        if self.isSubProcess:
+            self.attachedTo.process.addInvolvedEntities(entities, tag)
+        else:
+            i = index
+            if index < 0:
+                i = self.getLastIndex(tag)
+            allTags = [u"involved"]
+            allTags.extend([t + tag for t in allTags])
+            allTags.extend([t + unicode(i) for t in allTags])
+            self._addRelation(entities, tags=allTags)
+
+    def _getEntityRelations(self, tags):
+        if self.isSubProcess:
+            yield self.attachedTo.process._getEntityRelations(tags)
+        else:
+            rcatalog = getUtility(ICatalog)
+            ids = getUtility(IIntIds)
+            opts = {u'source_id': ids.getId(self)}
+            if tags is not None:
+                opts[u'tag'] = any(*tags)
+            for relation in rcatalog.findRelations(opts):
+                yield relation.target
+
+    def getCreatedEntity(self, tag, index=-1):
+        allTags = [u"created" + tag]
+        if index < 0:
+            i = self.getLastIndex(tag)
+            if i == 0:
+                i = 1
+
+            allTags = [t + unicode(i - 1) for t in allTags]
+        else:
+            allTags = [t + unicode(index) for t in allTags]
+
+        return tuple(self._getEntityRelations(allTags))[0]
+
+    def getInvolvedEntities(self, tag=None):
+        if tag is not None:
+            return self._getEntityRelations([u"involved" + tag])
+
+        return self._getEntityRelations([u"involved"])
+
+    def getInvolvedEntity(self, tag, index=-1):
+        allTags = [u"involved" + tag]
+        if index < 0:
+            i = self.getLastIndex(tag)
+            if i == 0:
+                i = 1
+            allTags = [t + unicode(i - 1) for t in allTags]
+        else:
+            allTags = [t + unicode(index) for t in allTags]
+
+        return tuple(self._getEntityRelations(allTags))[0]
+
+    def getAllCreatedEntities(self, tag=None):
+        if tag is not None:
+            return self._getEntityRelations([u"created"+tag])
+
+        return self._getEntityRelations([u"created"])
+
+    def hasRelationWith(self, entity, tag=None):
+        tags = [u"involved"]
+        if  tag is not None:
+            tags = [t + tag for t in tags]
+        for e in self._getEntityRelations(tags):
+            if e == entity:
+                return True
+        return False
+
+    def hasCreatedEntity(self, entity, tag=None):
+        tags = [u"created"]
+        if  tag is not None:
+            tags = [t + tag for t in tags]
+        for e in self._getEntityRelations(tags):
+            if e == entity:
+                return True
+        return False
