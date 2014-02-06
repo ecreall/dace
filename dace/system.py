@@ -10,7 +10,7 @@ from zope.catalog.interfaces import ICatalog
 from zope.component.hooks import getSite
 from zmq.eventloop.ioloop import DelayedCallback
 
-from .interfaces import IEntity, IAction
+from .interfaces import IEntity, IBusinessAction
 from .z3 import BaseJob, Participation
 from . import log
 
@@ -47,7 +47,7 @@ def run():
         setattr(last_transaction_by_app, cache_key, last_tid)
         intids = getUtility(IIntIds)
         transaction.begin()
-    #            query = {'object_provides': {'any_of': (IAction.__identifier__,)}}
+    #            query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
     #            results = list(catalog.apply(query))
     #            print "actions to check:", len(results)
     #            continue
