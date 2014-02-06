@@ -306,5 +306,5 @@ class IProcessFinished(Interface):
     process = Attribute("The process")
 
 
-class IAction(Interface):
+class IBusinessAction(Interface):
     pass
