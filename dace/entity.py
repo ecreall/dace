@@ -3,7 +3,7 @@ from zope.interface import implements
 from zope.intid.interfaces import IIntIds
 from persistent.list import PersistentList
 
-from .interfaces import IEntity, IAction, IProcessDefinition
+from .interfaces import IEntity, IBusinessAction, IProcessDefinition
 from .relations import ICatalog, any
 
 
@@ -101,7 +101,7 @@ class Entity(object):
         allactions = []
         catalog = getUtility(ICatalog)
         intids = getUtility(IIntIds)
-        query = {'object_provides': {'any_of': (IAction.__identifier__,)}}
+        query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
         results = list(catalog.apply(query))
         if len(results) > 0:
             for a in results:

@@ -6,9 +6,11 @@ from zope.intid.interfaces import IIntIds
 from zope.globalrequest import getRequest
 from zope.location.interfaces import ILocation
 from zope.container.interfaces import INameChooser
+from datetime import datetime, timedelta
+import pytz
 
 from .interfaces import IParameterDefinition, IProcessDefinition, IApplicationDefinition, IActivity, IBusinessAction, IRuntime
-from .core import EventHandler, WorkItemBehavior
+from .core import EventHandler, WorkItemBehavior, AlreadyLocked
 
 
 class Parameter(object):
@@ -107,6 +109,7 @@ class BusinessAction(Persistent):
     def __init__(self, parent):
         super(BusinessAction, self).__init__()
         self.__parent__ = parent
+        self.isexecuted = False
 
     @property
     def __name__(self):
@@ -178,8 +181,18 @@ class BusinessAction(Persistent):
         content = (content + view.content())
         return content
 
+    def befor(self, resuest):
+        self.lock(resuest)
+        self.__parent__.lock(request)
+
+    def after(self, resuest):
+        self.unlock(resuest)
+        self.__parent__.node.workItemFinished(self.__parent__)
+        self.isexecuted = True
+
+
     def validate(self,obj):
-        if not obj.__provides__(self.context) or not self.__parent__.validate():
+        if  self.isexecuted and not obj.__provides__(self.context) or not self.__parent__.validate():
             return False
 
         if self.relation_validation and not self.relation_validation.im_func(self.process, obj):
@@ -196,10 +209,45 @@ class BusinessAction(Persistent):
         
         return True
 
+    _lock = (None, None)
 
-    def execut(self, context, appstruct):
+    def lock(self, request):
+        """Raise AlreadyLocked if the activity was already locked by someone
+        else.
+        """
+        if self.is_locked(request):
+            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
+                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
+        self._lock = (request.principal.id, datetime.now(pytz.utc))
+
+    def unlock(self, request):
+        """Raise AlreadyLocked if the activity was already locked by someone
+        else.
+        """
+        if self.is_locked(request):
+            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
+                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
+        self._lock = (None, None)
+
+    def is_locked(self, request):
+        """If the activity was locked by the same user, return False.
+        """
+        if self._lock[1] is None:
+            return False
+        if self._lock[1] + LOCK_DURATION <= datetime.now(pytz.utc):
+            return False
+        if self._lock[0] == request.principal.id:
+            return False
+        return True
+
+    def execut(self, context, request, appstruct):
         pass
 
+class ElementaryAction(BusinessAction):
+
+    def execut(self, context, request, appstruct):
+        self.start(context, appstruct)
+        self.after(request)
 
 class LoopActionCardinality(BusinessAction):
 
@@ -221,58 +269,75 @@ class LoopActionCardinality(BusinessAction):
             if self.loopCondition.im_func(context, self.process, appstruct):
                 break
 
-    def execut(self, context, appstruct):
+    def execut(self, context, request, appstruct):
         if testBefore:
             self._executBefore(context, appstruct)
         else:
             self._executAfter(context, appstruct)
 
-        self.__parent__.node.workItemFinished(self.__parent__)
+        self.after(request)
 
 
 class LoopActionDataInput(BusinessAction):
 
     loopDataInputRef = None
 
-    def execut(self, context, appstruct):
+    def execut(self, context, request, appstruct):
         instances = self.loopDataInputRef.im_func(context, self.process, appstruct)       
         for item in instances:
             self.start(context, appstruct, item)
-        self.__parent__.node.workItemFinished(self.__parent__)
+        self.after( request)
 
 
 class MultiInstanceActionCardinality(BusinessAction):
     
     loopCardinality = None
-    isSequential = False 
+    isSequential = False
+    isInfiniteCardinality = False
 
     def __init__(self, parent):
         super(MultiInstanceActionCardinality, self).__init__(parent)
         self.numberOfInstances = 0
+        if self.isInfiniteCardinality:
+            self.numberOfInstances = -1
         self.numberOfTerminatedInstances = 0
         self.started = False
 
-    def execut(self, context, appstruct):
+    def befor(self, resuest):
+        self.lock(resuest)
         if isSequential:
-            # bloquer le wi (== self.__parent__)
+            self.__parent__.lock(request)
 
+    def after(self, resuest):
+        if isSequential:
+            self.__parent__.unlock(request)
+
+        if self.numberOfInstances >= 0 and (self.numberOfInstances == 0 or self.numberOfTerminatedInstances >= self.numberOfInstances):
+            self.__parent__.node.workItemFinished(self.__parent__)
+            self.isexecuted = True
+    
+    def _infiniteexecution(self, context, request, appstruct):
+        self.start(context, appstruct)
+        self.numberOfTerminatedInstances += 1
+
+    def _limitedexecution(self, context, request, appstruct):
         if not self.started:
             self.started = True
             self.numberOfInstances = self.loopCardinality.im_func(context, self.process, appstruct)
         
-        if self.numberOfTerminatedInstances <= self.numberOfInstances:
+        if self.numberOfInstances > 0 and self.numberOfTerminatedInstances <= self.numberOfInstances:
             self.start(context, appstruct)
             self.numberOfTerminatedInstances += 1
+ 
+    def execut(self, context, request, appstruct):
+        if self.isInfiniteCardinality:
+            self._infiniteexecution(context, request, appstruct)
+        else:
+            self._limitedexecution(context, request, appstruct)
 
-        if isSequential:
-            # débloquer le wi
-        
-        if self.numberOfTerminatedInstances > self.numberOfInstances:
-            self.__parent__.node.workItemFinished(self.__parent__)        
+        self.after(request)
 
 
-# il faut voir si nous pouvons travailler sur l'instanciation d el'action elle même.
-# Dans ce cas il faut voir avec les autre actions.
 class MultiInstanceActionDataInput(BusinessAction):
 
     loopDataInputRef = None
@@ -281,45 +346,75 @@ class MultiInstanceActionDataInput(BusinessAction):
 
     def __init__(self, parent):
         super(MultiInstanceActionCardinality, self).__init__(parent)
-        self.started = False
-        self.instances = []
+        self.instances = PersistentList()
         if dataIsPrincipal:
             # loopDataInputRef renvoie une liste d'elements identifiabls
             self.instances = self.loopDataInputRef.im_func(None, self.process, None)
+            for instance in self.instances:
+                self.__parent__.actions.append(ActionInstanceAsPrincipal(instance, self, parent))
+            self.isexecuted = True
 
-    def _executasprincipal(self, context, appstruct):
-        self.start(context, appstruct)
-        self.instances.pop(self.instances.index(context))
-
-    def _executasnotprincipal(self, context, appstruct):
-        if not self.started:
-            self.started = True
-            self.instances = self.loopDataInputRef.im_func(context, self.process, appstruct)
+    def after(self, resuest):
+        self.__parent__.unlock(request)
+        if  not self.instances:
+            self.__parent__.node.workItemFinished(self.__parent__)
+        self.isexecuted = True            
+            
+    # est executé une seule fois
+    def execut(self, context, request, appstruct):
+        self.instances = self.loopDataInputRef.im_func(context, self.process, appstruct)
+        listactions = []
+        for instance in self.instances: 
+            listactions.append(ActionInstanceAsPrincipal(instance, self, parent))
         
-        if self.instances:
-            item = self.instances[0]
-            self.start(context, appstruct, item)
-            self.instances.pop(self.instances.index(item))
+        self.__parent__.actions.extend(listactions)
+        self.after(request)
 
-    def execut(self, context, appstruct):
-        if isSequential:
-            # bloquer le wi
+        if not listactions:
+            furstaction = listactions[0]
+            furstaction.befor(request)
+            furstaction.excut(context, request, appstruct)
 
-        if dataIsPrincipal:
-            self._executasprincipal(context, appstruct)
-        else:
-            self._executasnotprincipal(context, appstruct)
 
-        if isSequential:
-            # débloquer le wi
-        
-        if not self.instances:
+class ActionInstance(BusinessAction):
+
+    # mia = multi instance action
+    def __init__(self, item, mia, parent)
+        super(ActionInstance, self).__init__(parent)
+        self.mia = mia
+        self.item = item
+
+    def befor(self, resuest):
+        self.lock(resuest)
+        if self.mia.isSequential:
+            self.__parent__.lock(request)
+
+    def after(self, resuest):
+        if self.mia.isSequential:
+            self.__parent__.unlock(request)
+
+        if  not self.mia.instances:
             self.__parent__.node.workItemFinished(self.__parent__)
 
-    def validate(self,obj):
-        super(MultiInstanceActionDataInput, self).validate(obj)
-        if dataIsPrincipal:
-            if not (obj in self.instances):
-                return False
+        self.isexecuted = True            
             
+
+
+    def execut(self, context, resuest, appstruct):
+        self.start(context, appstruct)
+        self.mia.instances.pop(self.item)
+        self.after(request)
         
+
+
+class ActionInstanceAsPrincipal(ActionInstance):  
+
+    def validate(self,obj):
+        return (obj is self.item) and super(MultiInstanceActionDataInput, self).validate(obj)
+
+class ActionInstanceAsNotPrincipal(ActionInstance):
+
+    def execut(self, context, appstruct):
+        self.start(context, appstruct, self.item)
+        self.mia.instances.pop(self.item)
+        self.after(request)

@@ -5,6 +5,8 @@ from zope.interface import implements, implementedBy
 from zope.location.interfaces import ILocation
 from zope.event import notify
 from zope.lifecycleevent import ObjectAddedEvent, ObjectRemovedEvent
+from datetime import datetime, timedelta
+import pytz
 
 from persistent.list import PersistentList
 from persistent import Persistent
@@ -14,6 +16,7 @@ import grok
 from .interfaces import (
     IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
 
+LOCK_DURATION = timedelta(seconds=120)
 
 class WorkItemFactory(grok.GlobalUtility):
     grok.implements(IFactory)
@@ -88,6 +91,9 @@ class StartWorkItem(object):
     def lock(self, request):
         pass
 
+    def unlock(self, request):
+        pass
+
     def is_locked(self, request):
         return False
 
@@ -139,6 +145,37 @@ class BaseWorkItem(Persistent):
         self.__parent__ = None
 
 
+    _lock = (None, None)
+
+    def lock(self, request):
+        """Raise AlreadyLocked if the activity was already locked by someone
+        else.
+        """
+        if self.is_locked(request):
+            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
+                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
+        self._lock = (request.principal.id, datetime.now(pytz.utc))
+
+    def unlock(self, request):
+        """Raise AlreadyLocked if the activity was already locked by someone
+        else.
+        """
+        if self.is_locked(request):
+            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
+                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
+        self._lock = (None, None)
+
+    def is_locked(self, request):
+        """If the activity was locked by the same user, return False.
+        """
+        if self._lock[1] is None:
+            return False
+        if self._lock[1] + LOCK_DURATION <= datetime.now(pytz.utc):
+            return False
+        if self._lock[0] == request.principal.id:
+            return False
+        return True
+
 class WorkItem(BaseWorkItem):
     """This is subclassed in generated code.
     """
@@ -170,11 +207,6 @@ class WorkItem(BaseWorkItem):
         proc = self.node.process
         return not transition.sync or transition.condition(proc)
 
-    def lock(self, request):
-        self.node.lock(request)
-
-    def is_locked(self, request):
-        return self.node.is_locked(request)
 
 
 class DecisionWorkItem(BaseWorkItem):
@@ -222,8 +254,3 @@ class DecisionWorkItem(BaseWorkItem):
 
         return True
 
-    def lock(self, request):
-        self.gw.lock(request)
-
-    def is_locked(self, request):
-        return self.gw.is_locked(request)
