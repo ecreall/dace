@@ -243,11 +243,13 @@ class BusinessAction(Persistent):
     def execut(self, context, request, appstruct):
         pass
 
+
 class ElementaryAction(BusinessAction):
 
     def execut(self, context, request, appstruct):
         self.start(context, appstruct)
         self.after(request)
+
 
 class LoopActionCardinality(BusinessAction):
 
@@ -398,19 +400,17 @@ class ActionInstance(BusinessAction):
 
         self.isexecuted = True            
             
-
-
     def execut(self, context, resuest, appstruct):
         self.start(context, appstruct)
         self.mia.instances.pop(self.item)
         self.after(request)
-        
 
 
 class ActionInstanceAsPrincipal(ActionInstance):  
 
     def validate(self,obj):
         return (obj is self.item) and super(MultiInstanceActionDataInput, self).validate(obj)
+
 
 class ActionInstanceAsNotPrincipal(ActionInstance):
 
