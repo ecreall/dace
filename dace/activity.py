@@ -306,12 +306,13 @@ class MultiInstanceActionCardinality(BusinessAction):
         self.started = False
 
     def befor(self, resuest):
-        self.lock(resuest)
         if isSequential:
+            self.lock(resuest)
             self.__parent__.lock(request)
 
     def after(self, resuest):
         if isSequential:
+            self.unlock(resuest)
             self.__parent__.unlock(request)
 
         if self.numberOfInstances >= 0 and (self.numberOfInstances == 0 or self.numberOfTerminatedInstances >= self.numberOfInstances):
