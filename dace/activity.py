@@ -183,16 +183,6 @@ class BusinessAction(Persistent):
         content = (content + view.content())
         return content
 
-    def beforexecution(self, resuest):
-        self.lock(resuest)
-        self.__parent__.lock(request)
-
-    def afterexecution(self, resuest):
-        self.unlock(resuest)
-        self.__parent__.node.workItemFinished(self.__parent__)
-        self.isexecuted = True
-
-
     def validate(self,obj):
         if  self.isexecuted and not obj.__provides__(self.context) or not self.__parent__.validate():
             return False
@@ -210,6 +200,25 @@ class BusinessAction(Persistent):
             return False
         
         return True
+
+    def beforexecution(self, resuest):
+        self.lock(resuest)
+        self.__parent__.lock(request)
+
+    def start(self, context, request, appstruct, args = None):
+        # il y a probablement un moyen plus simple en cherchant la méthode par son nom dans self par exemple..
+        steps[appstruct['stepid']].im_func(self, context, request, appstruct)
+
+    def execut(self, context, request, appstruct):
+        pass
+
+    def afterexecution(self, resuest):
+        self.unlock(resuest)
+        self.__parent__.node.workItemFinished(self.__parent__)
+        self.isexecuted = True
+
+    def redirect(self, context, request, appstruct):
+        pass
 
     _lock = (None, None)
 
@@ -242,16 +251,6 @@ class BusinessAction(Persistent):
             return False
         return True
 
-    def execut(self, context, request, appstruct):
-        pass
-
-    def redirect(self, context, request, appstruct):
-        pass
-
-    def start(self, context, request, appstruct, args = None):
-        # il y a propablement un moyent plus simple en cherchant la méthode par son nom dans self par exemple...
-        steps[appstruct['stepid']].im_func(self, context, request, appstruct)
-
 
 class ElementaryAction(BusinessAction):
 
@@ -262,7 +261,7 @@ class ElementaryAction(BusinessAction):
             self.redirect(context, request, appstruct)
 
 
-# Une loopAction ne peut étre une action avec des steps. Cela n'a pas de sense
+# Une loopAction ne peut être une action avec des steps. Cela n'a pas de sens
 class LoopActionCardinality(BusinessAction):
 
     loopMaximum = None
@@ -354,7 +353,7 @@ class MultiInstanceActionDataInput(BusinessAction):
     def __init__(self, parent):
         super(MultiInstanceActionCardinality, self).__init__(parent)
         self.instances = PersistentList()
-        # loopDataInputRef renvoie une liste d'elements identifiabls
+        # loopDataInputRef renvoie une liste d'éléments identifiables
         self.instances = self.loopDataInputRef.im_func(None, self.process, None)
         for instance in self.instances:
             if dataIsPrincipal:
@@ -410,12 +409,12 @@ class ActionInstanceAsPrincipal(ActionInstance):
 
 
 
-# La question est comment faire pour les action multiStep?
-# Je pense que cela peut étre gérer dans l'action start de l'action. La fonction start ce charge d'executer la bonne
+# La question est comment faire pour les actions multiStep?
+# Je pense que cela peut être géré dans l'action start de l'action. La fonction start se charge d'exécuter la bonne
 # Step (voir la méthode start de la class BusinessAction (comportement par défaut en plutistep)).
-# dans ce cas le nom de la step doit étre ajouter dans le appstruct comme paramètre de l'action: chaque step (Vue, généralement un form) 
-# demande à l'action de s'executer action.execut(...). Avant cela la step rajoute dans le appstruct une clef 'stepid' et sa valeur 
-# correspendant à la méthode qui doit étre executer. Le code associé aux steps et le start ainsi que les vue seront générer.
+# dans ce cas le nom du step doit être ajouté dans le appstruct comme paramètre de l'action: chaque step (Vue, généralement un form) 
+# demande à l'action de s'exécuter action.execut(...). Avant cela, la step rajoute dans le appstruct une clef 'stepid' et sa valeur 
+# correspondant à la méthode qui doit être exécuté. Le code associé aux steps et le start ainsi que les vues seront générés.
 
 # exemple:
 
