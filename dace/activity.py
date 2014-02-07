@@ -207,7 +207,7 @@ class BusinessAction(Persistent):
 
     def start(self, context, request, appstruct, args = None):
         # il y a probablement un moyen plus simple en cherchant la méthode par son nom dans self par exemple..
-        steps[appstruct['stepid']].im_func(self, context, request, appstruct)
+        return steps[appstruct['stepid']].im_func(self, context, request, appstruct, args)
 
     def execut(self, context, request, appstruct):
         pass
