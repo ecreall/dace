@@ -12,6 +12,7 @@ import pytz
 from .interfaces import IParameterDefinition, IProcessDefinition, IApplicationDefinition, IActivity, IBusinessAction, IRuntime
 from .core import EventHandler, WorkItemBehavior, AlreadyLocked
 
+ACTIONSTEPID = '__actionstepid__'
 
 class Parameter(object):
 
@@ -207,9 +208,12 @@ class BusinessAction(Persistent):
 
     def start(self, context, request, appstruct, args = None):
         # il y a probablement un moyen plus simple en cherchant la méthode par son nom dans self par exemple..
-        return steps[appstruct['stepid']].im_func(self, context, request, appstruct, args)
+        if args is not None and ACTIONSTEPID in args:
+            return steps[args[ACTIONSTEPID]].im_func(self, context, request, appstruct, args)
+        else:
+            return True
 
-    def execut(self, context, request, appstruct):
+    def execut(self, context, request, appstruct, args = None):
         pass
 
     def afterexecution(self, resuest):
@@ -217,7 +221,7 @@ class BusinessAction(Persistent):
         self.__parent__.node.workItemFinished(self.__parent__)
         self.isexecuted = True
 
-    def redirect(self, context, request, appstruct):
+    def redirect(self, context, request, appstruct, args = None):
         pass
 
     _lock = (None, None)
@@ -254,11 +258,11 @@ class BusinessAction(Persistent):
 
 class ElementaryAction(BusinessAction):
 
-    def execut(self, context, request, appstruct):
-        isFinished = self.start(context, request, appstruct)
+    def execut(self, context, request, appstruct, args = None):
+        isFinished = self.start(context, request, appstruct, args)
         if isFinished:
             self.afterexecution(request)
-            self.redirect(context, request, appstruct)
+            self.redirect(context, request, appstruct, args)
 
 
 # Une loopAction ne peut être une action avec des steps. Cela n'a pas de sens
@@ -268,42 +272,45 @@ class LoopActionCardinality(BusinessAction):
     loopCondition = None
     testBefore = False
 
-    def _executBefore(self, context, request, appstruct):
+    def _executBefore(self, context, request, appstruct, args = None):
         nbloop = 0       
         while self.loopCondition.im_func(context, self.process, appstruct) and nbloop < loopMaximum:
-            self.start(context, request, appstruct)
+            self.start(context, request, appstruct, args)
             nbloop += 1
 
-    def _executAfter(self, context, request, appstruct):
+    def _executAfter(self, context, request, appstruct, args = None):
         nbloop = 0
         while nbloop < loopMaximum:
-            self.start(context, request, appstruct)
+            self.start(context, request, appstruct, args)
             nbloop += 1
             if self.loopCondition.im_func(context, self.process, appstruct):
                 break
 
-    def execut(self, context, request, appstruct):
+    def execut(self, context, request, appstruct, args = None):
         if testBefore:
-            self._executBefore(context, request, appstruct)
+            self._executBefore(context, request, appstruct, args)
         else:
-            self._executAfter(context, request, appstruct)
+            self._executAfter(context, request, appstruct, args)
 
         self.afterexecution(request)
-        self.redirect(context, request, appstruct)
+        self.redirect(context, request, appstruct, args)
 
 
 class LoopActionDataInput(BusinessAction):
 
     loopDataInputRef = None
 
-    def execut(self, context, request, appstruct):
+    def execut(self, context, request, appstruct, args = None):
         instances = self.loopDataInputRef.im_func(context, self.process, appstruct)  
         for item in instances:
-            args = {'item': item}
+            if args is not None:
+                args.['item'] = item
+            else:
+                args = {'item': item}
             self.start(context, request, appstruct, args)
 
          self.afterexecution(request)
-         self.redirect(context, request, appstruct)
+         self.redirect(context, request, appstruct, args)
         
 
 
@@ -338,11 +345,11 @@ class MultiInstanceActionInfiniteCardinality(BusinessAction):
             self.unlock(resuest)
             self.__parent__.unlock(request)
  
-    def execut(self, context, request, appstruct):
-        isFinished = self.start(context, resuest, appstruct)
+    def execut(self, context, request, appstruct, args = None):
+        isFinished = self.start(context, resuest, appstruct, args)
         if isFinished :
             self.afterexecution(request)
-            self.redirect(context, request, appstruct)
+            self.redirect(context, request, appstruct, args)
 
 
 class MultiInstanceActionDataInput(BusinessAction):
@@ -387,19 +394,25 @@ class ActionInstance(BusinessAction):
         self.isexecuted = True            
 
     def start(self, context, resuest, appstruct, args = None):
-        args = {'item': self.item}
+        if args is not None:
+            args.['item'] = self.item
+        else:
+            args = {'item': self.item}
         return self.mia.start(context, resuest, appstruct, args)
 
-    def redirect(self, context, resuest, appstruct):
-        args = {'item': self.item}
-        self.mia.redirect(context, resuest, appstruct, args = None)
+    def redirect(self, context, resuest, appstruct, args = None):
+        if args is not None:
+            args.['item'] = self.item
+        else:
+            args = {'item': self.item}
+        self.mia.redirect(context, resuest, appstruct, args)
             
-    def execut(self, context, resuest, appstruct):
-        isFinished = self.start(context, resuest, appstruct)
+    def execut(self, context, resuest, appstruct, args = None):
+        isFinished = self.start(context, resuest, appstruct, args)
         if isFinished :
             self.mia.instances.pop(self.item)
             self.afterexecution(request)
-            self.redirect(context, request, appstruct)
+            self.redirect(context, request, appstruct, args)
 
 
 class ActionInstanceAsPrincipal(ActionInstance):  
@@ -412,8 +425,8 @@ class ActionInstanceAsPrincipal(ActionInstance):
 # La question est comment faire pour les actions multiStep?
 # Je pense que cela peut être géré dans l'action start de l'action. La fonction start se charge d'exécuter la bonne
 # Step (voir la méthode start de la class BusinessAction (comportement par défaut en plutistep)).
-# dans ce cas le nom du step doit être ajouté dans le appstruct comme paramètre de l'action: chaque step (Vue, généralement un form) 
-# demande à l'action de s'exécuter action.execut(...). Avant cela, la step rajoute dans le appstruct une clef 'stepid' et sa valeur 
+# dans ce cas le nom du step doit être ajouté dans args comme paramètre de l'action: chaque step (Vue, généralement un form) 
+# demande à l'action de s'exécuter action.execut(...). Avant cela, la step rajoute dans le args une clef ACTIONSTEPID et sa valeur 
 # correspondant à la méthode qui doit être exécuté. Le code associé aux steps et le start ainsi que les vues seront générés.
 
 # exemple:
@@ -423,10 +436,10 @@ class ActionInstanceAsPrincipal(ActionInstance):
 #    steps = {'s1':s1,'s2':s2}
 #
 #    
-#    def s1(self, contex, resuest, appstruct):
+#    def s1(self, contex, resuest, appstruct, args):
 #        pass
 #
-#    def s2(self, contex, resuest, appstruct):
+#    def s2(self, contex, resuest, appstruct, args):
 #        pass
 
  
