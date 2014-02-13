@@ -202,8 +202,8 @@ class BusinessAction(Persistent):
         
         return True
 
-    def beforexecution(self, resuest):
-        self.lock(resuest)
+    def beforeexecution(self, request):
+        self.lock(request)
         self.__parent__.lock(request)
 
     def start(self, context, request, appstruct, args = None):
@@ -213,11 +213,11 @@ class BusinessAction(Persistent):
         else:
             return True
 
-    def execut(self, context, request, appstruct, args = None):
+    def execute(self, context, request, appstruct, args = None):
         pass
 
-    def afterexecution(self, resuest):
-        self.unlock(resuest)
+    def afterexecution(self, request):
+        self.unlock(request)
         self.__parent__.node.workItemFinished(self.__parent__)
         self.isexecuted = True
 
@@ -258,7 +258,7 @@ class BusinessAction(Persistent):
 
 class ElementaryAction(BusinessAction):
 
-    def execut(self, context, request, appstruct, args = None):
+    def execute(self, context, request, appstruct, args = None):
         isFinished = self.start(context, request, appstruct, args)
         if isFinished:
             self.afterexecution(request)
@@ -272,13 +272,13 @@ class LoopActionCardinality(BusinessAction):
     loopCondition = None
     testBefore = False
 
-    def _executBefore(self, context, request, appstruct, args = None):
+    def _executeBefore(self, context, request, appstruct, args = None):
         nbloop = 0       
         while self.loopCondition.im_func(context, self.process, appstruct) and nbloop < loopMaximum:
             self.start(context, request, appstruct, args)
             nbloop += 1
 
-    def _executAfter(self, context, request, appstruct, args = None):
+    def _executeAfter(self, context, request, appstruct, args = None):
         nbloop = 0
         while nbloop < loopMaximum:
             self.start(context, request, appstruct, args)
@@ -286,7 +286,7 @@ class LoopActionCardinality(BusinessAction):
             if self.loopCondition.im_func(context, self.process, appstruct):
                 break
 
-    def execut(self, context, request, appstruct, args = None):
+    def execute(self, context, request, appstruct, args = None):
         if testBefore:
             self._executBefore(context, request, appstruct, args)
         else:
@@ -300,7 +300,7 @@ class LoopActionDataInput(BusinessAction):
 
     loopDataInputRef = None
 
-    def execut(self, context, request, appstruct, args = None):
+    def execute(self, context, request, appstruct, args = None):
         instances = self.loopDataInputRef.im_func(context, self.process, appstruct)  
         for item in instances:
             if args is not None:
@@ -335,18 +335,18 @@ class MultiInstanceActionInfiniteCardinality(BusinessAction):
 
     isSequential = False
 
-    def beforexecution(self, resuest):
+    def beforeexecution(self, request):
         if isSequential:
-            self.lock(resuest)
+            self.lock(request)
             self.__parent__.lock(request)
 
-    def afterexecution(self, resuest):
+    def afterexecution(self, request):
         if isSequential:
-            self.unlock(resuest)
+            self.unlock(request)
             self.__parent__.unlock(request)
  
-    def execut(self, context, request, appstruct, args = None):
-        isFinished = self.start(context, resuest, appstruct, args)
+    def execute(self, context, request, appstruct, args = None):
+        isFinished = self.start(context, request, appstruct, args)
         if isFinished :
             self.afterexecution(request)
             self.redirect(context, request, appstruct, args)
@@ -379,12 +379,12 @@ class ActionInstance(BusinessAction):
         self.mia = mia
         self.item = item
 
-    def beforexecution(self, resuest):
-        self.lock(resuest)
+    def beforeexecution(self, request):
+        self.lock(request)
         if self.mia.isSequential:
             self.__parent__.lock(request)
 
-    def afterexecution(self, resuest):
+    def afterexecution(self, request):
         if self.mia.isSequential:
             self.__parent__.unlock(request)
 
@@ -393,22 +393,22 @@ class ActionInstance(BusinessAction):
 
         self.isexecuted = True            
 
-    def start(self, context, resuest, appstruct, args = None):
+    def start(self, context, request, appstruct, args = None):
         if args is not None:
             args.['item'] = self.item
         else:
             args = {'item': self.item}
-        return self.mia.start(context, resuest, appstruct, args)
+        return self.mia.start(context, request, appstruct, args)
 
-    def redirect(self, context, resuest, appstruct, args = None):
+    def redirect(self, context, request, appstruct, args = None):
         if args is not None:
             args.['item'] = self.item
         else:
             args = {'item': self.item}
-        self.mia.redirect(context, resuest, appstruct, args)
+        self.mia.redirect(context, request, appstruct, args)
             
-    def execut(self, context, resuest, appstruct, args = None):
-        isFinished = self.start(context, resuest, appstruct, args)
+    def execute(self, context, request, appstruct, args = None):
+        isFinished = self.start(context, request, appstruct, args)
         if isFinished :
             self.mia.instances.pop(self.item)
             self.afterexecution(request)
@@ -436,10 +436,10 @@ class ActionInstanceAsPrincipal(ActionInstance):
 #    steps = {'s1':s1,'s2':s2}
 #
 #    
-#    def s1(self, contex, resuest, appstruct, args):
+#    def s1(self, context, request, appstruct, args):
 #        pass
 #
-#    def s2(self, contex, resuest, appstruct, args):
+#    def s2(self, context, request, appstruct, args):
 #        pass
 
  
