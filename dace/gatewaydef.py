@@ -24,5 +24,3 @@ class ParallelGatewayDefinition(GatewayDefinition):
 
 class InclusiveGatewayDefinition(GatewayDefinition):
     factory = InclusiveGateway
-
-

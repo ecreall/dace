@@ -1,10 +1,11 @@
-from zope.component import getUtility, getUtilitiesFor
 from zope.interface import implements
-from zope.intid.interfaces import IIntIds
 from persistent.list import PersistentList
+from pyramid.threadlocal import get_current_registry
+from substanced.util import find_catalog, get_oid
 
 from .interfaces import IEntity, IBusinessAction, IProcessDefinition
 from .relations import ICatalog, any
+from .util import get_obj
 
 
 class ActionCall(object):
@@ -15,8 +16,6 @@ class ActionCall(object):
         self.action = action
         self.title = self.action.title
         self.process = self.action.process
-        #self.studyContent = self.action.studyContent(self.object)
-        #self.reportContent = self.action.reportContent(self.object)
     @property
     def url(self):
         return self.action.url(self.object)
@@ -36,15 +35,16 @@ class Entity(object):
     def setstate(self, state):
         if not isinstance(state, (list, tuple)):
             state = [state]
+
         self.state = PersistentList()
         for s in state:
             self.state.append(s)
 
     def getCreator(self):
-        ids = getUtility(IIntIds)
-        rcatalog = getUtility(ICatalog)
+        registry = get_current_registry()
+        rcatalog = registry.getUtility(ICatalog)
         relations = rcatalog.findRelations({
-            u'target_id': ids.getId(self),
+            u'target_id': get_oid(self),
             u'tag': any(u"created")})
         return tuple(relations)[0].source
 
@@ -59,57 +59,42 @@ class Entity(object):
             proc.addInvolvedEntities(self, tag, index)
 
     def _getInvolvedProcessRelations(self, tag=None, index=-1):
-        ids = getUtility(IIntIds)
-        rcatalog = getUtility(ICatalog)
+        registry = get_current_registry()
+        rcatalog = registry.getUtility(ICatalog)
         tags = [u"involved"]
         if tag is not None:
             tags = [t + tag for t in tags]
-        opts = {u'target_id': ids.getId(self)}
+
+        opts = {u'target_id': get_oid(self)}
         opts[u'tag'] = any(*tags)
         for relation in rcatalog.findRelations(opts):
             yield relation
 
     def getInvolvedProcessIds(self, tag=None):
-        # amen debut
-        intids = getUtility(IIntIds)
-
         for a in self.actions:
             if a.action.process is not None:
-                yield intids.getId(a.action.process)
-        # amen fin
-        #for relation in self._getInvolvedProcessRelations(tag):
-        #    yield relation.source_id
+                yield get_oid(a.action.process)
 
     def getInvolvedProcesses(self, tag=None):
         for relation in self._getInvolvedProcessRelations(tag):
             yield relation.source
 
-    def getAllObject(self,):
-        from zope.catalog.interfaces import ICatalog
-        from zope.intid.interfaces import IIntIds
-        from com.ecreall.omegsi.library import ResultSet
-        catalog = getUtility(ICatalog)
-        intids = getUtility(IIntIds)
-        query = {'object_provides': {'any_of': (self.__dict__['dolmen.content.directives.schema'][0].__identifier__,)}}
-        results = catalog.apply(query)
-        return ResultSet(results, intids)
-
     @property
     def actions(self):
-        from zope.catalog.interfaces import ICatalog
-        from zope.intid.interfaces import IIntIds
+        catalog = find_catalog(self, 'system')
         allactions = []
-        catalog = getUtility(ICatalog)
-        intids = getUtility(IIntIds)
         query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
+        # TODO search in object_provides mycatalog.index
         results = list(catalog.apply(query))
         if len(results) > 0:
+            cache = {}
             for a in results:
-                action = intids.getObject(a)
+                action = get_obj(a, cache)
                 if action.validate(self):
                     allactions.append(action)
 
-        allprocess = getUtilitiesFor(IProcessDefinition)
+        registry = get_current_registry()
+        allprocess = registry.getUtilitiesFor(IProcessDefinition)
         # Add start workitem
         for name, pd in allprocess:
             if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):

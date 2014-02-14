@@ -2,7 +2,7 @@ import time
 import transaction
 import datetime
 
-from zope.event import notify
+from pyramid.threadlocal import get_current_registry
 
 import zmq
 from zmq.eventloop.ioloop import DelayedCallback
@@ -136,7 +136,8 @@ class EndEvent(Throwing):
             parent.workitems.clear()
 
         self.process._finished = True
-        notify(ProcessFinished(self))
+        registry = get_current_registry()
+        registry.notify(ProcessFinished(self))
         # ici test pour les sous processus
         if self.process.definition.isSubProcess:
             self.process.attachedTo.workItemFinished(self.process.attachedTo.wi)

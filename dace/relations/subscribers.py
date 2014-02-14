@@ -3,7 +3,7 @@ from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
 from substanced.event import RootAdded
 from substanced.interfaces import IObjectWillBeRemovedEvent
-from substanced.util import find_objectmap, get_oid, set_oid
+from substanced.util import get_oid
 
 from .interfaces import (
     ICatalog,
@@ -33,9 +33,7 @@ def update_relation(relation, event):
 def add_relation(relation, event):
     registry = get_current_registry()
     catalog = registry.getUtility(ICatalog)
-    objectmap = find_objectmap(relation)
-    objectid = objectmap.new_objectid()
-    set_oid(relation, objectid)
+    objectid = get_oid(relation)
     catalog.index_doc(objectid, relation)
 
 

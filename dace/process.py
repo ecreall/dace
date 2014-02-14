@@ -1,25 +1,18 @@
-import transaction
-from persistent.list import PersistentList
-from zope.component import getUtility
-from zope.component.hooks import getSite
-from zope.event import notify
-from zope.intid.interfaces import IIntIds
-
 from persistent import Persistent
+from persistent.list import PersistentList
+from pyramid.threadlocal import get_current_registry
+from substanced.util import find_catalog, get_oid
+from zope.interface import implements
+import transaction
 
-from dolmen.content import Content, nofactory, schema
-
-from zope.catalog.interfaces import ICatalog as ISearchCatalog
-
-from .entity import Entity
-from .relations import RelationValue, ICatalog, any
-
-from .interfaces import IProcess, IProcessDefinition, IWorkItem
 from .activity import SubProcess
-from .gateway import ExclusiveGateway
 from .core import ProcessStarted
+from .entity import Entity
+from .gateway import ExclusiveGateway
+from .interfaces import IProcess, IProcessDefinition, IWorkItem
+from .relations import ICatalog, any, connect
 from .transition import Transition
-
+from .util import get_obj
 
 
 class WorkflowData(Persistent):
@@ -27,9 +20,8 @@ class WorkflowData(Persistent):
     """
 
 
-class Process(Entity, Content):
-    schema(IProcess)
-    nofactory()
+class Process(Entity, Persistent):
+    implements(IProcess)
     _started = False
     _finished = False
     # l'instance d'activite (SubProcess) le manipulant
@@ -54,7 +46,8 @@ class Process(Entity, Content):
         transaction.commit()
 
     def definition(self):
-        return getUtility(
+        registry = get_current_registry()
+        return registry.getUtility(
             IProcessDefinition,
             self.id,
             )
@@ -65,16 +58,17 @@ class Process(Entity, Content):
         return self.definition.isSubProcess
 
     def getWorkItems(self):
-        catalog = getUtility(ISearchCatalog)
-        intids = getUtility(IIntIds)
-        p_uid = intids.queryId(self)
+        catalog = find_catalog(self, 'system')
+        p_uid = get_oid(self, None)
+        # TODO adapt query
         query = {
             'object_provides': {'any_of': (IWorkItem.__identifier__,)},
             'process_inst_uid': {'any_of': (int(p_uid),)},
         }
         results = catalog.apply(query)
 
-        workitems = [intids.getObject(r) for r in results]
+        cache = {}
+        workitems = [get_obj(r, cache) for r in results]
         d = {}
         for w in workitems:
             if isinstance(w.node, SubProcess):
@@ -104,7 +98,8 @@ class Process(Entity, Content):
 #            raise TypeError("Too many arguments. Expected %s. got %s" %
 #                            (len(definition.parameters), len(arguments)))
 
-        notify(ProcessStarted(self))
+        registry = get_current_registry()
+        registry.notify(ProcessStarted(self))
         self.transition(None, (self.startTransition, ))
 
     def refreshXorGateways(self):
@@ -113,10 +108,11 @@ class Process(Entity, Content):
                 node._refreshWorkItems()
 
     def transition(self, node, transitions):
+        registry = get_current_registry()
         if transitions:
             for transition in transitions:
                 next = self.nodes[transition.to]
-                notify(Transition(node, next))
+                registry.notify(Transition(node, next))
                 next.prepare()
 
             for transition in transitions:
@@ -164,13 +160,10 @@ class Process(Entity, Content):
         if not isinstance(entities, (list, tuple)):
             entities = [entities]
 
-        ids = getUtility(IIntIds)
-        source_id = ids.getId(self)
-        relation_container = getSite()[u'_relations']
+        source = self
         for entity in entities:
-            target_id = ids.getId(entity)
-            relation_container[(source_id, target_id)] = RelationValue(
-                source_id, target_id, tags=tags)
+            target = entity
+            connect(source, target, tags=tags)
 
     def addCreatedEntities(self, entities, tag, index=-1):
         if self.isSubProcess:
@@ -197,12 +190,12 @@ class Process(Entity, Content):
             self._addRelation(entities, tags=allTags)
 
     def _getEntityRelations(self, tags):
+        registry = get_current_registry()
         if self.isSubProcess:
             yield self.attachedTo.process._getEntityRelations(tags)
         else:
-            rcatalog = getUtility(ICatalog)
-            ids = getUtility(IIntIds)
-            opts = {u'source_id': ids.getId(self)}
+            rcatalog = registry.getUtility(ICatalog)
+            opts = {u'source_id': get_oid(self)}
             if tags is not None:
                 opts[u'tag'] = any(*tags)
             for relation in rcatalog.findRelations(opts):

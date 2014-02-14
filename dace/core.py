@@ -1,24 +1,20 @@
-import thread
 from datetime import datetime, timedelta
-import pytz
 from persistent import Persistent
-from zope.container.interfaces import INameChooser
-from zope.container.contained import NameChooser
+from pyramid.threadlocal import get_current_registry
+from substanced.events import ObjectAddedEvent
+from substanced.interfaces import ILocation
 from zope.interface import implements, Attribute
-from zope.component import createObject
-from zope.event import notify
-from zope.lifecycleevent import ObjectAddedEvent
-from zope.location.interfaces import ILocation
-
-import grok
+import pytz
+import thread
 
 from .interfaces import IRuntime, IProcessStarted, IProcessFinished
 from .workitem import DecisionWorkItem, StartWorkItem
-from .wizard import WizardStep
 from . import log, _
 
 DEFAULT_LOCK_DURATION = timedelta(seconds=120)
 
+
+#TODO
 class RuntimeNameChooser(NameChooser, grok.Adapter):
     grok.context(IRuntime)
     grok.implements(INameChooser)
@@ -105,7 +101,8 @@ class FlowNode(BPMNElement, Persistent):
         self.workitems = {}
 
     def prepare(self):
-        notify(ActivityPrepared(self))
+        registry = get_current_registry()
+        registry.notify(ActivityPrepared(self))
 
     def __call__(self, transition):
         self.start(transition)
@@ -142,7 +139,8 @@ class FlowNode(BPMNElement, Persistent):
             )
 
     def _finish(self):
-        notify(ActivityFinished(self))
+        registry = get_current_registry()
+        registry.notify(ActivityFinished(self))
 
         definition = self.definition
 
@@ -159,11 +157,11 @@ class FlowNode(BPMNElement, Persistent):
         self.process.transition(self, transitions)
 
 
-
 class WorkItemBehavior(object):
 
     def prepare(self):
-        notify(ActivityPrepared(self))
+        registry = get_current_registry()
+        registry.notify(ActivityPrepared(self))
         self._create_workitem()
 
     def _create_workitem(self):
@@ -174,7 +172,8 @@ class WorkItemBehavior(object):
             i = 0
             for application, formal, actual in self.definition.applications:
                 factoryname = self.process.id + '.' + application
-                workitem = createObject(factoryname, self)
+                registry = get_current_registry()
+                workitem = registry.content.create(factoryname, self)
                 i += 1
                 workitem.id = i
                 workitems[i] = workitem, application, formal, actual
@@ -182,7 +181,8 @@ class WorkItemBehavior(object):
         self.workitems = workitems
         # Indexes workitems
         for wi in self.workitems.values():
-            notify(ObjectAddedEvent(wi[0]))
+            registry = get_current_registry()
+            registry.notify(ObjectAddedEvent(wi[0]))
 
     def _clear_workitem(self):
         """Used only by event in stop method.
@@ -193,7 +193,8 @@ class WorkItemBehavior(object):
 
     def start(self, transition):
         self._define_next_replay_node()
-        notify(ActivityStarted(self))
+        registry = get_current_registry()
+        registry.notify(ActivityStarted(self))
 
         if self.workitems:
             if not hasattr(self.process, '_v_toreplay_app'):
@@ -210,6 +211,7 @@ class WorkItemBehavior(object):
                             delattr(self.process.workflowRelevantData, name)
                     # If form.wi is a start workitem, replace it with real one.
                     if args:
+                        # TODO
                         if isinstance(args[0], WizardStep):
                             form = args[0].parent
                         else:
@@ -253,7 +255,8 @@ class WorkItemBehavior(object):
         if res:
             raise TypeError("Too many results")
 
-        notify(WorkItemFinished(
+        registry = get_current_registry()
+        registry.notify(WorkItemFinished(
             work_item, app, actual, results))
 
         if not self.workitems:
@@ -316,6 +319,7 @@ class ActivityPrepared:
     def __repr__(self):
         return "ActivityPrepared(%r)" % self.activity
 
+
 class ActivityFinished:
 
     def __init__(self, activity):
@@ -344,7 +348,7 @@ class ProcessError(Exception):
     """
 
 
-class LockableElement(object)
+class LockableElement(object):
     _lock = (None, None)
     _lock_duration = DEFAULT_LOCK_DURATION
 
@@ -371,15 +375,16 @@ class LockableElement(object)
         """
         if self._lock[1] is None:
             return False
-        if self._lock[1] + _lock_duration <= datetime.now(pytz.utc):
+        if self._lock[1] + self._lock_duration <= datetime.now(pytz.utc):
             return False
         if self._lock[0] == request.principal.id:
             return False
         return True
 
-@grok.subscribe(ActivityPrepared)
-@grok.subscribe(ActivityStarted)
-@grok.subscribe(ActivityFinished)
+
+@subscriber(ActivityPrepared)
+@subscriber(ActivityStarted)
+@subscriber(ActivityFinished)
 def activity_handler(event):
     log.info('%s %s', thread.get_ident(), event)
 

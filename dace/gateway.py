@@ -1,5 +1,5 @@
-from zope.event import notify
-from zope.lifecycleevent import ObjectAddedEvent
+from pyramid.threadlocal import get_current_registry
+from substanced.events import ObjectAddedEvent
 
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event
@@ -21,8 +21,9 @@ class Gateway(FlowNode):
 
         self.workitems = workitems
         # Indexes workitems
+        registry = get_current_registry()
         for wi in self.workitems.values():
-            notify(ObjectAddedEvent(wi[0]))
+            registry.notify(ObjectAddedEvent(wi[0]))
 
     def createWorkItems(self, gw, allowed_transitions):
         for transition in allowed_transitions:
@@ -37,6 +38,8 @@ class ExclusiveGateway(Gateway):
     def start(self, transition):
         self._define_next_replay_node()
         definition = self.definition
+        registry = get_current_registry()
+        notify = registry.notify
         notify(ActivityStarted(self))
         if self._v_next_replay_node is not None:
             for transition in definition.outgoing:
@@ -104,7 +107,8 @@ class ExclusiveGateway(Gateway):
             wi[0].remove()
         self.workitems.clear()
         # finish this gateway
-        notify(ActivityFinished(self))
+        registry = get_current_registry()
+        registry.notify(ActivityFinished(self))
 
         self.process._v_toreplay = work_item.node_ids
         self.process._v_toreplay_app = work_item.application
@@ -120,6 +124,7 @@ class ExclusiveGateway(Gateway):
                 for wi_tuple in node._createWorkItems(gw,
                         node_ids + (transition.to,)):
                     yield wi_tuple
+
 
 # parallel sans condition sans default
 class ParallelGateway(Gateway):
@@ -143,7 +148,8 @@ class ParallelGateway(Gateway):
         if len(self.incoming) < len(definition.incoming):
             return  # not enough incoming yet
 
-        notify(ActivityStarted(self))
+        registry = get_current_registry()
+        registry.notify(ActivityStarted(self))
 
         # Execute all possible transitions
         self._finish()
@@ -169,6 +175,7 @@ class ParallelGateway(Gateway):
                 for wi_tuple in node._createWorkItems(gw,
                         node_ids + (transition.to,)):
                     yield wi_tuple
+
 
 # parallel avec condition avec default
 class InclusiveGateway(Gateway):

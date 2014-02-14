@@ -1,23 +1,16 @@
-from zope.component import getUtility
-from zope.component.interfaces import IFactory
-from zope.container.interfaces import INameChooser
-from zope.interface import implements, implementedBy
-from zope.location.interfaces import ILocation
-from zope.event import notify
-from zope.lifecycleevent import ObjectAddedEvent, ObjectRemovedEvent
-from datetime import datetime, timedelta
-import pytz
-
-from persistent.list import PersistentList
 from persistent import Persistent
-
-import grok
+from persistent.list import PersistentList
+from pyramid.threadlocal import get_current_registry
+from substanced.events import ObjectAddedEvent, ObjectRemovedEvent
+from substanced.interfaces import ILocation
+from zope.interface import implements, implementedBy
 
 from .interfaces import (
     IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
+from .core import LockableElement
 
 
-
+# TODO
 class WorkItemFactory(grok.GlobalUtility):
     grok.implements(IFactory)
     grok.baseclass()
@@ -46,7 +39,8 @@ class StartWorkItem(object):
         self.process_identifier = gwdef.process.id
         self.node_ids = node_ids
         self.process = None
-        pd = getUtility(
+        registry = get_current_registry()
+        pd = registry.getUtility(
                 IProcessDefinition,
                 self.process_identifier)
         self.actions = PersistentList()
@@ -62,7 +56,8 @@ class StartWorkItem(object):
         return self.node_ids[-1]
 
     def start(self, *args):
-        pd = getUtility(
+        registry = get_current_registry()
+        pd = registry.getUtility(
                 IProcessDefinition,
                 self.process_identifier)
         proc = pd()
@@ -70,10 +65,7 @@ class StartWorkItem(object):
         proc._v_toreplay_app = self.application
         proc._v_toreplay_context = getattr(self, 'context', None)
 
-        runtime = getUtility(IRuntime)
-        #chooser = INameChooser(runtime)
-        #name = chooser.chooseName(self.process_identifier, proc)
-        #runtime[name] = proc
+        runtime = registry.getUtility(IRuntime)
         runtime.addprocesses(proc)
         definition = pd.applications[self.application]
         data = proc.workflowRelevantData
@@ -83,7 +75,7 @@ class StartWorkItem(object):
                 setattr(data, parameter.__name__, arg)
         if args:
             raise TypeError("Too many arguments. Expected %s. got %s" %
-                            (len(definition.parameters), len(arguments)))
+                            (len(definition.parameters), len(args)))
         proc.start()
         self.process = proc
         return proc
@@ -117,8 +109,9 @@ class BaseWorkItem(LockableElement, Persistent):
         self.actions = PersistentList()
         for a in node.definition.contexts:
             self.actions.append(a(self))
+        registry = get_current_registry()
         for action in self.actions:
-            notify(ObjectAddedEvent(action))
+            registry.notify(ObjectAddedEvent(action))
 
     @property
     def process_id(self):
@@ -136,9 +129,10 @@ class BaseWorkItem(LockableElement, Persistent):
         raise NotImplementedError
 
     def remove(self):
+        registry = get_current_registry()
         for a in self.actions:
-            notify(ObjectRemovedEvent(a))
-        notify(ObjectRemovedEvent(self))
+            registry.notify(ObjectRemovedEvent(a))
+        registry.notify(ObjectRemovedEvent(self))
         # This is used in "system" thread to not process the action
         # The gateway workitems were removed by a previous action.
         self._v_removed = True
@@ -175,7 +169,6 @@ class WorkItem(BaseWorkItem):
                 if activity_id == t.to][0]
         proc = self.node.process
         return not transition.sync or transition.condition(proc)
-
 
 
 class DecisionWorkItem(BaseWorkItem):
@@ -222,4 +215,3 @@ class DecisionWorkItem(BaseWorkItem):
                     return False
 
         return True
-
