@@ -10,6 +10,7 @@ requires = [
     'zope.event',
     'zope.lifecycleevent',
     'pyzmq',
+    'zc.relation',
     ]
 
 setup(name='dace',

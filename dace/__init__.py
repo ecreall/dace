@@ -10,3 +10,6 @@ from dace.process import Process
 from dace.runtime import Runtime
 from dace.user import User
 from dace.interfaces import IEntity, IObject, IProcess, IUser, IRuntime
+
+def includeme(config): # pragma: no cover
+    config.include('.relations')
