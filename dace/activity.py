@@ -6,11 +6,10 @@ from zope.intid.interfaces import IIntIds
 from zope.globalrequest import getRequest
 from zope.location.interfaces import ILocation
 from zope.container.interfaces import INameChooser
-from datetime import datetime, timedelta
 import pytz
 
 from .interfaces import IParameterDefinition, IProcessDefinition, IApplicationDefinition, IActivity, IBusinessAction, IRuntime
-from .core import EventHandler, WorkItemBehavior, AlreadyLocked
+from .core import EventHandler, WorkItemBehavior, LockableElement
 
 ACTIONSTEPID = '__actionstepid__'
 
@@ -93,7 +92,7 @@ class ActionType:
     manual = 2
 
 
-class BusinessAction(Persistent):
+class BusinessAction(LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
 
     context = NotImplemented
@@ -224,36 +223,6 @@ class BusinessAction(Persistent):
     def redirect(self, context, request, appstruct, args = None):
         pass
 
-    _lock = (None, None)
-
-    def lock(self, request):
-        """Raise AlreadyLocked if the activity was already locked by someone
-        else.
-        """
-        if self.is_locked(request):
-            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
-                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
-        self._lock = (request.principal.id, datetime.now(pytz.utc))
-
-    def unlock(self, request):
-        """Raise AlreadyLocked if the activity was already locked by someone
-        else.
-        """
-        if self.is_locked(request):
-            raise AlreadyLocked(_(u"Already locked by ${user} at ${datetime}",
-                mapping={'user': self._lock[0], 'datetime': self._lock[1]}))
-        self._lock = (None, None)
-
-    def is_locked(self, request):
-        """If the activity was locked by the same user, return False.
-        """
-        if self._lock[1] is None:
-            return False
-        if self._lock[1] + LOCK_DURATION <= datetime.now(pytz.utc):
-            return False
-        if self._lock[0] == request.principal.id:
-            return False
-        return True
 
 
 class ElementaryAction(BusinessAction):
