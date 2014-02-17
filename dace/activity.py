@@ -1,12 +1,15 @@
+# -*- coding: utf-8 -*-
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.threadlocal import get_current_request
-from substanced.interfaces import ILocation
+from pyramid.interfaces import ILocation
 from substanced.util import get_oid
 from zope.interface import implements
 
 from .core import EventHandler, LockableElement, WorkItemBehavior
+from .lock import LockableElement
+
 from .interfaces import (
     IParameterDefinition,
     IProcessDefinition,
@@ -98,6 +101,7 @@ class ActionType:
 
 class BusinessAction(LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
+#    implements(IBusinessAction)
 
     context = NotImplemented
     action =  NotImplemented
@@ -211,7 +215,7 @@ class BusinessAction(LockableElement, Persistent):
         self.__parent__.lock(request)
 
     def start(self, context, request, appstruct, args=None):
-        # il y a probablement un moyen plus simple en cherchant la méthode par son nom dans self par exemple..
+        # il y a probablement un moyen plus simple en cherchant la methode par son nom dans self par exemple..
         if args is not None and ACTIONSTEPID in args:
             return self.steps[args[ACTIONSTEPID]].im_func(self, context, request, appstruct, args)
         else:
@@ -238,7 +242,7 @@ class ElementaryAction(BusinessAction):
             self.redirect(context, request, appstruct, args)
 
 
-# Une loopAction ne peut être une action avec des steps. Cela n'a pas de sens
+# Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
 class LoopActionCardinality(BusinessAction):
 
     loopMaximum = None
@@ -332,7 +336,7 @@ class MultiInstanceActionDataInput(BusinessAction):
     def __init__(self, parent):
         super(MultiInstanceActionDataInput, self).__init__(parent)
         self.instances = PersistentList()
-        # loopDataInputRef renvoie une liste d'éléments identifiables
+        # loopDataInputRef renvoie une liste d'elements identifiables
         self.instances = self.loopDataInputRef.im_func(None, self.process, None)
         for instance in self.instances:
             if self.dataIsPrincipal:

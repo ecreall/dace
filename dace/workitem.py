@@ -1,18 +1,20 @@
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
-from substanced.events import ObjectAddedEvent, ObjectRemovedEvent
-from substanced.interfaces import ILocation
+from substanced.event import ObjectAdded, ObjectRemoved
+from pyramid.interfaces import ILocation
 from zope.interface import implements, implementedBy
+from pyramid.config import Configurator
 
 from .interfaces import (
     IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
-from .core import LockableElement
+from .lock import LockableElement
+
 
 
 # TODO
 class WorkItemFactory(grok.GlobalUtility):
-    grok.implements(IFactory)
+    implements(IFactory)
     grok.baseclass()
     factory = NotImplemented
 
@@ -29,6 +31,7 @@ class WorkItemFactory(grok.GlobalUtility):
 
     def __call__(self, *args, **kw):
         return self.factory(*args, **kw)
+
 
 
 class StartWorkItem(object):

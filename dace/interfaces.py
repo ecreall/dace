@@ -1,16 +1,17 @@
-from zope.container.constraints import contains
+#from zope.container.constraints import contains
 from zope.interface import Interface, Attribute
 
-from dolmen.content.interfaces import IContent, IContainer
-from dolmen.app.content import IDescriptiveSchema
-from dolmen.authentication import (
-    IPrincipal, IPasswordProtected, IPrincipalFolder)
-from dolmen.file import ImageField
-from z3c.schema.email import RFC822MailAddress
-from zope.container.constraints import containers
-from zope.i18nmessageid import MessageFactory
+#from dolmen.content.interfaces import IContent, IContainer
+#from dolmen.app.content import IDescriptiveSchema
+#from dolmen.authentication import (
+#    IPrincipal, IPasswordProtected, IPrincipalFolder)
+from substanced.interfaces import IPrincipal
+#from dolmen.file import ImageField 
+#from z3c.schema.email import RFC822MailAddress
+#from zope.container.constraints import containers
+#from zope.i18nmessageid import MessageFactory
 
-_ = MessageFactory("menhir.contenttype.user")
+#_ = MessageFactory("menhir.contenttype.user")
 
 
 class IEntity(Interface):
@@ -30,21 +31,22 @@ class IEntity(Interface):
         pass
 
 
-class IObject(IContent, IEntity):
+class IObject(IEntity):
     pass
 
 
-class IProfile(IPrincipal, IPasswordProtected, IEntity):
-    containers(IPrincipalFolder)
+class IProfile(IPrincipal, IEntity):
+    pass
+    #containers(IPrincipalFolder)
 
-    email = RFC822MailAddress(
-        title=_(u'Email address'),
-        description=_(u'Enter a valid email address.'),
-        required=False)
+    #email = RFC822MailAddress(
+    #    title=_(u'Email address'),
+    #    description=_(u'Enter a valid email address.'),
+    #    required=False)
 
-    portrait = ImageField(
-        title=_(u"Portrait"),
-        required=False)
+    #portrait = ImageField(
+    #    title=_(u"Portrait"),
+    #    required=False)
 
 
 class IUser(IProfile):
@@ -55,7 +57,7 @@ class IMachine(IProfile):
     pass
 
 
-class IProcess(IEntity, IDescriptiveSchema):
+class IProcess(IEntity):
 
     def addData(key, data, loop=False):
         """Return a token.
@@ -115,10 +117,10 @@ class IProcess(IEntity, IDescriptiveSchema):
         )
 
 
-class IRuntime(IContainer):
+class IRuntime(Interface):
     """Runtime container.
     """
-    contains(IProcess)
+    #contains(IProcess)
 
 
 class IBPMNElement(Interface):
