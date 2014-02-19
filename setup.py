@@ -7,9 +7,9 @@ README = open(os.path.join(here, 'README.rst')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 
 requires = [
-    'zope.event',
-    'zope.lifecycleevent',
+    'pyramid',
     'pyzmq',
+    'substanced',
     'zc.relation',
     'zope.schema',
     ]
