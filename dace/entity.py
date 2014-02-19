@@ -1,7 +1,8 @@
 from zope.interface import implements
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
-from substanced.util import find_catalog, get_oid
+from substanced.util import get_oid
+from dace.util import find_catalog
 
 from .interfaces import IEntity, IBusinessAction, IProcessDefinition
 from .relations import ICatalog, any
