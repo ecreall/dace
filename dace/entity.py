@@ -83,6 +83,16 @@ class Entity(object):
     def actions(self):
         catalog = find_catalog(self, 'system')
         allactions = []
+
+        searchablebusinessaction_catalog = find_catalog('searchablebusinessaction')
+        objectprovides_catalog = find_catalog('objectprovidesindexes')
+
+        context_id_index = searchablebusinessaction_catalog['context_id']
+        object_provides_index = objectprovides_catalog['object_provides']
+
+        query = object_provides_index.any((IBusinessAction.__identifier__,)) & 
+                context_index.any(process_ids)
+
         query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
         # TODO search in object_provides mycatalog.index
         results = list(catalog.apply(query))

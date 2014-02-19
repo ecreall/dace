@@ -77,4 +77,4 @@ class BusinessActionSearch(Adapter):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
+        return [i.__identifier__ for i in Declaration(self.context.context).flattened()]
