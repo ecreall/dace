@@ -5,7 +5,12 @@ from zope.location.interfaces import ILocation
 from substanced.catalog import (
     catalog_factory,
     Keyword,
+    indexview,
+    indexview_defaults,
     )
+
+from dace.util import Adapter, adapter
+
 
 class IObjectProvides(Interface):
     def object_provides():

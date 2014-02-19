@@ -7,15 +7,12 @@ from substanced.catalog import (
     Field,
     Keyword,
     Text,
+    indexview,
+    indexview_defaults,
     )
 from dace.util import Adapter, adapter
 
 from ..interfaces import IBusinessAction
-
-from substanced.catalog import (
-    indexview,
-    indexview_defaults,
-    )
 
 class ISearchableBusinessAction(Interface):
     def process_id():
