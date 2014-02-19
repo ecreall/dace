@@ -11,6 +11,7 @@ from .core import InvalidProcessDefinition
 from .transitiondef import TransitionDefinition
 from .process import Process
 from .eventdef import StartEventDefinition
+from .util import find_catalog
 
 
 class ProcessDefinition(object):
