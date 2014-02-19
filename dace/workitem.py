@@ -12,20 +12,12 @@ from .interfaces import (
 from .lock import LockableElement
 
 
-class WorkItemFactory:
+class WorkItemFactory(object):
     implements(IFactory)
     factory = NotImplemented
-    name = ''
+    title = u''
+    description = u''
 
-    """
-    @property
-    def title(self):
-        return grok.title.bind(default=u"").get(self)
-
-    @property
-    def description(self):
-        return grok.description.bind(default=u"").get(self)
-    """
     def getInterfaces(self):
         return implementedBy(self.factory)
 

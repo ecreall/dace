@@ -3,6 +3,7 @@ from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
 from zope.interface import implements, Attribute
+from zope.component import createObject
 from substanced.event import ObjectAdded
 import thread
 
@@ -169,8 +170,7 @@ class WorkItemBehavior(object):
             i = 0
             for application, formal, actual in self.definition.applications:
                 factoryname = self.process.id + '.' + application
-                registry = get_current_registry()
-                workitem = registry.content.create(factoryname, self)
+                workitem = createObject(factoryname, self)
                 i += 1
                 workitem.id = i
                 workitems[i] = workitem, application, formal, actual
