@@ -33,7 +33,7 @@ class Runtime(Folder):
     def addprocesses(self, newprocesses):
         if not isinstance(newprocesses, (list, tuple)):
             newprocesses = [newprocesses]
-
+        # TODO namechooser and objectmover
         chooser = INameChooser(self)
         for process in newprocesses:
             oldname = process.__name__

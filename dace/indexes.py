@@ -1,22 +1,21 @@
 from zope.annotation.interfaces import IAnnotations
-from zope.interface import Interface, providedBy, Declaration
-from pyramid.interfaces import ILocation
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
 
-from dace.util import Adapter, adapter, find_catalog
- 
+from dace.util import find_catalog
+
 from .interfaces import (
         IEntity,
         IProcessDefinition,
-        IStartWorkItem,
         IDecisionWorkItem,
         IWorkItem)
 from .core import get_current_process_uid
-from . import log, _
+from . import log
+from .catalog.object import ISearchableObject
 
 
-def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c: True):
+def getWorkItem(process_id, activity_id, request, context,
+                condition=lambda p, c: True):
     # If we previous call to getWorkItem was the same request
     # and returned a workitem from a gateway, search first in the
     # same gateway
@@ -54,7 +53,7 @@ def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c
             activity_id_index.eq(activity_id) & \
             object_provides_index.any((IWorkItem.__identifier__,)) & \
             process_inst_uid_index.any(process_ids)
-    
+
     results = query.execute().all()
     if len(results) > 0:
         wi = None
@@ -70,7 +69,7 @@ def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c
                 # TODO: I think node_id is a callable here, can't we just
                 # use workitem[0].node_id?
                 key = '%s.%s' % (process_id,
-                                 ISearchableWorkItem(workitem[0]).node_id)
+                                 ISearchableObject(workitem[0]).node_id)
                 workitems[key] = workitem[0]
         if wi is None:
             raise Forbidden
@@ -108,7 +107,7 @@ def workItemAvailable(menu_entry, process_id, activity_id, condition=lambda p, c
 #        if wi.is_locked(menu_entry.request):
 #            menu_entry.title = translate(menu_entry.title, context=menu_entry.request) + \
 #                               translate(_(u" (locked)"), context=menu_entry.request)
-        p_uid = ISearchableWorkItem(wi).process_inst_uid()
+        p_uid = ISearchableObject(wi).process_inst_uid()
         if p_uid:
             menu_entry.params = {'p_uid': p_uid[0]}
     except Exception as e:

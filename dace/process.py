@@ -12,7 +12,7 @@ from .gateway import ExclusiveGateway
 from .interfaces import IProcess, IProcessDefinition, IWorkItem
 from .relations import ICatalog, any, connect
 from .transition import Transition
-from .util import get_obj, find_catalog
+from .util import find_catalog
 
 
 class WorkflowData(Persistent):

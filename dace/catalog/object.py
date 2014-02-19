@@ -1,7 +1,5 @@
 from zope.interface import Interface, Declaration, implements, providedBy
 from pyramid.threadlocal import get_current_registry
-from pyramid.interfaces import ILocation
-
 from substanced.catalog import (
     catalog_factory,
     Field,
@@ -9,10 +7,11 @@ from substanced.catalog import (
     indexview,
     indexview_defaults,
     )
+from substanced.util import get_oid
 
 from dace.util import Adapter, adapter
-from ..interfaces import (
-	IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem)
+from dace.interfaces import (
+    IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem)
 
 
 class IObjectProvides(Interface):
@@ -37,7 +36,7 @@ class ISearchableObject(Interface):
 
 
 @indexview_defaults(catalog_name='dace')
-class ObjectProvidesViews(object):
+class DaceCatalogViews(object):
     def __init__(self, resource):
         self.resource = resource
 
@@ -83,7 +82,7 @@ class ObjectProvidesViews(object):
 
 
 @catalog_factory('dace')
-class ObjectProvidesIndexes(object):
+class DaceIndexes(object):
 
     object_provides = Keyword()
     process_id = Field()
@@ -116,7 +115,8 @@ class StartWorkItemSearch(Adapter):
         return ()
 
     def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
+        return [i.__identifier__ for a in self.context.actions
+                for i in Declaration(a.context).flattened()]
 
 
 @adapter(context=IDecisionWorkItem)
@@ -133,7 +133,8 @@ class DecisionWorkItemSearch(Adapter):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
+        return [i.__identifier__ for a in self.context.actions
+                for i in Declaration(a.context).flattened()]
 
 
 @adapter(context=IWorkItem)
@@ -150,7 +151,8 @@ class WorkItemSearch(Adapter):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
+        return [i.__identifier__ for a in self.context.actions
+                for i in Declaration(a.context).flattened()]
 
 
 @adapter(context=IBusinessAction)

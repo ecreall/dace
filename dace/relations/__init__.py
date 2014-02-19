@@ -1,7 +1,6 @@
 from pyramid.threadlocal import get_current_request
 from substanced.util import find_objectmap, set_oid
-from zc.relation.catalog import any
-from substanced.interfaces import ICatalog
+from zc.relation.catalog import any  #keep it
 
 from .values import RelationValue
 
@@ -20,7 +19,3 @@ def connect(source, target, **kwargs):
     objectid = objectmap.new_objectid()
     set_oid(relation, objectid)
     container[str(objectid)] = relation
-
-
-#def includeme(config): # pragma: no cover
-#    config.scan('.subscribers')

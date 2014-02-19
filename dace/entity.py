@@ -5,7 +5,6 @@ from substanced.util import find_catalog, get_oid
 
 from .interfaces import IEntity, IBusinessAction, IProcessDefinition
 from .relations import ICatalog, any
-from .util import get_obj
 
 
 class ActionCall(object):
@@ -86,11 +85,9 @@ class Entity(object):
         context_id_index = dace_catalog['context_id']
         object_provides_index = dace_catalog['object_provides']
         query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-                context_index.any(self.__provides__.declared)
-        # TODO search in object_provides mycatalog.index
+                context_id_index.any(self.__provides__.declared)
         results = query.execute().all()
         if len(results) > 0:
-            cache = {}
             for action in results:
                 if action.validate(self):
                     allactions.append(action)

@@ -1,4 +1,4 @@
-from pyramid.threadlocal import get_current_request, get_current_registry
+from pyramid.threadlocal import get_current_request
 import venusian
 
 from substanced.util import find_objectmap, find_catalog as fcsd

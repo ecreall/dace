@@ -23,7 +23,7 @@ class Gateway(FlowNode):
         # Indexes workitems
         registry = get_current_registry()
         for wi in self.workitems.values():
-            registry.notify(ObjectAddedEvent(wi[0]))
+            registry.notify(ObjectAdded(wi[0]))
 
     def createWorkItems(self, gw, allowed_transitions):
         for transition in allowed_transitions:
@@ -77,7 +77,7 @@ class ExclusiveGateway(Gateway):
         self.workitems = workitems
         # Indexes workitems
         for wi in self.workitems.values():
-            notify(ObjectAddedEvent(wi[0]))
+            notify(ObjectAdded(wi[0]))
 
         for transition in allowed_transitions:
             next = self.process.nodes[transition.to]

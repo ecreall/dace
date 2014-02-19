@@ -113,7 +113,7 @@ class BaseWorkItem(LockableElement, Persistent):
             self.actions.append(a(self))
         registry = get_current_registry()
         for action in self.actions:
-            registry.notify(ObjectAddedEvent(action))
+            registry.notify(ObjectAdded(action))
 
     @property
     def process_id(self):
@@ -133,8 +133,8 @@ class BaseWorkItem(LockableElement, Persistent):
     def remove(self):
         registry = get_current_registry()
         for a in self.actions:
-            registry.notify(ObjectRemovedEvent(a))
-        registry.notify(ObjectRemovedEvent(self))
+            registry.notify(ObjectRemoved(a))
+        registry.notify(ObjectRemoved(self))
         # This is used in "system" thread to not process the action
         # The gateway workitems were removed by a previous action.
         self._v_removed = True

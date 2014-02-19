@@ -3,6 +3,7 @@ from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
 from zope.interface import implements, Attribute
+from substanced.event import ObjectAdded
 import thread
 
 from .interfaces import IRuntime, IProcessStarted, IProcessFinished
@@ -178,7 +179,7 @@ class WorkItemBehavior(object):
         # Indexes workitems
         for wi in self.workitems.values():
             registry = get_current_registry()
-            registry.notify(ObjectAddedEvent(wi[0]))
+            registry.notify(ObjectAdded(wi[0]))
 
     def _clear_workitem(self):
         """Used only by event in stop method.
@@ -207,7 +208,7 @@ class WorkItemBehavior(object):
                             delattr(self.process.workflowRelevantData, name)
                     # If form.wi is a start workitem, replace it with real one.
                     if args:
-                        # TODO
+                        # TODO WizardStep doesn't exist
                         if isinstance(args[0], WizardStep):
                             form = args[0].parent
                         else:
