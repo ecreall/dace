@@ -58,17 +58,18 @@ class Process(Entity, Persistent):
         return self.definition.isSubProcess
 
     def getWorkItems(self):
-        catalog = find_catalog(self, 'system')
+        searchableworkitem_catalog = find_catalog('searchableworkitem')
+        objectprovides_catalog = find_catalog('objectprovidesindexes')
+
+        process_inst_uid_index = searchableworkitem_catalog['process_inst_uid']
+        object_provides_index = objectprovides_catalog['object_provides']
+
         p_uid = get_oid(self, None)
         # TODO adapt query
-        query = {
-            'object_provides': {'any_of': (IWorkItem.__identifier__,)},
-            'process_inst_uid': {'any_of': (int(p_uid),)},
-        }
-        results = catalog.apply(query)
+        query = object_provides_index.any((IWorkItem.__identifier__,)) & 
+                process_inst_uid_index.any((int(p_uid),))
+        workitems = query.execute().all()
 
-        cache = {}
-        workitems = [get_obj(r, cache) for r in results]
         d = {}
         for w in workitems:
             if isinstance(w.node, SubProcess):
