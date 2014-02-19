@@ -3,10 +3,7 @@ import zope.cachedescriptors.property
 from zope.interface import implements
 from zope.component import createObject
 from zope.component import ComponentLookupError
-from zope.component import getUtility
 from zope.component.hooks import getSite
-from zope.catalog.interfaces import ICatalog
-from zope.intid.interfaces import IIntIds
 from substanced.interfaces import IObjectAdde
 
 from .interfaces import IProcessDefinition, IProcess
@@ -145,16 +142,16 @@ class ProcessDefinition(object):
         created = getattr(self, '_isIntanciated_%s' % site_id, self)
         if created is not self:
             return created
+        objectprovides_catalog = find_catalog('objectprovidesindexes')
 
-        catalog = getUtility(ICatalog)
-        intids = getUtility(IIntIds)
+        object_provides_index = objectprovides_catalog['object_provides']
         # TODO: process_id should be indexed for IProcess
-        query = {'object_provides': {'any_of': (IProcess.__identifier__,)}}#,'process_id': (self.id, self.id)}
+        query = object_provides_index.any((IProcess.__identifier__,))
 
-        results = catalog.apply(query)
+        results = query.execute().all()
         created = False
         for p in results:
-            if intids.getObject(p).id == self.id:
+            if p.id == self.id:
                 created = True
                 break
 
