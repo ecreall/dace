@@ -1,5 +1,5 @@
 from pyramid.threadlocal import get_current_registry
-from substanced.events import ObjectAddedEvent
+from substanced.event import ObjectAdded
 
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event

@@ -1,23 +1,23 @@
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
-from substanced.event import ObjectAdded, ObjectRemoved
 from pyramid.interfaces import ILocation
 from zope.interface import implements, implementedBy
-from pyramid.config import Configurator
+from zope.component.interfaces import IFactory
+
+from substanced.event import ObjectAdded, ObjectRemoved
 
 from .interfaces import (
     IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
 from .lock import LockableElement
 
 
-
-# TODO
-class WorkItemFactory(grok.GlobalUtility):
+class WorkItemFactory:
     implements(IFactory)
-    grok.baseclass()
     factory = NotImplemented
+    name = ''
 
+    """
     @property
     def title(self):
         return grok.title.bind(default=u"").get(self)
@@ -25,7 +25,7 @@ class WorkItemFactory(grok.GlobalUtility):
     @property
     def description(self):
         return grok.description.bind(default=u"").get(self)
-
+    """
     def getInterfaces(self):
         return implementedBy(self.factory)
 
@@ -33,8 +33,7 @@ class WorkItemFactory(grok.GlobalUtility):
         return self.factory(*args, **kw)
 
 
-
-class StartWorkItem(object):
+class StartWorkItem(LockableElement):
     implements(IStartWorkItem)
 
     def __init__(self, application, gwdef, node_ids):

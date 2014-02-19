@@ -7,7 +7,7 @@ from zope.component import getUtility
 from zope.component.hooks import getSite
 from zope.catalog.interfaces import ICatalog
 from zope.intid.interfaces import IIntIds
-from zope.lifecycleevent.interfaces import IObjectAddedEvent
+from substanced.interfaces import IObjectAdde
 
 from .interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition

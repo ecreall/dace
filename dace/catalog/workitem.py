@@ -1,9 +1,12 @@
 from zope.interface import Interface, Declaration
+from pyramid.threadlocal import get_current_registry
 
 from substanced.catalog import (
     catalog_factory,
     Text,
     Field,
+    indexview,
+    indexview_defaults,
     )
 from dace.util import Adapter, adapter
  
@@ -12,16 +15,6 @@ from ..interfaces import (
         IStartWorkItem,
         IDecisionWorkItem,
         IWorkItem)
-
-
-@catalog_factory('searchableworkitem')
-class SearchableWorkItem(object):
-    #grok.context(ISearchableWorkItem)
-
-    process_id = Field()
-    node_id = Field()
-    process_inst_uid = Set()
-    context_id = Set()
 
 
 class ISearchableWorkItem(Interface):
@@ -33,6 +26,42 @@ class ISearchableWorkItem(Interface):
         pass
     def context_id():
         pass
+
+@indexview_defaults(catalog_name='searchableworkitem')
+class SearchableWorkItemViews(object):
+    def __init__(self, resource):
+        self.resource = resource
+
+    @indexview()
+    def process_id(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        return adapter.process_id()
+
+    @indexview()
+    def node_id(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        return adapter.node_id()
+
+    @indexview()
+    def process_inst_uid(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        return adapter.process_inst_uid()
+
+    @indexview()
+    def context_id(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        return adapter.context_id()
+
+
+@catalog_factory('searchableworkitem')
+class SearchableWorkItem(object):
+    #grok.context(ISearchableWorkItem)
+
+    process_id = Field()
+    node_id = Field()
+    process_inst_uid = Keyword()
+    context_id = Keyword()
+
 
 @adapter(context = IStartWorkItem, name = u'startworkitemsearch' )
 class StartWorkItemSearch(Adapter):

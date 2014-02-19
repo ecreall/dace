@@ -7,11 +7,13 @@ from zope.interface import Interface, providedBy, Declaration
 from zope.location.interfaces import ILocation
 from zope.security.interfaces import Forbidden
 
+from dace.util import Adapter, adapter
+
 import grok
 from grok import index
 
 from dolmen.app.site import IDolmen
-
+ 
 from .interfaces import (
         IEntity,
         IProcessDefinition,
@@ -21,102 +23,31 @@ from .interfaces import (
 from .core import get_current_process_uid
 from . import log, _
 
+
+from substanced.catalog import (
+    catalog_factory,
+    Text,
+    Field,
+    )
+
 class IObjectProvides(Interface):
     def object_provides():
         pass
 
+@catalog_factory('objectprovidesindexes')
+class ObjectProvidesIndexes(object):
+    #grok.context(IObjectProvides)
 
-class ObjectProvidesIndexes(grok.Indexes):
-    grok.site(IDolmen)
-    grok.context(IObjectProvides)
+    object_provides = Set()
 
-    object_provides = index.Set()
-
-
-class ObjectProvides(grok.Adapter):
+@adapter(context = ILocation, name = u'objectprovides' )
+class ObjectProvides(Adapter):
     """Return provided interfaces of the object.
     """
     grok.implements(IObjectProvides)
-    grok.context(ILocation)
 
     def object_provides(self):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
-
-
-class ISearchableWorkItem(Interface):
-    def process_id():
-        pass
-    def node_id():
-        pass
-    def process_inst_uid():
-        pass
-    def context_id():
-        pass
-
-
-class SearchableWorkItem(grok.Indexes):
-    """Indexes the searchable workitems.
-    """
-    grok.site(IDolmen)
-    grok.context(ISearchableWorkItem)
-
-    process_id = index.Field()
-    node_id = index.Field()
-    process_inst_uid = index.Set()
-    context_id = index.Set()
-
-
-class StartWorkItemSearch(grok.Adapter):
-    grok.implements(ISearchableWorkItem)
-    grok.context(IStartWorkItem)
-
-    def process_id(self):
-        return self.context.process_id
-
-    def node_id(self):
-        return self.context.node_id
-
-    def process_inst_uid(self):
-        return ()
-
-    def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
-
-
-class DecisionWorkItemSearch(grok.Adapter):
-    grok.implements(ISearchableWorkItem)
-    grok.context(IDecisionWorkItem)
-
-    def process_id(self):
-        return self.context.process_id
-
-    def node_id(self):
-        return self.context.node_id
-
-    def process_inst_uid(self):
-        intids = getUtility(IIntIds)
-        return [intids.queryId(self.context.__parent__.__parent__)]
-
-    def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
-
-
-class WorkItemSearch(grok.Adapter):
-    grok.implements(ISearchableWorkItem)
-    grok.context(IWorkItem)
-
-    def process_id(self):
-        return self.context.process_id
-
-    def node_id(self):
-        return self.context.node_id
-
-    def process_inst_uid(self):
-        intids = getUtility(IIntIds)
-        return [intids.queryId(self.context.__parent__.__parent__)]
-
-    def context_id(self):
-        return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
 
 
 def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c: True):
