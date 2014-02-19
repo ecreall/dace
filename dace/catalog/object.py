@@ -4,13 +4,15 @@ from pyramid.interfaces import ILocation
 
 from substanced.catalog import (
     catalog_factory,
+    Field,
     Keyword,
     indexview,
     indexview_defaults,
     )
 
 from dace.util import Adapter, adapter
-from ..interfaces import IBusinessAction
+from ..interfaces import (
+	IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem)
 
 
 class IObjectProvides(Interface):
@@ -94,7 +96,7 @@ class ObjectProvidesIndexes(object):
 class SearchableObject(Adapter):
     """Return provided interfaces of the object.
     """
-    implements(IObject)
+    implements(IObjectProvides)
 
     def object_provides(self):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
@@ -117,8 +119,7 @@ class StartWorkItemSearch(SearchableObject):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
 
 
-
-@adapter(context = IDecisionWorkItem, name = u'decisionworkitemsearch')
+@adapter(context=IDecisionWorkItem, name=u'decisionworkitemsearch')
 class DecisionWorkItemSearch(SearchableObject):
     implements(ISearchableObject)
 
