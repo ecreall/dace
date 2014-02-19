@@ -1,14 +1,22 @@
 import unittest
 from pyramid import testing
-from substanced.testing import make_site
+from substanced.root import Root
+from substanced.event import RootAdded
+from pyramid.threadlocal import get_current_registry
 
 
 class TestCatalog(unittest.TestCase):
     def setUp(self):
         self.config = testing.setUp()
+        self.config.registry.settings['substanced.secret'] = 'klkmlkml'
+        self.config.testing_securitypolicy(permissive=True)
+        self.config.include('substanced')
+        self.config.include('dace')
+
+    def tearDown(self):
+        testing.tearDown()
 
     def test_catalog_creation(self):
-        site = make_site()
-        from ..catalog import create_catalog
-        create_catalog(site)
+        site = Root()
+        get_current_registry().notify(RootAdded(site))
         self.assertEqual(1, 1)
