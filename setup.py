@@ -34,6 +34,9 @@ setup(name='dace',
       install_requires=requires,
       tests_require=requires,
       test_suite="dace",
+      extras_require = dict(
+          test=[],
+      ),
       entry_points="""\
       """,
       )
