@@ -104,4 +104,4 @@ from substanced.util import find_service
 def mysubscriber(event):
     root = event.object
     catalogs = find_service(root, 'catalogs')
-    catalog = catalogs.add_catalog('searchablebusinessaction')
+    catalog = catalogs.add_catalog('dace')
