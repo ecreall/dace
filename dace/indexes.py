@@ -1,18 +1,11 @@
 from zope.annotation.interfaces import IAnnotations
-from zope.catalog.interfaces import ICatalog
-from zope.component import getUtility
 from zope.i18n import translate
-from zope.intid.interfaces import IIntIds
 from zope.interface import Interface, providedBy, Declaration
 from zope.location.interfaces import ILocation
 from zope.security.interfaces import Forbidden
+from pyramid.threadlocal import get_current_registry
 
-from dace.util import Adapter, adapter
-
-import grok
-from grok import index
-
-from dolmen.app.site import IDolmen
+from dace.util import Adapter, adapter, find_catalog
  
 from .interfaces import (
         IEntity,
@@ -22,32 +15,6 @@ from .interfaces import (
         IWorkItem)
 from .core import get_current_process_uid
 from . import log, _
-
-
-from substanced.catalog import (
-    catalog_factory,
-    Text,
-    Field,
-    )
-
-class IObjectProvides(Interface):
-    def object_provides():
-        pass
-
-@catalog_factory('objectprovidesindexes')
-class ObjectProvidesIndexes(object):
-    #grok.context(IObjectProvides)
-
-    object_provides = Set()
-
-@adapter(context = ILocation, name = u'objectprovides' )
-class ObjectProvides(Adapter):
-    """Return provided interfaces of the object.
-    """
-    grok.implements(IObjectProvides)
-
-    def object_provides(self):
-        return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
 
 def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c: True):
@@ -63,33 +30,36 @@ def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c
             return wi
 
     # Not found in gateway, we search in catalog
-    catalog = getUtility(ICatalog)
-    intids = getUtility(IIntIds)
-    query = {
-             'object_provides': {'any_of': (IWorkItem.__identifier__,)},
-             'process_id': (process_id, process_id),
-             'node_id': (activity_id, activity_id),
-    }
+    searchableworkitem_catalog = find_catalog('searchableworkitem')
+    objectprovides_catalog = find_catalog('objectprovidesindexes')
 
-    pd = getUtility(IProcessDefinition, process_id)
+    process_id_index = searchableworkitem_catalog['process_id']
+    activity_id_index = searchableworkitem_catalog['node_id']
+    process_inst_uid_index = searchableworkitem_catalog['process_inst_uid']
+    object_provides_index = objectprovides_catalog['object_provides']
+
+    pd = get_current_registry().getUtility(IProcessDefinition, process_id)
     # Retrieve the same workitem we used to show the link
     p_uid = get_current_process_uid(request)
+    process_ids = ()
     if p_uid is not None:
-        query['process_inst_uid'] = {'any_of': (int(p_uid),)}
+        process_ids = (int(p_uid),)
     else:
         # TODO: Do we need this?
         if IEntity.providedBy(context):
             filter_by_involved = True
             if filter_by_involved:
                 process_ids = tuple(context.getInvolvedProcessIds())
-                if process_ids:
-                    query['process_inst_uid'] = {'any_of': process_ids}
 
-    results = list(catalog.apply(query))
+    query = process_id_index.eq(process_id) &
+            activity_id_index.eq(activity_id) & 
+            object_provides_index.any((IWorkItem.__identifier__,)) & 
+            process_inst_uid_index.any(process_ids)
+    
+    results = q.execute().all()
     if len(results) > 0:
         wi = None
-        for w in results:
-            wv = intids.getObject(w)
+        for wv in results:
             if wv.validate() and condition(wv.__parent__.__parent__ , context):
                 wi = wv
                 break

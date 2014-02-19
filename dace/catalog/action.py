@@ -1,4 +1,4 @@
-from zope.interface import Interface
+from zope.interface import Interface, implements, Declaration
 from pyramid.threadlocal import get_current_registry
 
 from substanced.util import get_oid
@@ -6,7 +6,6 @@ from substanced.catalog import (
     catalog_factory,
     Field,
     Keyword,
-    Allowed,
     Text,
     )
 from dace.util import Adapter, adapter
@@ -66,7 +65,7 @@ class SearchableBusinessActionFactory(object):
 
 @adapter(context = IBusinessAction, name = u'businessactionsearch' )
 class BusinessActionSearch(Adapter):
-    grok.implements(ISearchableBusinessAction)
+    implements(ISearchableBusinessAction)
 
     def process_id(self):
         return self.context.process_id

@@ -1,10 +1,11 @@
-from zope.interface import Interface, Declaration
+from zope.interface import Interface, Declaration, implements
 from pyramid.threadlocal import get_current_registry
 
 from substanced.catalog import (
     catalog_factory,
     Text,
     Field,
+    Keyword,
     indexview,
     indexview_defaults,
     )
@@ -67,7 +68,7 @@ class SearchableWorkItem(object):
 
 @adapter(context = IStartWorkItem, name = u'startworkitemsearch' )
 class StartWorkItemSearch(Adapter):
-    grok.implements(ISearchableWorkItem)
+    implements(ISearchableWorkItem)
 
     def process_id(self):
         return self.context.process_id
@@ -84,7 +85,7 @@ class StartWorkItemSearch(Adapter):
 
 @adapter(context = IDecisionWorkItem, name = u'decisionworkitemsearch' )
 class DecisionWorkItemSearch(Adapter):
-    grok.implements(ISearchableWorkItem)
+    implements(ISearchableWorkItem)
 
     def process_id(self):
         return self.context.process_id
@@ -101,7 +102,7 @@ class DecisionWorkItemSearch(Adapter):
 
 @adapter(context = IWorkItem, name = u'workitemsearch' )
 class WorkItemSearch(Adapter):
-    grok.implements(ISearchableWorkItem)
+    implements(ISearchableWorkItem)
 
     def process_id(self):
         return self.context.process_id

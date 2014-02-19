@@ -1,7 +1,7 @@
 from pyramid.threadlocal import get_current_request, get_current_registry
 import venusian
 
-from substanced.util import find_objectmap
+from substanced.util import find_objectmap, find_catalog as fgsd
 
 
 class Adapter(object):
@@ -44,6 +44,11 @@ class adapter(object):
 
         venusian.attach(wrapped, callback)
         return wrapped
+
+
+def find_catalog(name=None):
+    resource = get_current_request().root
+    fgsd(resource, name):
 
 
 
