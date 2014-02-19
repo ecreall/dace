@@ -38,21 +38,29 @@ class SearchableWorkItemViews(object):
     @indexview()
     def process_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        if adapter is None:
+            return default
         return adapter.process_id()
 
     @indexview()
     def node_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        if adapter is None:
+            return default
         return adapter.node_id()
 
     @indexview()
     def process_inst_uid(self, default):
         adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        if adapter is None:
+            return default
         return adapter.process_inst_uid()
 
     @indexview()
     def context_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource,ISearchableWorkItem)
+        if adapter is None:
+            return default
         return adapter.context_id()
 
 
