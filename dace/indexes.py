@@ -56,7 +56,7 @@ def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c
             object_provides_index.any((IWorkItem.__identifier__,)) & 
             process_inst_uid_index.any(process_ids)
     
-    results = q.execute().all()
+    results = query.execute().all()
     if len(results) > 0:
         wi = None
         for wv in results:
