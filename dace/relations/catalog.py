@@ -52,6 +52,6 @@ def create_catalog(root):
         IRelationValue['to_interfaces_flattened'],
         multiple=True,
         btree=BTrees.family32.OI)
-    root['relations_catalog'] = catalog
-    root['relations_container'] = RelationsContainer()
+#    root['relations_catalog'] = catalog
+#    root['relations_container'] = RelationsContainer()
     # TODO register catalog as local utility

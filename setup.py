@@ -13,6 +13,8 @@ requires = [
     'substanced',
     'zc.relation',
     'zope.schema',
+    'zope.annotation',
+    'zope.cachedescriptors',
     ]
 
 setup(name='dace',

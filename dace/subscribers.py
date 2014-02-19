@@ -92,3 +92,17 @@ def start_machine(event):
     start_ioloop(event)
     for app in apps:
         start_crawler(app, "ben")
+
+
+
+from pyramid.events import subscriber
+
+from substanced.event import RootAdded
+from substanced.util import find_service
+
+
+@subscriber(RootAdded)
+def mysubscriber(event):
+    root = event.object
+    catalogs = find_service(root, 'catalogs')
+    catalog = catalogs.add_catalog('searchablebusinessaction')

@@ -22,5 +22,5 @@ def connect(source, target, **kwargs):
     container[str(objectid)] = relation
 
 
-def includeme(config): # pragma: no cover
-    config.scan('.subscribers')
+#def includeme(config): # pragma: no cover
+#    config.scan('.subscribers')

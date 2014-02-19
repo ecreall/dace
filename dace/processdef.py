@@ -1,4 +1,4 @@
-import grok
+from pyramid.events import subscriber
 import zope.cachedescriptors.property
 from zope.interface import implements
 from zope.component import createObject
@@ -162,7 +162,7 @@ class ProcessDefinition(object):
         return created
 
 
-@grok.subscribe(IProcess, IObjectAddedEvent)
+@subscriber(IProcess, IObjectAddedEvent)
 def invalidate_isInstantiated_cache(obj, event):
     definition = obj.definition
     site_id = getSite().__name__

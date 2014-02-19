@@ -11,5 +11,5 @@ from dace.runtime import Runtime
 from dace.interfaces import IEntity, IObject, IProcess, IUser, IRuntime
 
 def includeme(config): # pragma: no cover
-    config.include('.relations')
-    config.include('.catalog')
+#    config.include('.relations')
+    config.scan()

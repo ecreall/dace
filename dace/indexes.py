@@ -1,8 +1,7 @@
 from zope.annotation.interfaces import IAnnotations
-from zope.i18n import translate
 from zope.interface import Interface, providedBy, Declaration
-from zope.location.interfaces import ILocation
-from zope.security.interfaces import Forbidden
+from pyramid.interfaces import ILocation
+from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
 
 from dace.util import Adapter, adapter, find_catalog
@@ -51,9 +50,9 @@ def getWorkItem(process_id, activity_id, request, context, condition=lambda p, c
             if filter_by_involved:
                 process_ids = tuple(context.getInvolvedProcessIds())
 
-    query = process_id_index.eq(process_id) &
-            activity_id_index.eq(activity_id) & 
-            object_provides_index.any((IWorkItem.__identifier__,)) & 
+    query = process_id_index.eq(process_id) & \
+            activity_id_index.eq(activity_id) & \
+            object_provides_index.any((IWorkItem.__identifier__,)) & \
             process_inst_uid_index.any(process_ids)
     
     results = query.execute().all()
@@ -106,9 +105,9 @@ def workItemAvailable(menu_entry, process_id, activity_id, condition=lambda p, c
         if wi is None:
             return False
 
-        if wi.is_locked(menu_entry.request):
-            menu_entry.title = translate(menu_entry.title, context=menu_entry.request) + \
-                               translate(_(u" (locked)"), context=menu_entry.request)
+#        if wi.is_locked(menu_entry.request):
+#            menu_entry.title = translate(menu_entry.title, context=menu_entry.request) + \
+#                               translate(_(u" (locked)"), context=menu_entry.request)
         p_uid = ISearchableWorkItem(wi).process_inst_uid()
         if p_uid:
             menu_entry.params = {'p_uid': p_uid[0]}
