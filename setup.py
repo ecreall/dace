@@ -9,6 +9,7 @@ CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
 requires = [
     'pyramid',
     'pyzmq',
+    'substanced',
     'zc.relation',
     'zope.schema',
     ]
