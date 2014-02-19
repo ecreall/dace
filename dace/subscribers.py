@@ -46,11 +46,10 @@ def sigint_handler(*args):
 signal.signal(signal.SIGINT, sigint_handler)
 
 from ZODB.broken import Broken
-from zope.app.appsetup.bootstrap import getInformationFromEvent
+#from zope.app.appsetup.bootstrap import getInformationFromEvent
 from zope.component import getUtility
 from zope.component.hooks import getSite, setSite
-from zope.intid.interfaces import IIntIds
-from zope.catalog.interfaces import ICatalog
+#from zope.intid.interfaces import IIntIds
 from .interfaces import IWorkItem
 from .event import IntermediateCatchEvent
 from .system import start_crawler
