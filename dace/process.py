@@ -1,7 +1,7 @@
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
-from substanced.util import find_catalog, get_oid
+from substanced.util import get_oid
 from zope.interface import implements
 import transaction
 
@@ -12,7 +12,7 @@ from .gateway import ExclusiveGateway
 from .interfaces import IProcess, IProcessDefinition, IWorkItem
 from .relations import ICatalog, any, connect
 from .transition import Transition
-from .util import get_obj
+from .util import get_obj, find_catalog
 
 
 class WorkflowData(Persistent):
