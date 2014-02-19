@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from substanced.interfaces import IObjectAdded, IObjectRemoved, ICatalog
+from substanced.interfaces import IObjectAdded, IObjectRemoved
 #from zc.relation.interfaces import ICatalog  # keep it
 from zope.schema import Int, TextLine, List
 from zope.interface import Interface, Attribute
@@ -9,28 +9,28 @@ from .. import _
 
 
 
-class IRelationAddedEvent(IObjectAdded):
+class IRelationAdded(IObjectAdded):
     """A relation has been added.
     """
 
 
-class IRelationDeletedEvent(IObjectEvent):
+class IRelationDeleted(IObjectEvent):
     """A relation has been deleted.
     """
 
 
-class IRelationModifiedEvent(IObjectRemoved):
+class IRelationModified(IObjectRemoved):
     """A relation has been modified.
     """
 
 
-class IRelationSourceDeletedEvent(IObjectEvent):
+class IRelationSourceDeleted(IObjectEvent):
     """The source of a relation has been deleted.
     """
     relation = Attribute(u"Relation")
 
 
-class IRelationTargetDeletedEvent(IObjectEvent):
+class IRelationTargetDeleted(IObjectEvent):
     """The target of a relation has been deleted.
     """
     relation = Attribute(u"Relation")

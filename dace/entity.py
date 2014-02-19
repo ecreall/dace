@@ -90,7 +90,7 @@ class Entity(object):
         context_id_index = searchablebusinessaction_catalog['context_id']
         object_provides_index = objectprovides_catalog['object_provides']
 
-        query = object_provides_index.any((IBusinessAction.__identifier__,)) & 
+        query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
                 context_index.any(self.__provides__.declared)
 
         # TODO search in object_provides mycatalog.index

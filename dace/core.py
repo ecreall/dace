@@ -1,20 +1,19 @@
 from persistent import Persistent
 from pyramid.threadlocal import get_current_registry
-from substanced.event import ObjectAdded
 from pyramid.interfaces import ILocation
+from pyramid.events import subscriber
 from zope.interface import implements, Attribute
-import pytz
 import thread
 
 from .interfaces import IRuntime, IProcessStarted, IProcessFinished
 from .workitem import DecisionWorkItem, StartWorkItem
-from . import log, _
+from . import log
 
 
 #TODO
-class RuntimeNameChooser(NameChooser, grok.Adapter):
-    grok.context(IRuntime)
-    grok.implements(INameChooser)
+#class RuntimeNameChooser(NameChooser, grok.Adapter):
+#    grok.context(IRuntime)
+#    grok.implements(INameChooser)
 
 
 class BPMNElementDefinition(object):

@@ -4,14 +4,14 @@ from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from zope.interface import implements, alsoProvides
 
-from .events import RelationAddedEvent, RelationDeletedEvent
-from .interfaces import IRelationsContainer
+from .events import RelationAdded, RelationDeleted
+#from .interfaces import IRelationsContainer
 
 
 class RelationsContainer(OOBTree):
     """A rough implementation of a relation storage.
     """
-    implements(IRelationsContainer)
+#    implements(IRelationsContainer)
 
     def __setitem__(self, key, value):
         value.__parent__ = self
@@ -19,7 +19,7 @@ class RelationsContainer(OOBTree):
         alsoProvides(value, ILocation)
         OOBTree.__setitem__(self, key, value)
         registry = get_current_registry()
-        registry.notify(RelationAddedEvent(value))
+        registry.notify(RelationAdded(value))
 
     def __delitem__(self, key):
         relation = self.get(key, None)
@@ -29,7 +29,7 @@ class RelationsContainer(OOBTree):
             # IRelationTargetDeletedEvent that end-up somehow deleting
             # the relation
             registry = get_current_registry()
-            registry.notify(RelationDeletedEvent(self.get(key)))
+            registry.notify(RelationDeleted(self.get(key)))
             OOBTree.__delitem__(self, key)
         else:
             KeyError(key)

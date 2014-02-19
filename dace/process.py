@@ -66,7 +66,7 @@ class Process(Entity, Persistent):
 
         p_uid = get_oid(self, None)
         # TODO adapt query
-        query = object_provides_index.any((IWorkItem.__identifier__,)) & 
+        query = object_provides_index.any((IWorkItem.__identifier__,)) & \
                 process_inst_uid_index.any((int(p_uid),))
         workitems = query.execute().all()
 

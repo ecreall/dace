@@ -11,7 +11,7 @@ from zope.component.hooks import getSite
 from zmq.eventloop.ioloop import DelayedCallback
 
 from .interfaces import IEntity, IBusinessAction
-from .z3 import BaseJob, Participation
+#TODO: from .z3 import BaseJob, Participation
 from . import log
 
 last_transaction_by_app = threading.local()

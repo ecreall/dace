@@ -7,7 +7,7 @@ from pyramid.interfaces import ILocation
 from substanced.util import get_oid
 from zope.interface import implements
 
-from .core import EventHandler, LockableElement, WorkItemBehavior
+from .core import EventHandler, WorkItemBehavior
 from .lock import LockableElement
 
 from .interfaces import (
@@ -80,7 +80,7 @@ class SubProcess(Activity):
         proc = pd()
         runtime = registry.getUtility(IRuntime)
         # TODO Name chooser substanced
-        chooser = INameChooser(runtime)
+#        chooser = INameChooser(runtime)
         name = chooser.chooseName(self.definition.processDefinition, proc)
         runtime[name] = proc
         proc.attachedTo = self
@@ -91,7 +91,7 @@ class SubProcess(Activity):
         self.wi.remove()
 
 
-from zeam.form.base.interfaces import IForm
+#from zeam.form.base.interfaces import IForm
 
 
 class ActionType:

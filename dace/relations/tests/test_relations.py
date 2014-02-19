@@ -9,6 +9,6 @@ class TestCatalog(unittest.TestCase):
 
     def test_catalog_creation(self):
         site = make_site()
-        from .catalog import create_catalog
+        from ..catalog import create_catalog
         create_catalog(site)
         self.assertEqual(1, 1)

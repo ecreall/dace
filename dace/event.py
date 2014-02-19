@@ -10,7 +10,7 @@ from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, WorkItemBehavior, ProcessFinished
 from .workitem import DecisionWorkItem
-from .z3 import Job
+#TODO: from .z3 import Job
 from . import log
 
 # shared between threads

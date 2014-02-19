@@ -1,38 +1,38 @@
 # -*- coding: utf-8 -*-
-from substanced.event import ObjectAddedEvent, ObjectRemovedEvent
+from substanced.event import ObjectAdded, ObjectRemoved
 from zope.interface import implements
 from zope.interface.interfaces import ObjectEvent
 
 from .interfaces import (
-    IRelationAddedEvent,
-    IRelationDeletedEvent,
-    IRelationModifiedEvent,
-    IRelationSourceDeletedEvent,
-    IRelationTargetDeletedEvent)
+    IRelationAdded,
+    IRelationDeleted,
+    IRelationModified,
+    IRelationSourceDeleted,
+    IRelationTargetDeleted)
 
 
-class RelationAddedEvent(ObjectAddedEvent):
-    implements(IRelationAddedEvent)
+class RelationAdded(ObjectAdded):
+    implements(IRelationAdded)
 
 
-class RelationDeletedEvent(ObjectRemovedEvent):
-    implements(IRelationDeletedEvent)
+class RelationDeleted(ObjectRemoved):
+    implements(IRelationDeleted)
 
 
-class RelationModifiedEvent(ObjectEvent):
-    implements(IRelationModifiedEvent)
+class RelationModified(ObjectEvent):
+    implements(IRelationModified)
 
 
-class RelationSourceDeletedEvent(ObjectEvent):
-    implements(IRelationSourceDeletedEvent)
+class RelationSourceDeleted(ObjectEvent):
+    implements(IRelationSourceDeleted)
 
     def __init__(self, object, relation):
         self.object = object
         self.relation = relation
 
 
-class RelationTargetDeletedEvent(ObjectEvent):
-    implements(IRelationTargetDeletedEvent)
+class RelationTargetDeleted(ObjectEvent):
+    implements(IRelationTargetDeleted)
 
     def __init__(self, object, relation):
         self.object = object

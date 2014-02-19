@@ -1,12 +1,12 @@
 from zope.interface import implements
 from persistent.list import PersistentList
-from dolmen.content import Container
-from zope.container.interfaces import INameChooser
-from zope.copypastemove.interfaces import IObjectMover
+from substanced.folder import Folder
+#from zope.container.interfaces import INameChooser
+#from zope.copypastemove.interfaces import IObjectMover
 from .interfaces import IRuntime
 
 
-class Runtime(Container):
+class Runtime(Folder):
     implements(IRuntime)
 
     def __init__(self ):
