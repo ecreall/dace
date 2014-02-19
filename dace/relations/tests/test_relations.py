@@ -20,3 +20,4 @@ class TestCatalog(unittest.TestCase):
         site = Root()
         get_current_registry().notify(RootAdded(site))
         self.assertEqual(1, 1)
+#        connect(source, target, tags=tags)

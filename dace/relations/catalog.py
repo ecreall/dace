@@ -55,3 +55,4 @@ def create_catalog(root):
 #    root['relations_catalog'] = catalog
 #    root['relations_container'] = RelationsContainer()
     # TODO register relations catalog and container as a service
+    # register as ICatalog local utility or use find_catalog('relations')
