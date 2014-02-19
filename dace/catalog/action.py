@@ -1,6 +1,7 @@
 from zope.interface import Interface
 from pyramid.threadlocal import get_current_registry
 
+from substanced.util import get_oid
 from substanced.catalog import (
     catalog_factory,
     Field,
@@ -52,6 +53,7 @@ class SearchableBusinessActionViews(object):
         adapter = get_current_registry().queryAdapter(self.resource,ISearchableBusinessAction)
         return adapter.context_id()
 
+
 @catalog_factory('searchablebusinessaction')
 class SearchableBusinessActionFactory(object):
     #grok.context(ISearchableWorkItem)
@@ -73,8 +75,7 @@ class BusinessActionSearch(Adapter):
         return self.context.node_id
 
     def process_inst_uid(self):
-        intids = getUtility(IIntIds)
-        return [intids.queryId(self.context.__parent__.__parent__)]
+        return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]

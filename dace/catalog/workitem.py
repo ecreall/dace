@@ -8,6 +8,8 @@ from substanced.catalog import (
     indexview,
     indexview_defaults,
     )
+from substanced.util import get_oid
+
 from dace.util import Adapter, adapter
  
 from ..interfaces import (
@@ -91,8 +93,7 @@ class DecisionWorkItemSearch(Adapter):
         return self.context.node_id
 
     def process_inst_uid(self):
-        intids = getUtility(IIntIds)
-        return [intids.queryId(self.context.__parent__.__parent__)]
+        return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
@@ -109,8 +110,7 @@ class WorkItemSearch(Adapter):
         return self.context.node_id
 
     def process_inst_uid(self):
-        intids = getUtility(IIntIds)
-        return [intids.queryId(self.context.__parent__.__parent__)]
+        return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_id(self):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
