@@ -345,15 +345,3 @@ class ProcessError(Exception):
 @subscriber(ActivityFinished)
 def activity_handler(event):
     log.info('%s %s', thread.get_ident(), event)
-
-
-def get_current_process_uid(request):
-    p_uid = request.form.get('p_uid', None)
-#    if p_uid is not None:
-#        request.response.setCookie('p_uid', p_uid)
-#    else:
-#        p_uid = request.cookies.get('p_uid', None)
-    return p_uid
-# TODO expire cookie when a form action succeeded
-#    request.response.expireCookie('p_uid')
-#    set the cookie in the update() of a form only
