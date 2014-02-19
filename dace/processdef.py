@@ -143,9 +143,9 @@ class ProcessDefinition(object):
         created = getattr(self, '_isIntanciated_%s' % site_id, self)
         if created is not self:
             return created
-        objectprovides_catalog = find_catalog('objectprovidesindexes')
+        dace_catalog = find_catalog('dace')
 
-        object_provides_index = objectprovides_catalog['object_provides']
+        object_provides_index = dace_catalog['object_provides']
         # TODO: process_id should be indexed for IProcess
         query = object_provides_index.any((IProcess.__identifier__,))
 

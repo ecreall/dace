@@ -81,18 +81,12 @@ class Entity(object):
 
     @property
     def actions(self):
-        catalog = find_catalog(self, 'system')
         allactions = []
-
-        searchablebusinessaction_catalog = find_catalog('searchablebusinessaction')
-        objectprovides_catalog = find_catalog('objectprovidesindexes')
-
-        context_id_index = searchablebusinessaction_catalog['context_id']
-        object_provides_index = objectprovides_catalog['object_provides']
-
+        dace_catalog = find_catalog('dace')
+        context_id_index = dace_catalog['context_id']
+        object_provides_index = dace_catalog['object_provides']
         query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
                 context_index.any(self.__provides__.declared)
-
         # TODO search in object_provides mycatalog.index
         results = query.execute().all()
         if len(results) > 0:
@@ -106,7 +100,6 @@ class Entity(object):
         # Add start workitem
         for name, pd in allprocess:
             if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-
                 wis = pd.createStartWorkItem(None)
                 for key in wis.keys():
                     swisactions = wis[key].actions
