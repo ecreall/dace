@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from substanced.interfaces import IObjectAdded, IObjectRemoved
-#from zc.relation.interfaces import ICatalog  # keep it
+from zc.relation.interfaces import ICatalog  # keep it
 from zope.schema import Int, TextLine, List
 from zope.interface import Interface, Attribute
 from zope.interface.interfaces import IObjectEvent

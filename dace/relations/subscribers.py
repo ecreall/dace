@@ -2,17 +2,17 @@
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
 from substanced.event import RootAdded
-from substanced.interfaces import IObjectWillBeRemovedEvent
+from substanced.interfaces import IObjectWillBeRemoved
 from substanced.util import get_oid
 
 from .interfaces import (
     ICatalog,
-    IRelationAddedEvent,
-    IRelationModifiedEvent,
+    IRelationAdded,
+    IRelationModified,
     IRelationValue,
     )
 from .catalog import create_catalog
-from .events import RelationSourceDeletedEvent, RelationTargetDeletedEvent
+from .events import RelationSourceDeleted, RelationTargetDeleted
 
 
 @subscriber(RootAdded)
@@ -21,7 +21,7 @@ def add_relations_catalog(event):
     create_catalog(root)
 
 
-@subscriber(IRelationValue, IRelationModifiedEvent)
+@subscriber(IRelationValue, IRelationModified)
 def update_relation(relation, event):
     registry = get_current_registry()
     catalog = registry.getUtility(ICatalog)
@@ -29,7 +29,7 @@ def update_relation(relation, event):
     catalog.index_doc(get_oid(relation), relation)
 
 
-@subscriber(IRelationValue, IRelationAddedEvent)
+@subscriber(IRelationValue, IRelationAdded)
 def add_relation(relation, event):
     registry = get_current_registry()
     catalog = registry.getUtility(ICatalog)
@@ -37,7 +37,7 @@ def add_relation(relation, event):
     catalog.index_doc(objectid, relation)
 
 
-@subscriber(IObjectWillBeRemovedEvent)
+@subscriber(IObjectWillBeRemoved)
 def object_deleted(event):
     registry = get_current_registry()
     ob = event.object
@@ -57,7 +57,7 @@ def object_deleted(event):
 
     rels = list(catalog.findRelations({'source_id': uid}))
     for rel in rels:
-        registry.notify(RelationSourceDeletedEvent(ob, rel))
+        registry.notify(RelationSourceDeleted(ob, rel))
         parent = rel.__parent__
         try:
             del parent[rel.__name__]
@@ -66,7 +66,7 @@ def object_deleted(event):
 
     rels = list(catalog.findRelations({'target_id': uid}))
     for rel in rels:
-        registry.notify(RelationTargetDeletedEvent(ob, rel))
+        registry.notify(RelationTargetDeleted(ob, rel))
         parent = rel.__parent__
         try:
             del parent[rel.__name__]
