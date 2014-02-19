@@ -47,7 +47,7 @@ class ObjectProvidesViews(object):
         if adapter is None:
             return default
 
-        return adapter.process_id()
+        return adapter.object_provides()
 
     @indexview()
     def process_id(self, default):
@@ -92,7 +92,7 @@ class ObjectProvidesIndexes(object):
     context_id = Keyword()
 
 
-@adapter(context=ILocation, name=u'searchableobject')
+@adapter(context=Interface)
 class SearchableObject(Adapter):
     """Return provided interfaces of the object.
     """
@@ -102,8 +102,8 @@ class SearchableObject(Adapter):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
 
-@adapter(context=IStartWorkItem, name=u'startworkitemsearch')
-class StartWorkItemSearch(SearchableObject):
+@adapter(context=IStartWorkItem)
+class StartWorkItemSearch(Adapter):
     implements(ISearchableObject)
 
     def process_id(self):
@@ -119,8 +119,8 @@ class StartWorkItemSearch(SearchableObject):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
 
 
-@adapter(context=IDecisionWorkItem, name=u'decisionworkitemsearch')
-class DecisionWorkItemSearch(SearchableObject):
+@adapter(context=IDecisionWorkItem)
+class DecisionWorkItemSearch(Adapter):
     implements(ISearchableObject)
 
     def process_id(self):
@@ -136,8 +136,8 @@ class DecisionWorkItemSearch(SearchableObject):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
 
 
-@adapter(context=IWorkItem, name=u'workitemsearch')
-class WorkItemSearch(SearchableObject):
+@adapter(context=IWorkItem)
+class WorkItemSearch(Adapter):
     implements(ISearchableObject)
 
     def process_id(self):
@@ -153,7 +153,7 @@ class WorkItemSearch(SearchableObject):
         return [i.__identifier__ for a in self.context.actions for i in Declaration(a.context).flattened()]
 
 
-@adapter(context=IBusinessAction, name=u'businessactionsearch')
+@adapter(context=IBusinessAction)
 class BusinessActionSearch(Adapter):
     implements(ISearchableObject)
 

@@ -23,9 +23,9 @@ class utility(object):
        self.name = name
 
     def __call__(self, wrapped):
-        def callback(scanner, name, ob):
+        def callback(scanner, ob, name=u''):
             instance = ob()
-            get_current_registry().registerUtility(component=instance, name=self.name)
+            scanner.config.registry.registerUtility(component=instance, name=self.name)
 
         venusian.attach(wrapped, callback)
         return wrapped
@@ -33,14 +33,14 @@ class utility(object):
 
 class adapter(object):
 
-    def __init__(self, name, context):
+    def __init__(self, context, name=u''):
        self.context = context
        self.name = name
 
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
             mprovided = list(ob.__implemented__.interfaces())[0]
-            get_current_registry().registerAdapter(factory=ob, required=(self.context,), provided=mprovided ,name=self.name)
+            scanner.config.registry.registerAdapter(factory=ob, required=(self.context,), provided=mprovided, name=self.name)
 
         venusian.attach(wrapped, callback)
         return wrapped
