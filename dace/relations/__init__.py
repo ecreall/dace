@@ -1,6 +1,7 @@
 from pyramid.threadlocal import get_current_request
 from substanced.util import find_objectmap, set_oid
 from zc.relation.catalog import any  #keep it
+from .interfaces import ICatalog  #keep it
 
 from .values import RelationValue
 
