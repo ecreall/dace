@@ -89,17 +89,15 @@ class Entity(object):
 
         context_id_index = searchablebusinessaction_catalog['context_id']
         object_provides_index = objectprovides_catalog['object_provides']
-        #self.__provides__(self.context)
-        query = object_provides_index.any((IBusinessAction.__identifier__,)) & 
-                context_index.any(process_ids)
 
-        query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
+        query = object_provides_index.any((IBusinessAction.__identifier__,)) & 
+                context_index.any(self.__provides__.declared)
+
         # TODO search in object_provides mycatalog.index
-        results = list(catalog.apply(query))
+        results = query.execute().all()
         if len(results) > 0:
             cache = {}
-            for a in results:
-                action = get_obj(a, cache)
+            for action in results:
                 if action.validate(self):
                     allactions.append(action)
 
