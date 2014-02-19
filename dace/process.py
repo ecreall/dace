@@ -58,11 +58,10 @@ class Process(Entity, Persistent):
         return self.definition.isSubProcess
 
     def getWorkItems(self):
-        searchableworkitem_catalog = find_catalog('searchableworkitem')
-        objectprovides_catalog = find_catalog('objectprovidesindexes')
+        dace_catalog = find_catalog('dace')
 
-        process_inst_uid_index = searchableworkitem_catalog['process_inst_uid']
-        object_provides_index = objectprovides_catalog['object_provides']
+        process_inst_uid_index = dace_catalog['process_inst_uid']
+        object_provides_index = dace_catalog['object_provides']
 
         p_uid = get_oid(self, None)
         # TODO adapt query

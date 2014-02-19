@@ -28,13 +28,11 @@ def getWorkItem(process_id, activity_id, request, context,
             return wi
 
     # Not found in gateway, we search in catalog
-    searchableworkitem_catalog = find_catalog('searchableworkitem')
-    objectprovides_catalog = find_catalog('objectprovidesindexes')
-
-    process_id_index = searchableworkitem_catalog['process_id']
-    activity_id_index = searchableworkitem_catalog['node_id']
-    process_inst_uid_index = searchableworkitem_catalog['process_inst_uid']
-    object_provides_index = objectprovides_catalog['object_provides']
+    dace_catalog = find_catalog('dace')
+    process_id_index = dace_catalog['process_id']
+    activity_id_index = dace_catalog['node_id']
+    process_inst_uid_index = dace_catalog['process_inst_uid']
+    object_provides_index = dace_catalog['object_provides']
 
     pd = get_current_registry().getUtility(IProcessDefinition, process_id)
     # Retrieve the same workitem we used to show the link
