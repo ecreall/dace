@@ -101,7 +101,7 @@ from substanced.util import find_service
 
 
 @subscriber(RootAdded)
-def mysubscriber(event):
+def add_catalogs(event):
     root = event.object
     catalogs = find_service(root, 'catalogs')
     catalog = catalogs.add_catalog('dace')
