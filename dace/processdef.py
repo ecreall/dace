@@ -4,7 +4,7 @@ from zope.interface import implements
 from zope.component import createObject
 from zope.component import ComponentLookupError
 from zope.component.hooks import getSite
-from substanced.interfaces import IObjectAdde
+from substanced.interfaces import IObjectAdded
 
 from .interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition
@@ -160,7 +160,7 @@ class ProcessDefinition(object):
         return created
 
 
-@subscriber(IProcess, IObjectAddedEvent)
+@subscriber(IProcess, IObjectAdded)
 def invalidate_isInstantiated_cache(obj, event):
     definition = obj.definition
     site_id = getSite().__name__
