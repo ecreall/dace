@@ -57,7 +57,7 @@ class adapter(object):
 
 def find_catalog(name=None):
     resource = get_current_request().root
-    fcsd(resource, name)
+    return fcsd(resource, name)
 
 
 def get_current_process_uid(request):
