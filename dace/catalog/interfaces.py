@@ -6,6 +6,12 @@ class IObjectProvides(Interface):
     def object_provides():
         pass
 
+    def object_type():
+        pass
+
+    def containers_oids():
+        pass
+    
 
 class ISearchableObject(Interface):
 

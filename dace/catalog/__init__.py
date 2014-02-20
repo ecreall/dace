@@ -1,5 +1,6 @@
 from zope.interface import Interface, Declaration, implements, providedBy
 from pyramid.threadlocal import get_current_registry
+from substanced.util import get_oid
 from substanced.catalog import (
     catalog_factory,
     Field,
@@ -27,6 +28,22 @@ class DaceCatalogViews(object):
             return default
 
         return adapter.object_provides()
+
+    @indexview()
+    def object_type(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.object_type()
+
+    @indexview()
+    def containers_oids(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.containers_oids()
 
     @indexview()
     def process_id(self, default):
@@ -65,6 +82,8 @@ class DaceCatalogViews(object):
 class DaceIndexes(object):
 
     object_provides = Keyword()
+    object_type = Field()
+    containers_oids = Keyword()
     process_id = Field()
     node_id = Field()
     process_inst_uid = Keyword()
@@ -80,6 +99,22 @@ class SearchableObject(Adapter):
     def object_provides(self):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
+    def object_type(self):
+        if getattr(self.context,'__provides__', None) is not None and not (self.context.__provides__.declared == ()):
+            return self.context.__provides__.declared[0].__identifier__
+        return None
+
+    def containers_oids(self):
+        return self._get_oids(self.context.__parent__)
+        
+    def _get_oids(self, obj):
+        result = []
+        if getattr(obj, '__parent__' , None) is None:
+            return [0]
+
+        result.append(get_oid(obj, None))
+        result.extend(self._get_oids(obj.__parent__))
+        return result
 
 @adapter(context=IStartWorkItem)
 class StartWorkItemSearch(Adapter):

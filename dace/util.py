@@ -1,9 +1,8 @@
 import venusian
-from zope.annotation.interfaces import IAnnotations
+from zope.annotation.interfaces import IAnnotations, Interface
 from pyramid.exceptions import Forbidden
-from pyramid.threadlocal import get_current_registry
-from pyramid.threadlocal import get_current_request
-from substanced.util import find_objectmap, find_catalog as fcsd
+from pyramid.threadlocal import get_current_registry, get_current_request
+from substanced.util import find_objectmap, get_content_type, get_oid, find_catalog as fcsd
 
 from .interfaces import (
         IEntity,
@@ -58,6 +57,41 @@ class adapter(object):
 def find_catalog(name=None):
     resource = get_current_request().root
     return fcsd(resource, name)
+
+
+def allSubobjectsOfType(root = None, interface = None):
+    root_oid =  0
+    if root is None:
+        root = get_current_request().root
+    else :
+        root_oid =  get_oid(root)
+
+    if interface is None:
+        interface = Interface
+
+    root_oid =  get_oid(root)
+    interface_id = interface.__identifier__
+    dace_catalog = find_catalog('dace')
+    object_type_index = dace_catalog['object_type']
+    containers_oids_index = dace_catalog['containers_oids']
+    query = containers_oids_index.any((root_oid,)) & object_type_index.eq(interface_id)
+    return [o for o in query.execute().all()]
+
+
+def allSubobjectsOfKind(root = None, interface = None):
+    root_oid = get_oid(root)
+    if root is None or root == get_current_request().root:
+        root_oid = 0
+
+    if interface is None:
+        interface = Interface
+
+    interface_id = interface.__identifier__
+    dace_catalog = find_catalog('dace')
+    object_provides_index = dace_catalog['object_provides']
+    containers_oids_index = dace_catalog['containers_oids']
+    query = containers_oids_index.any((root_oid,)) & object_provides_index.any((interface_id,))
+    return [o for o in query.execute().all()]
 
 
 def get_current_process_uid(request):
