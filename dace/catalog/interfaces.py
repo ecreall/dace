@@ -11,7 +11,9 @@ class IObjectProvides(Interface):
 
     def containers_oids():
         pass
-    
+
+    def container_oid():
+        pass    
 
 class ISearchableObject(Interface):
 

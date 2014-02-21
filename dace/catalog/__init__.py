@@ -1,6 +1,7 @@
 from zope.interface import Interface, Declaration, implements, providedBy
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
+from substanced.root import Root
 from substanced.catalog import (
     catalog_factory,
     Field,
@@ -36,6 +37,14 @@ class DaceCatalogViews(object):
             return default
 
         return adapter.object_type()
+
+    @indexview()
+    def container_oid(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.container_oid()
 
     @indexview()
     def containers_oids(self, default):
@@ -83,6 +92,7 @@ class DaceIndexes(object):
 
     object_provides = Keyword()
     object_type = Field()
+    container_oid = Field()
     containers_oids = Keyword()
     process_id = Field()
     node_id = Field()
@@ -105,7 +115,19 @@ class SearchableObject(Adapter):
         return None
 
     def containers_oids(self):
+        if type(self.context) == Root:
+            return [-1]
+
         return self._get_oids(self.context.__parent__)
+
+    def container_oid(self):
+        if type(self.context) == Root:
+            return -1
+
+        if getattr(self.context.__parent__, '__parent__' , None) is None:
+            return 0
+
+        return get_oid(self.context.__parent__, None)
         
     def _get_oids(self, obj):
         result = []
