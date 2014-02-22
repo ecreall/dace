@@ -9,8 +9,6 @@ from substanced.catalog import (
     indexview,
     indexview_defaults,
     )
-from substanced.util import get_oid
-
 from dace.util import Adapter, adapter
 from dace.interfaces import (
     IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem)
@@ -55,6 +53,14 @@ class DaceCatalogViews(object):
         return adapter.containers_oids()
 
     @indexview()
+    def oid(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.oid()
+
+    @indexview()
     def process_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
@@ -94,6 +100,7 @@ class DaceIndexes(object):
     object_type = Field()
     container_oid = Field()
     containers_oids = Keyword()
+    oid = Field()
     process_id = Field()
     node_id = Field()
     process_inst_uid = Keyword()
@@ -118,16 +125,25 @@ class SearchableObject(Adapter):
         if type(self.context) == Root:
             return [-1]
 
+        if getattr(self.context, '__parent__' , None) is None:
+            return [-1]
+
         return self._get_oids(self.context.__parent__)
 
     def container_oid(self):
         if type(self.context) == Root:
             return -1
 
+        if getattr(self.context, '__parent__' , None) is None:
+            return 0
+
         if getattr(self.context.__parent__, '__parent__' , None) is None:
             return 0
 
         return get_oid(self.context.__parent__, None)
+
+    def oid(self):
+        return get_oid(self.context)
         
     def _get_oids(self, obj):
         result = []

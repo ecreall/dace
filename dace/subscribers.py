@@ -96,8 +96,10 @@ def start_machine(event):
 
 from pyramid.events import subscriber
 
-from substanced.event import RootAdded
-from substanced.util import find_service
+from substanced.event import RootAdded, ObjectAdded
+from substanced.util import find_service, set_oid , find_objectmap, get_oid
+from dace.util import find_catalog
+from pyramid.threadlocal import get_current_request
 
 
 @subscriber(RootAdded)

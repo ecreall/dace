@@ -2,8 +2,7 @@ import venusian
 from zope.annotation.interfaces import IAnnotations, Interface
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry, get_current_request
-from substanced.util import find_objectmap, get_content_type, get_oid, find_catalog as fcsd
-
+from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd
 from .interfaces import (
         IEntity,
         IProcessDefinition,
