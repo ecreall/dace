@@ -6,7 +6,7 @@ from dace.util import find_catalog
 
 from .interfaces import IEntity, IBusinessAction, IProcessDefinition
 from .relations import ICatalog, any
-
+from .object import Object
 
 class ActionCall(object):
 
@@ -25,12 +25,13 @@ class ActionCall(object):
         return self.action.content(self.object)
 
 
-class Entity(object):
+class Entity(Object):
     implements(IEntity)
 
     def __init__(self, **kwargs):
-        super(Entity, self).__init__(**kwargs)
+        Object.__init__(self)
         self.state = PersistentList()
+        self.__property__ = None
 
     def setstate(self, state):
         if not isinstance(state, (list, tuple)):

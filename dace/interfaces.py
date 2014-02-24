@@ -14,7 +14,12 @@ from substanced.interfaces import IPrincipal
 #_ = MessageFactory("menhir.contenttype.user")
 
 
-class IEntity(Interface):
+
+class IObject(Interface):
+    pass
+
+
+class IEntity(IObject):
 
     def getCreator():
         """Get creator with `tag` relation.
@@ -29,10 +34,6 @@ class IEntity(Interface):
 
     def getInvolvedProcesses():
         pass
-
-
-class IObject(IEntity):
-    pass
 
 
 class IProfile(IPrincipal, IEntity):
@@ -310,3 +311,10 @@ class IProcessFinished(Interface):
 
 class IBusinessAction(Interface):
     pass
+
+
+class INameChooser(Interface):
+
+    def checkName(name, object):
+
+    def chooseName(name, object):
