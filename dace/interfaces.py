@@ -316,5 +316,8 @@ class IBusinessAction(Interface):
 class INameChooser(Interface):
 
     def checkName(name, object):
+        pass
 
     def chooseName(name, object):
+        pass
+
