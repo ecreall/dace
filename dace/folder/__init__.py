@@ -1,8 +1,11 @@
 from substanced.folder import Folder as FD
 from persistent.list import PersistentList
 from dace.interfaces import INameChooser
+from dace.object import Object
 
 class Property(FD):
+     
+    multiple = NotImplemented
 
     def __init__(self, name, opposit=None, isunique=False):
         super(Property, self).__init__()
@@ -24,10 +27,13 @@ class Property(FD):
 
 
 class SharedProperty(Property):
-    pass
+
+    multiple = NotImplemented
 
 
 class CompositProperty(Property):    
+
+    multiple = NotImplemented
 
     def __init__(self, name, opposit=None, isunique=False):
         Property.__init__(self, name, opposit)
@@ -35,9 +41,13 @@ class CompositProperty(Property):
 
 class CompositUniqueProperty(CompositProperty):
 
+    multiple = False
+
     def __init__(self, name, opposit=None, value=None):
         CompositProperty.__init__(self, name, opposit, True)
         self.valuekey = None
+        if value is not None:
+            self.addvalue(value)
 
     def addvalue(self, value, initiator=True):
         self.setvalue(value, initiator)
@@ -52,17 +62,24 @@ class CompositUniqueProperty(CompositProperty):
         if self.valuekey is not None:
             self.removevalue(self.__parent__[self.valuekey])
 
-        if hasattr(value,'__property__'):
-            value.__property__.removevalue(value)
+        if value is None:
+            self.valuekey = None
+            return            
 
+        if getattr(value,'__property__', None) is not None:
+            value.__property__.removevalue(value)
+ 
+        import pdb; pdb.set_trace()
         value.__property__ = self
         name = INameChooser(self.__parent__).chooseName(u'', value)
+        self.__parent__.add(name, value)
         self.valuekey = name
-        self.__parent__.add(self.valuekey, value)
 
     def getvalue(self):
-        if self.valuekey is not None:
+        if self.valuekey is not None and  self.__parent__.__contains__(self.valuekey):
             return self.__parent__[self.valuekey]
+
+        return None
 
     def removevalue(self, value, initiator=True):
         if self.valuekey is not None and self.__parent__[self.valuekey] == value:
@@ -73,9 +90,17 @@ class CompositUniqueProperty(CompositProperty):
 
 class CompositMultipleProperty(CompositProperty):
 
+    multiple = True
+
     def __init__(self, name, opposit=None, isunique=False, values=None):
         super(CompositMultipleProperty, self).__init__(name, opposit, isunique)
         self.contents_keys = PersistentList()
+        if values is not None:
+            if (not isinstance(values, list) and not isinstance(values, tuple) ):
+                values = [values]
+
+            if values:
+                self.setvalue(values)
 
     def addvalue(self, value, initiator=True):
         if self.isunique and value in self.getvalue():
@@ -84,7 +109,7 @@ class CompositMultipleProperty(CompositProperty):
         if initiator and self.opposit is not None:
             value[self.opposit].addvalue(self.__parent__, False)
 
-        if hasattr(value,'__property__') :
+        if  getattr(value,'__property__', None) is not None :
             value.__property__.removevalue(value)
 
         value.__property__ = self
@@ -97,8 +122,14 @@ class CompositMultipleProperty(CompositProperty):
             value = [value]
 
         oldvalues = self.getvalue()
-        toremove = [v for v in oldvalues if not (v in value)]
-        toadd = [v for v in value if not (v in oldvalues)]
+        toremove = []
+        toadd = []
+        if value is None:
+            toremove = oldvalues
+        else:  
+            toremove = [v for v in oldvalues if not (v in value)]
+            toadd = [v for v in value if not (v in oldvalues)]
+
         self.removevalue(toremove)
         if toadd:
             for v in value:
@@ -122,6 +153,8 @@ class CompositMultipleProperty(CompositProperty):
 
 class SharedUniqueProperty(SharedProperty):
 
+    multiple = False
+
     def __init__(self, name, opposit=None, value=None):
         super(SharedUniqueProperty, self).__init__(name, opposit, True)
         self.value = value
@@ -141,6 +174,8 @@ class SharedUniqueProperty(SharedProperty):
 
 class SharedMultipleProperty(SharedProperty):
 
+    multiple = True
+
     def __init__(self, name, opposit=None, isunique=False, values=None):
         super(SharedMultipleProperty, self).__init__(name, opposit, isunique)
         self.values = PersistentList()
@@ -158,9 +193,10 @@ class SharedMultipleProperty(SharedProperty):
         pass
 
 
-class Folder(FD):
+class Folder(Object, FD):
 
     def __init__(self):
+        Object.__init__(self)
         FD.__init__(self)
         self.attributes = PersistentList()
 
@@ -173,3 +209,20 @@ class Folder(FD):
             self[name].setvalue(value)
         else:
             super(Folder,self).__setattr__(name, value)
+
+    def get_data2(self, node):
+        result = Object.get_data(self, node)
+        for p in self.attributes:
+            if self[p].multiple:
+                intresult = []
+                values = self[p].getvalue()
+                for v in values:
+                    intresult.append(v.get_data(node.get(p)))
+
+                result[p] = values
+            else:
+                value = self[p].getvalue()
+                if value is not None:
+                    result[p]=self[p].getvalue().get_data(node.get(p))
+
+        return  result  
