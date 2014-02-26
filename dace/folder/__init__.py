@@ -4,7 +4,7 @@ from dace.interfaces import INameChooser
 from dace.object import Object
 
 
-
+__compositunique__ = 'cu'
 def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
 
     key = propertyref+'_valuekey'
@@ -53,12 +53,13 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             self.remove(keyvalue)
 
     def init(self):
-        self.__dict__[key] = None
+        if not hasattr(keys):
+            self.__dict__[key] = None
 
-    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref}
+    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref, 'opposite': opposite, 'isunique': isunique, 'type':__compositunique__ }
 
 
-
+__compositmultiple__ = 'cm'
 def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
     keys = propertyref+'_contents_keys'
 
@@ -119,29 +120,44 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
                 self.remove(v.name)
 
     def init(self):
-        self.__dict__[keys] = []
+        if not hasattr(keys):
+            self.__dict__[keys] = []
 
-    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref}
+    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref, 'opposite': opposite, 'isunique': isunique, 'type':__compositmultiple__ }
+
+
+__properties__ = { __compositunique__: CompositUniqueProperty,
+                   __compositmultiple__: CompositMultipleProperty}
 
 
 class Folder(Object, FD):
+
+    properties_def = {}
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, 'properties'):
             cls.properties = {}
 
         new_instance = super(Folder, cls).__new__(cls, *args, **kwargs)
+        new_instance.__init_proprties__()
         return new_instance
 
     def __init__(self):
         Object.__init__(self)
         FD.__init__(self)
 
+    def __init_proprties__(self):
+        for p in self.properties_def.keys():
+            op = __properties__[self.properties_def[p][0]]
+            opposite = self.properties_def[p][1]
+            isunique = self.properties_def[p][2]
+            self.__addproperty__(op(p,opposite, isunique))
+
     def __addproperty__(self, _property, default=None):
         if _property['name'] not in self.__class__.properties:
             self.__class__.properties[_property['name']] = _property
+            self.__class__.properties[_property['name']]['init'](self)
 
-        self.__class__.properties[_property['name']]['init'](self)
         if default is not None:
             _property['set'](self, default)
 

@@ -17,4 +17,12 @@ class Object(object):
             name = child.name
             val = getattr(self, name, colander.null)
             result[name] = val
-        return result            
+        return result
+
+    def set_data(self, appstruct):
+        for name, val in appstruct.items():
+            if getattr(self, name, None) is not None:
+                existing_val = getattr(self, name, None)
+                new_val = appstruct[name]
+                if existing_val != new_val:
+                    setattr(self, name, new_val)      
