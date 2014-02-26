@@ -4,124 +4,93 @@ from dace.interfaces import INameChooser
 from dace.object import Object
 
 
-class Property(FD):
-     
-    multiple = NotImplemented
 
-    def __init__(self, name, opposit=None, isunique=False):
-        super(Property, self).__init__()
-        self.name = name
-        self.opposit = opposit
-        self.isunique = isunique
+def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
 
-    def addvalue(self, value):
-        pass
-
-    def setvalue(self, value):
-        pass
-
-    def getvalue(self, value):
-        pass
-
-    def removevalue(self, value):
-        pass
-
-
-class SharedProperty(Property):
-
-    multiple = NotImplemented
-
-
-class CompositProperty(Property):    
-
-    multiple = NotImplemented
-
-    def __init__(self, name, opposit=None, isunique=False):
-        Property.__init__(self, name, opposit)
-
-
-class CompositUniqueProperty(CompositProperty):
-
-    multiple = False
-
-    def __init__(self, name, opposit=None, value=None):
-        CompositProperty.__init__(self, name, opposit, True)
-        self.valuekey = None
-        if value is not None:
-            self.addvalue(value)
-
-    def addvalue(self, value, initiator=True):
-        self.setvalue(value, initiator)
-
-    def setvalue(self, value, initiator=True):
-        if self.valuekey is not None and self.__parent__[self.valuekey] == value:
-            return
-
-        if initiator and self.opposit is not None:
-            value[self.opposit].addvalue(self.__parent__, False)
-
-        if self.valuekey is not None:
-            self.removevalue(self.__parent__[self.valuekey])
-
-        if value is None:
-            self.valuekey = None
-            return            
-
-        if getattr(value,'__property__', None) is not None:
-            value.__property__.removevalue(value)
- 
-        name = INameChooser(self.__parent__).chooseName(u'', value)
-        self.__parent__.add(name, value)
-        value.__property__ = self
-        self.valuekey = name
-
-    def getvalue(self):
-        if self.valuekey is not None and  self.__parent__.__contains__(self.valuekey):
-            return self.__parent__[self.valuekey]
+    key = propertyref+'_valuekey'
+    
+    def _get(self,):
+        keyvalue = getattr(self, key, None)
+        if keyvalue is not None:
+            return self[keyvalue]
 
         return None
 
-    def removevalue(self, value, initiator=True):
-        if self.valuekey is not None and self.__parent__[self.valuekey] == value:
-            if initiator and self.opposit is not None:
-                value[self.name].removevalue(self.__parent__, False)
-            self.__parent__.remove(self.valuekey)
+    def _add(self, value, initiator=True):
+        self.setproperty(propertyref, value)
 
-
-class CompositMultipleProperty(CompositProperty):
-
-    multiple = True
-
-    def __init__(self, name, opposit=None, isunique=False, values=None):
-        super(CompositMultipleProperty, self).__init__(name, opposit, isunique)
-        self.contents_keys = PersistentList()
-        if values is not None:
-            if (not isinstance(values, list) and not isinstance(values, tuple) ):
-                values = [values]
-
-            if values:
-                self.setvalue(values)
-
-    def addvalue(self, value, initiator=True):
-        if self.isunique and value in self.getvalue():
+    def _set(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        keyvalue = getattr(self, key, None)
+        if keyvalue is not None and myproperty['get'](self) == value:
             return
 
-        if initiator and self.opposit is not None:
-            value[self.opposit].addvalue(self.__parent__, False)
+        if initiator and opposite is not None:
+            getattr(value, opposite, None)['add'](value, self, False)
 
-        if  getattr(value,'__property__', None) is not None :
-            value.__property__.removevalue(value)
+        if keyvalue is not None:
+            myproperty['del'](self, myproperty['get'](self))
 
-        name = INameChooser(self.__parent__).chooseName(u'', value)
-        self.__parent__.add(name, value)
-        value.__property__ = self
-        self.contents_keys.append(name)
+        if value is None:
+            setattr(self, key, None)
+            return            
 
-    def setvalue(self, value, initiator=True):
-        if (not isinstance(value, list) and not isinstance(value, tuple) ):
+        if getattr(value,'__property__', None) is not None:
+            getattr(value.__parent__, value.__property__, None)['del'](value.__parent__, value)
+ 
+        name = INameChooser(self).chooseName(u'', value)
+        self.add(name, value)
+        value.__property__ = propertyref
+        setattr(self, key, name)
+
+    def _del(self, value, initiator=True):
+        keyvalue = getattr(self, key, None)
+        if keyvalue is not None and myproperty['get'](self) == value:
+            if initiator and opposite is not None:
+                getattr(value, propertyref, None)['del'](value, self, False)
+                #value[self.name].removevalue(self.__parent__, False)
+            self.remove(keyvalue)
+
+    def init(self):
+        self.__dict__[key] = None
+
+    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref}
+
+
+
+def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
+    keys = propertyref+'_contents_keys'
+
+    def _get(self):
+        contents_keys = self.__dict__[keys]
+        return [self[key] for key in contents_keys]
+
+    def _add(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        contents_keys = self.__dict__[keys]
+
+        if isunique and value in myproperty['get'](self):
+            return
+
+        if initiator and opposite is not None:
+            getattr(value, opposite, None)['add'](value, self, False)
+
+        if getattr(value,'__property__', None) is not None:
+            getattr(value.__parent__, value.__property__, None)['del'](value.__parent__, value)
+
+        name = INameChooser(self).chooseName(u'', value)
+        self.add(name, value)
+        value.__property__ = propertyref
+        contents_keys.append(name)
+        setattr(self, keys, contents_keys)
+
+    def _set(self, value, initiator=True):
+        
+        myproperty = self.__class__.properties[propertyref]
+        if not isinstance(value, (list, tuple)):
             value = [value]
 
-        oldvalues = self.getvalue()
+        oldvalues = myproperty['get'](self)
         toremove = []
         toadd = []
         if value is None:
@@ -130,82 +99,62 @@ class CompositMultipleProperty(CompositProperty):
             toremove = [v for v in oldvalues if not (v in value)]
             toadd = [v for v in value if not (v in oldvalues)]
 
-        self.removevalue(toremove)
+        myproperty['del'](self, toremove)
         if toadd:
-            for v in value:
-                self.addvalue(v)
+            for v in toadd:
+                myproperty['add'](self, v)
 
-    def getvalue(self):
-        return [self.__parent__[key] for key in self.contents_keys]
-
-    def removevalue(self, value, initiator=True):
-        if (not isinstance(value, list) and not isinstance(value, tuple) ):
+    def _del(self, value, initiator=True):
+        contents_keys = self.__dict__[keys]
+        if not isinstance(value, (list, tuple)):
             value = [value]
 
         for v in value:
-            if initiator and self.opposit is not None:
-                v[self.name].removevalue(self.__parent__, False)
+            if initiator and opposite is not None:
+                getattr(v, propertyref, None)['del'](v, self, False)
 
-            if self.__parent__.__contains__(v.name):
-                self.contents_keys.remove(v.name)
-                self.__parent__.remove(v.name)
+            if self.__contains__(v.name):
+                contents_keys.remove(v.name)
+                self.remove(v.name)
 
+    def init(self):
+        self.__dict__[keys] = []
 
-class SharedUniqueProperty(SharedProperty):
-
-    multiple = False
-
-    def __init__(self, name, opposit=None, value=None):
-        super(SharedUniqueProperty, self).__init__(name, opposit, True)
-        self.value = value
-
-    def addvalue(self, value):
-        pass
-
-    def setvalue(self, value):
-        pass
-
-    def getvalue(self, value):
-        pass
-
-    def removevalue(self, value):
-        pass
-
-
-class SharedMultipleProperty(SharedProperty):
-
-    multiple = True
-
-    def __init__(self, name, opposit=None, isunique=False, values=None):
-        super(SharedMultipleProperty, self).__init__(name, opposit, isunique)
-        self.values = PersistentList()
-
-    def addvalue(self, value):
-        pass
-
-    def setvalue(self, value):
-        pass
-
-    def getvalue(self, value):
-        pass
-
-    def removevalue(self, value):
-        pass
+    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref}
 
 
 class Folder(Object, FD):
 
+    def __new__(cls, *args, **kwargs):
+        if not hasattr(cls, 'properties'):
+            cls.properties = {}
+
+        new_instance = super(Folder, cls).__new__(cls, *args, **kwargs)
+        return new_instance
+
     def __init__(self):
         Object.__init__(self)
         FD.__init__(self)
-        self.attributes = PersistentList()
 
-    def __addproperty__(self, _property):
-        self[_property.name] = _property
-        self.attributes.append(_property.name)
+    def __addproperty__(self, _property, default=None):
+        if _property['name'] not in self.__class__.properties:
+            self.__class__.properties[_property['name']] = _property
+
+        self.__class__.properties[_property['name']]['init'](self)
+        if default is not None:
+            _property['set'](self, default)
 
     def __setattr__(self, name, value):
-        if hasattr(self,'attributes') and  name in self.attributes:
-            self[name].setvalue(value)
+        if name in self.__class__.properties:
+            self.setproperty(name, value)
         else:
-            super(Folder,self).__setattr__(name, value)
+            super(Folder, self).__setattr__(name, value)
+
+    def getproperty(self, name):
+        return self.__class__.properties[name]['get'](self)
+
+    def setproperty(self, name, value):
+        self.__class__.properties[name]['set'](self, value)
+
+    def addtoproperty(self, name, value):
+        self.__class__.properties[name]['add'](self, value)
