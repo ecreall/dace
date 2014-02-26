@@ -3,6 +3,7 @@ from persistent.list import PersistentList
 from dace.interfaces import INameChooser
 from dace.object import Object
 
+
 class Property(FD):
      
     multiple = NotImplemented
@@ -69,10 +70,9 @@ class CompositUniqueProperty(CompositProperty):
         if getattr(value,'__property__', None) is not None:
             value.__property__.removevalue(value)
  
-        import pdb; pdb.set_trace()
-        value.__property__ = self
         name = INameChooser(self.__parent__).chooseName(u'', value)
         self.__parent__.add(name, value)
+        value.__property__ = self
         self.valuekey = name
 
     def getvalue(self):
@@ -112,10 +112,10 @@ class CompositMultipleProperty(CompositProperty):
         if  getattr(value,'__property__', None) is not None :
             value.__property__.removevalue(value)
 
-        value.__property__ = self
         name = INameChooser(self.__parent__).chooseName(u'', value)
-        self.contents_keys.append(name)
         self.__parent__.add(name, value)
+        value.__property__ = self
+        self.contents_keys.append(name)
 
     def setvalue(self, value, initiator=True):
         if (not isinstance(value, list) and not isinstance(value, tuple) ):
@@ -209,20 +209,3 @@ class Folder(Object, FD):
             self[name].setvalue(value)
         else:
             super(Folder,self).__setattr__(name, value)
-
-    def get_data2(self, node):
-        result = Object.get_data(self, node)
-        for p in self.attributes:
-            if self[p].multiple:
-                intresult = []
-                values = self[p].getvalue()
-                for v in values:
-                    intresult.append(v.get_data(node.get(p)))
-
-                result[p] = values
-            else:
-                value = self[p].getvalue()
-                if value is not None:
-                    result[p]=self[p].getvalue().get_data(node.get(p))
-
-        return  result  
