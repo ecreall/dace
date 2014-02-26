@@ -36,7 +36,7 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             return            
 
         if getattr(value,'__property__', None) is not None:
-            getattr(value.__parent__, value.__property__, None)['del'](value.__parent__, value)
+            value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
  
         name = INameChooser(self).chooseName(u'', value)
         self.add(name, value)
@@ -44,11 +44,12 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
         setattr(self, key, name)
 
     def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
         keyvalue = getattr(self, key, None)
         if keyvalue is not None and myproperty['get'](self) == value:
             if initiator and opposite is not None:
                 getattr(value, propertyref, None)['del'](value, self, False)
-                #value[self.name].removevalue(self.__parent__, False)
+
             self.remove(keyvalue)
 
     def init(self):
@@ -76,7 +77,7 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
             getattr(value, opposite, None)['add'](value, self, False)
 
         if getattr(value,'__property__', None) is not None:
-            getattr(value.__parent__, value.__property__, None)['del'](value.__parent__, value)
+            value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
 
         name = INameChooser(self).chooseName(u'', value)
         self.add(name, value)
