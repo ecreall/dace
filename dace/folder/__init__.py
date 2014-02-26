@@ -5,6 +5,8 @@ from dace.object import Object
 
 
 __compositunique__ = 'cu'
+
+
 def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
 
     key = propertyref+'_valuekey'
@@ -56,10 +58,21 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
         if not hasattr(keys):
             self.__dict__[key] = None
 
-    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref, 'opposite': opposite, 'isunique': isunique, 'type':__compositunique__ }
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'name':propertyref,
+            'opposite': opposite,
+            'isunique': isunique,
+            'type':__compositunique__
+           }
 
 
 __compositmultiple__ = 'cm'
+
+
 def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
     keys = propertyref+'_contents_keys'
 
@@ -123,7 +136,16 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
         if not hasattr(keys):
             self.__dict__[keys] = []
 
-    return {'add':_add, 'get':_get, 'set':_set, 'del':_del, 'init': init, 'name':propertyref, 'opposite': opposite, 'isunique': isunique, 'type':__compositmultiple__ }
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'name':propertyref,
+            'opposite': opposite,
+            'isunique': isunique,
+            'type':__compositmultiple__
+           }
 
 
 __properties__ = { __compositunique__: CompositUniqueProperty,
