@@ -12,7 +12,11 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
     key = propertyref+'_valuekey'
     
     def _get(self,):
-        keyvalue = getattr(self, key, None)
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        keyvalue = self.__dict__[key]
         if keyvalue is not None:
             return self[keyvalue]
 
@@ -23,7 +27,10 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _set(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        keyvalue = getattr(self, key, None)
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        keyvalue = self.__dict__[key]
         if keyvalue is not None and myproperty['get'](self) == value:
             return
 
@@ -47,7 +54,10 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _del(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        keyvalue = getattr(self, key, None)
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        keyvalue = self.__dict__[key]
         if keyvalue is not None and myproperty['get'](self) == value:
             if initiator and opposite is not None:
                 getattr(value, propertyref, None)['del'](value, self, False)
@@ -55,7 +65,7 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             self.remove(keyvalue)
 
     def init(self):
-        if not hasattr(keys):
+        if not hasattr(self, key):
             self.__dict__[key] = None
 
     return {'add':_add,
@@ -77,11 +87,18 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
     keys = propertyref+'_contents_keys'
 
     def _get(self):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, keys):
+            myproperty['init'](self)
+
         contents_keys = self.__dict__[keys]
         return [self[key] for key in contents_keys]
 
     def _add(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, keys):
+            myproperty['init'](self)
+
         contents_keys = self.__dict__[keys]
 
         if isunique and value in myproperty['get'](self):
@@ -120,6 +137,10 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
                 myproperty['add'](self, v)
 
     def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, keys):
+            myproperty['init'](self)
+
         contents_keys = self.__dict__[keys]
         if not isinstance(value, (list, tuple)):
             value = [value]
@@ -133,7 +154,7 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
                 self.remove(v.name)
 
     def init(self):
-        if not hasattr(keys):
+        if not hasattr(self, keys):
             self.__dict__[keys] = []
 
     return {'add':_add,
@@ -197,3 +218,5 @@ class Folder(Object, FD):
 
     def addtoproperty(self, name, value):
         self.__class__.properties[name]['add'](self, value)
+
+

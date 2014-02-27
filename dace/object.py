@@ -21,8 +21,15 @@ class Object(object):
 
     def set_data(self, appstruct):
         for name, val in appstruct.items():
-            if getattr(self, name, None) is not None:
+            if hasattr(self, name):
                 existing_val = getattr(self, name, None)
                 new_val = appstruct[name]
                 if existing_val != new_val:
-                    setattr(self, name, new_val)      
+                    setattr(self, name, new_val)
+
+    def url(self, request, view=None, args=None):
+        if view is None:
+            #generalement c est la vue de l index associer qu'il faut retourner
+            return request.mgmt_path(self, '@@contents')
+        else:
+            return request.mgmt_path(self, '@@'+view)
