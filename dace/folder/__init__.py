@@ -58,7 +58,7 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             myproperty['init'](self)
 
         keyvalue = self.__dict__[key]
-        if keyvalue is not None and myproperty['get'](self) == value:
+        if keyvalue is not None and self.__contains__(keyvalue) and self[keyvalue] == value:
             if initiator and opposite is not None:
                 getattr(value, propertyref, None)['del'](value, self, False)
 
@@ -73,10 +73,11 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             'set':_set,
             'del':_del,
             'init': init,
-            'name':propertyref,
-            'opposite': opposite,
-            'isunique': isunique,
-            'type':__compositunique__
+            'data':{'name':propertyref,
+                    'opposite': opposite,
+                    'isunique': isunique,
+                    'type':__compositunique__
+                   }
            }
 
 
@@ -165,10 +166,11 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
             'set':_set,
             'del':_del,
             'init': init,
-            'name':propertyref,
-            'opposite': opposite,
-            'isunique': isunique,
-            'type':__compositmultiple__
+            'data': {'name':propertyref,
+                     'opposite': opposite,
+                     'isunique': isunique,
+                     'type':__compositmultiple__
+                    }
            }
 
 
@@ -200,9 +202,11 @@ class Folder(Object, FD):
             self.__addproperty__(op(p,opposite, isunique))
 
     def __addproperty__(self, _property, default=None):
-        if _property['name'] not in self.__class__.properties:
-            self.__class__.properties[_property['name']] = _property
-            self.__class__.properties[_property['name']]['init'](self)
+        propertyref = _property['data']['name']
+        if propertyref not in self.__class__.properties:
+
+            self.__class__.properties[propertyref] = _property
+            self.__class__.properties[propertyref]['init'](self)
 
         if default is not None:
             _property['set'](self, default)
