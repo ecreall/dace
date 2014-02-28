@@ -95,6 +95,9 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
         return [self[key] for key in contents_keys]
 
     def _add(self, value, initiator=True):
+        if value is None:
+            return
+
         myproperty = self.__class__.properties[propertyref]
         if not hasattr(self, keys):
             myproperty['init'](self)
