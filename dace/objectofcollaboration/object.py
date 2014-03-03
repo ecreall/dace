@@ -5,6 +5,7 @@ from persistent.list import PersistentList
 from substanced.folder import Folder
 
 from dace.interfaces import INameChooser, IObject
+from pontus.visual import VisualisableElement
 
 
 __compositunique__ = 'cu'
@@ -181,7 +182,7 @@ __properties__ = { __compositunique__: CompositUniqueProperty,
                    __compositmultiple__: CompositMultipleProperty}
 
 
-class Object(Folder):
+class Object(VisualisableElement, Folder):
 
     implements(IObject)
 
@@ -196,6 +197,7 @@ class Object(Folder):
         return new_instance
 
     def __init__(self, **kwargs):
+        VisualisableElement.__init__(self, **kwargs)
         Folder.__init__(self)
         self.__property__ = None
         for _property in self.properties_def.keys():

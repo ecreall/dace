@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
+from zope.interface import implements
 from persistent import Persistent
 from persistent.list import PersistentList
+
 from pyramid.threadlocal import get_current_registry
 from pyramid.threadlocal import get_current_request
 from pyramid.interfaces import ILocation
-from substanced.util import get_oid
-from zope.interface import implements
 
+from substanced.util import get_oid
+
+from pontus.interfaces import IFormView
 from .core import EventHandler, WorkItemBehavior
 from .lock import LockableElement
-
 from dace.interfaces import (
     IParameterDefinition,
     IProcessDefinition,
@@ -91,7 +93,7 @@ class SubProcess(Activity):
         self.wi.remove()
 
 
-#from zeam.form.base.interfaces import IForm
+
 
 
 class ActionType:
@@ -101,19 +103,24 @@ class ActionType:
 
 class BusinessAction(LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
-#    implements(IBusinessAction)
 
+    #identification et classification
+    title = NotImplemented
+    description = NotImplemented
+    groups = []
+    #execution
     context = NotImplemented
-    action =  NotImplemented
+    view_action =  NotImplemented
     report =  NotImplemented
     study =  NotImplemented
+    actionType = NotImplemented #!!
+    steps = {}
+    #validation
     relation_validation = NotImplemented
     roles_validation = NotImplemented
     processsecurity_validation = NotImplemented
     state_validation = NotImplemented
-    title = NotImplemented
-    actionType = NotImplemented
-    steps = {}
+     
 
     def __init__(self, parent):
         super(BusinessAction, self).__init__()
@@ -122,7 +129,7 @@ class BusinessAction(LockableElement, Persistent):
 
     @property
     def __name__(self):
-        return self.action.__view_name__
+        return self.view_action.__view_name__
 
     @property
     def process(self):
@@ -130,7 +137,7 @@ class BusinessAction(LockableElement, Persistent):
 
     @property
     def view_name(self):
-        return self.action.__view_name__
+        return self.view_action.__view_name__
 
     @property
     def process_id(self):
@@ -148,6 +155,15 @@ class BusinessAction(LockableElement, Persistent):
             request.form[u'p_uid'] = uid
         return request
 
+    @property
+    def isautomatic(self):
+        if actionType is NotImplemented:
+            return False
+        elif actionType == ActionType.automatic:
+            return True
+
+        return False
+
     def url(self, obj):
         if self.process is None:
             # TODO url
@@ -161,7 +177,7 @@ class BusinessAction(LockableElement, Persistent):
         registry = get_current_registry()
         view = registry.getMultiAdapter((obj, self.request), name=self.view_name)
 
-        if not view.__providedBy__(IForm):
+        if not view.__providedBy__(IFormView):
             return None
 
         view.update()
@@ -173,7 +189,7 @@ class BusinessAction(LockableElement, Persistent):
         registry = get_current_registry()
         view = registry.getMultiAdapter((obj, self.request), name=self.study.__view_name__)
 
-        if not view.__providedBy__(IForm):
+        if not view.__providedBy__(IFormView):
             return None
 
         view.update()
@@ -185,7 +201,7 @@ class BusinessAction(LockableElement, Persistent):
         registry = get_current_registry()
         view = registry.getMultiAdapter((obj, self.request), name=self.report.__view_name__)
 
-        if not view.__providedBy__(IForm):
+        if not view.__providedBy__(IFormView):
             return None
 
         view.update()

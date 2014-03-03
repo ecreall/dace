@@ -18,6 +18,7 @@ class ActionCall(object):
         self.action = action
         self.title = self.action.title
         self.process = self.action.process
+
     @property
     def url(self):
         return self.action.url(self.object)

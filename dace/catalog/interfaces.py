@@ -31,3 +31,9 @@ class ISearchableObject(Interface):
 
     def context_id():
         pass
+
+    def context_provides():
+        pass
+
+    def isautomatic():
+        pass

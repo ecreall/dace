@@ -92,6 +92,22 @@ class DaceCatalogViews(object):
 
         return adapter.context_id()
 
+    @indexview()
+    def context_provides(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None:
+            return default
+
+        return adapter.context_provides()
+
+    @indexview()
+    def isautomatic(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None:
+            return default
+
+        return adapter.isautomatic()
+
 
 @catalog_factory('dace')
 class DaceIndexes(object):
@@ -105,6 +121,8 @@ class DaceIndexes(object):
     node_id = Field()
     process_inst_uid = Keyword()
     context_id = Keyword()
+    context_provides = Keyword()
+    isautomatic = Field()
 
 
 @adapter(context=Interface)
@@ -154,6 +172,7 @@ class SearchableObject(Adapter):
         result.extend(self._get_oids(obj.__parent__))
         return result
 
+
 @adapter(context=IStartWorkItem)
 class StartWorkItemSearch(Adapter):
     implements(ISearchableObject)
@@ -167,9 +186,19 @@ class StartWorkItemSearch(Adapter):
     def process_inst_uid(self):
         return ()
 
-    def context_id(self):
+    def context_provides(self):
         return [i.__identifier__ for a in self.context.actions
                 for i in Declaration(a.context).flattened()]
+
+    def context_id(self):
+        return [a.context.__identifier__ for i in self.context.actions]
+
+    def isautomatic(self):
+        for a in self.context.actions:
+            if a.isautomatic:
+                return True
+
+        return False
 
 
 @adapter(context=IDecisionWorkItem)
@@ -185,9 +214,19 @@ class DecisionWorkItemSearch(Adapter):
     def process_inst_uid(self):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
-    def context_id(self):
+    def context_provides(self):
         return [i.__identifier__ for a in self.context.actions
                 for i in Declaration(a.context).flattened()]
+
+    def context_id(self):
+        return [a.context.__identifier__ for i in self.context.actions]
+
+    def isautomatic(self):
+        for a in self.context.actions:
+            if a.isautomatic:
+                return True
+
+        return False
 
 
 @adapter(context=IWorkItem)
@@ -203,9 +242,19 @@ class WorkItemSearch(Adapter):
     def process_inst_uid(self):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
-    def context_id(self):
+    def context_provides(self):
         return [i.__identifier__ for a in self.context.actions
                 for i in Declaration(a.context).flattened()]
+
+    def context_id(self):
+        return [a.context.__identifier__ for i in self.context.actions]
+
+    def isautomatic(self):
+        for a in self.context.actions:
+            if a.isautomatic:
+                return True
+
+        return False
 
 
 @adapter(context=IBusinessAction)
@@ -221,5 +270,11 @@ class BusinessActionSearch(Adapter):
     def process_inst_uid(self):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
-    def context_id(self):
+    def context_provides(self):
         return [i.__identifier__ for i in Declaration(self.context.context).flattened()]
+
+    def context_id(self):
+        return [self.context.context.__provides__.declared[0].__identifier__]
+
+    def isautomatic(self):
+        return self.context.isautomatic
