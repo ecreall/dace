@@ -51,8 +51,8 @@ from zope.component import getUtility
 from zope.component.hooks import getSite, setSite
 #from zope.intid.interfaces import IIntIds
 from .interfaces import IWorkItem
-from .event import IntermediateCatchEvent
-from .system import start_crawler
+from .processinstance.event import IntermediateCatchEvent
+from .objectofcollaboration.system import start_crawler
 
 
 def start_intermediate_events(event):

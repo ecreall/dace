@@ -1,5 +1,7 @@
 import venusian
+from zope.container.contained import NameChooser as NC
 from zope.annotation.interfaces import IAnnotations, Interface
+from zope.interface import implements
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry, get_current_request
 from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd
@@ -7,8 +9,12 @@ from .interfaces import (
         IEntity,
         IProcessDefinition,
         IDecisionWorkItem,
-        IWorkItem)
+        IWorkItem,
+        INameChooser,
+        IObject)
 from . import log
+
+
 
 
 class Adapter(object):
@@ -234,3 +240,8 @@ def workItemAvailable(menu_entry, process_id, activity_id, condition=lambda p, c
         log.exception(e)
         return False
     return True
+
+
+@adapter(IObject)
+class NameChooser(NC):
+    implements(INameChooser)

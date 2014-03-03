@@ -7,12 +7,12 @@ import transaction
 
 from .activity import SubProcess
 from .core import ProcessStarted
-from .entity import Entity
+from dace.objectofcollaboration.entity import Entity
 from .gateway import ExclusiveGateway
-from .interfaces import IProcess, IProcessDefinition, IWorkItem
-from .relations import ICatalog, any, connect
+from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
+from dace.relations import ICatalog, any, connect
 from .transition import Transition
-from .util import find_catalog
+from dace.util import find_catalog
 
 
 class WorkflowData(Persistent):

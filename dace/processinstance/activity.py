@@ -10,7 +10,7 @@ from zope.interface import implements
 from .core import EventHandler, WorkItemBehavior
 from .lock import LockableElement
 
-from .interfaces import (
+from dace.interfaces import (
     IParameterDefinition,
     IProcessDefinition,
     IApplicationDefinition,

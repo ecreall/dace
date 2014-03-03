@@ -5,7 +5,7 @@ from zope.interface import Interface, Attribute
 #from dolmen.app.content import IDescriptiveSchema
 #from dolmen.authentication import (
 #    IPrincipal, IPasswordProtected, IPrincipalFolder)
-from substanced.interfaces import IPrincipal
+from substanced.interfaces import IPrincipal, IFolder
 #from dolmen.file import ImageField 
 #from z3c.schema.email import RFC822MailAddress
 #from zope.container.constraints import containers
@@ -15,7 +15,7 @@ from substanced.interfaces import IPrincipal
 
 
 
-class IObject(Interface):
+class IObject(IFolder):
     pass
 
 
@@ -118,7 +118,7 @@ class IProcess(IEntity):
         )
 
 
-class IRuntime(Interface):
+class IRuntime(IEntity):
     """Runtime container.
     """
     #contains(IProcess)

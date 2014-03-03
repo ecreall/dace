@@ -1,8 +1,7 @@
 from zope.interface import implements
 
-from .interfaces import IActivityDefinition
-from .activity import Activity, SubProcess
-
+from dace.interfaces import IActivityDefinition
+from dace.processinstance.activity import Activity, SubProcess
 from .core import EventHandlerDefinition
 
 

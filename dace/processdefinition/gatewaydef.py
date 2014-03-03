@@ -1,4 +1,4 @@
-from .gateway import ExclusiveGateway, ParallelGateway, InclusiveGateway
+from dace.processinstance.gateway import ExclusiveGateway, ParallelGateway, InclusiveGateway
 from .core import FlowNodeDefinition
 
 

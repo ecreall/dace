@@ -1,6 +1,6 @@
 from zope.interface import implements
 
-from .interfaces import ITransitionDefinition
+from dace.interfaces import ITransitionDefinition
 
 
 def always_true(data):

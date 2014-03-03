@@ -1,7 +1,10 @@
-from substanced.folder import Folder as FD
+from zope.interface import implements
+import colander
 from persistent.list import PersistentList
-from dace.interfaces import INameChooser
-from dace.object import Object
+
+from substanced.folder import Folder
+
+from dace.interfaces import INameChooser, IObject
 
 
 __compositunique__ = 'cu'
@@ -178,7 +181,9 @@ __properties__ = { __compositunique__: CompositUniqueProperty,
                    __compositmultiple__: CompositMultipleProperty}
 
 
-class Folder(Object, FD):
+class Object(Folder):
+
+    implements(IObject)
 
     properties_def = {}
 
@@ -190,10 +195,13 @@ class Folder(Object, FD):
         new_instance.__init_proprties__()
         return new_instance
 
-    def __init__(self):
-        Object.__init__(self)
-        FD.__init__(self)
-
+    def __init__(self, **kwargs):
+        Folder.__init__(self)
+        self.__property__ = None
+        for _property in self.properties_def.keys():
+            if kwargs.has_key(_property):
+                self.setproperty(_property, kwargs[_property])
+        
     def __init_proprties__(self):
         for p in self.properties_def.keys():
             op = __properties__[self.properties_def[p][0]]
@@ -226,4 +234,25 @@ class Folder(Object, FD):
     def addtoproperty(self, name, value):
         self.__class__.properties[name]['add'](self, value)
 
+    def get_data(self, node):
+        result = {}
+        for child in node:
+            name = child.name
+            val = getattr(self, name, colander.null)
+            result[name] = val
+        return result
 
+    def set_data(self, appstruct):
+        for name, val in appstruct.items():
+            if hasattr(self, name):
+                existing_val = getattr(self, name, None)
+                new_val = appstruct[name]
+                if existing_val != new_val:
+                    setattr(self, name, new_val)
+
+    def url(self, request, view=None, args=None):
+        if view is None:
+            #generalement c est la vue de l index associer qu'il faut retourner
+            return request.mgmt_path(self, '@@contents')
+        else:
+            return request.mgmt_path(self, '@@'+view)

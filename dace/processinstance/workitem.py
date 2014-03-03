@@ -7,7 +7,7 @@ from zope.component.interfaces import IFactory
 
 from substanced.event import ObjectAdded, ObjectRemoved
 
-from .interfaces import (
+from dace.interfaces import (
     IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
 from .lock import LockableElement
 

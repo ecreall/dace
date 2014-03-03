@@ -4,14 +4,15 @@ from zope.interface import implements
 from zope.component import createObject
 from zope.component import ComponentLookupError
 from zope.component.hooks import getSite
+
 from substanced.interfaces import IObjectAdded
 
-from .interfaces import IProcessDefinition, IProcess
+from dace.interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition
 from .transitiondef import TransitionDefinition
-from .process import Process
+from dace.processinstance.process import Process
 from .eventdef import StartEventDefinition
-from .util import find_catalog
+from dace.util import find_catalog
 
 
 class ProcessDefinition(object):

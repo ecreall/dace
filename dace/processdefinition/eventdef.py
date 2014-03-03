@@ -1,7 +1,6 @@
-from .event import ConditionalEvent
 from .core import FlowNodeDefinition
-from .event import (StartEvent, TerminateEvent, EndEvent,
-    TimerEvent, SignalEvent, IntermediateCatchEvent, IntermediateThrowEvent)
+from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
+    TimerEvent, SignalEvent, IntermediateCatchEvent, IntermediateThrowEvent, ConditionalEvent)
 
 
 class EventDefinition(FlowNodeDefinition):
