@@ -162,7 +162,7 @@ class SearchableObject(Adapter):
 
     def oid(self):
         return get_oid(self.context)
-        
+
     def _get_oids(self, obj):
         result = []
         if getattr(obj, '__parent__' , None) is None:
@@ -191,7 +191,7 @@ class StartWorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
@@ -219,7 +219,7 @@ class DecisionWorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
@@ -247,7 +247,7 @@ class WorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
