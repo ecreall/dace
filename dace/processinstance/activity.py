@@ -93,9 +93,6 @@ class SubProcess(Activity):
         self.wi.remove()
 
 
-
-
-
 class ActionType:
     automatic = 1
     manual = 2
