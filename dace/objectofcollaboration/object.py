@@ -185,14 +185,14 @@ __properties__ = { __compositunique__: CompositUniqueProperty,
 class Object(VisualisableElement, Folder):
 
     implements(IObject)
-
     properties_def = {}
+    template = 'pontus:templates/visualisable_templates/object.pt'
 
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, 'properties'):
             cls.properties = {}
 
-        new_instance = super(Folder, cls).__new__(cls, *args, **kwargs)
+        new_instance = super(Object, cls).__new__(cls, *args, **kwargs)
         new_instance.__init_proprties__()
         return new_instance
 
@@ -255,6 +255,6 @@ class Object(VisualisableElement, Folder):
     def url(self, request, view=None, args=None):
         if view is None:
             #generalement c est la vue de l index associer qu'il faut retourner
-            return request.mgmt_path(self, '@@contents')
+            return request.mgmt_path(self, '@@index')
         else:
             return request.mgmt_path(self, '@@'+view)
