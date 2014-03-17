@@ -7,7 +7,7 @@ from substanced.folder import Folder
 from dace.interfaces import INameChooser, IObject
 from pontus.visual import VisualisableElement
 
-
+# TODO a optimiser il faut, aussi, ajouter les relations de referensement
 __compositunique__ = 'cu'
 
 
@@ -21,7 +21,7 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             myproperty['init'](self)
 
         keyvalue = self.__dict__[key]
-        if keyvalue is not None:
+        if keyvalue is not None and keyvalue in self:
             return self[keyvalue]
 
         return None
@@ -97,7 +97,7 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
             myproperty['init'](self)
 
         contents_keys = self.__dict__[keys]
-        return [self[key] for key in contents_keys]
+        return [self[key] for key in contents_keys if key in self]
 
     def _add(self, value, initiator=True):
         if value is None:
