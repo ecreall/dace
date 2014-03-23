@@ -3,8 +3,7 @@ from zope.interface import implements
 from persistent import Persistent
 from persistent.list import PersistentList
 
-from pyramid.threadlocal import get_current_registry
-from pyramid.threadlocal import get_current_request
+from pyramid.threadlocal import get_current_registry, get_current_request
 from pyramid.interfaces import ILocation
 
 from substanced.util import get_oid
@@ -123,6 +122,7 @@ class BusinessAction(LockableElement, Persistent):
         super(BusinessAction, self).__init__()
         self.__parent__ = parent
         self.isexecuted = False
+        
 
     @property
     def __name__(self):
@@ -149,7 +149,7 @@ class BusinessAction(LockableElement, Persistent):
         request = get_current_request()
         if self.process is not None:
             uid = get_oid(self.process)
-            request.form[u'p_uid'] = uid
+            request.params[u'p_uid'] = uid
         return request
 
     @property
@@ -162,12 +162,12 @@ class BusinessAction(LockableElement, Persistent):
         return False
 
     def url(self, obj):
+        actionuid = get_oid(self.parent) 
         if self.process is None:
             # TODO url
-            return url(get_current_request(), obj, self.view_name)
+            return get_current_request().mgmt_path(obj, self.view_name,  query={'action_uid':actionuid})
 
-        puid = get_oid(self.process)
-        return url(get_current_request(), obj, self.view_name, {'p_uid': puid})
+        return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query={'action_uid':actionuid})
 
     def content(self, obj):
         content = u''
@@ -303,13 +303,16 @@ class LoopActionDataInput(BusinessAction):
         self.redirect(context, request, appstruct, args)
 
 
-class MultiInstanceActionLimitedCardinality(BusinessAction):
-
+class MultiInstanceAction(BusinessAction):
     loopCardinality = None
     isSequential = False
 
+
+class LimitedCardinality(MultiInstanceAction):
+
+
     def __init__(self, parent):
-        super(MultiInstanceActionLimitedCardinality, self).__init__(parent)
+        super(LimitedCardinality, self).__init__(parent)
         self.numberOfInstances = self.loopCardinality.im_func(None, self.process, None)
         for instance in range(self.numberOfInstances):
             self.__parent__.actions.append(ActionInstance(instance, self, parent))
@@ -320,9 +323,9 @@ class MultiInstanceActionLimitedCardinality(BusinessAction):
         self.isexecuted = True
 
 
-class MultiInstanceActionInfiniteCardinality(BusinessAction):
+class InfiniteCardinality(BusinessAction):
 
-    isSequential = False
+    loopCardinality = -1
 
     def beforeexecution(self, request):
         if self.isSequential:
@@ -341,13 +344,13 @@ class MultiInstanceActionInfiniteCardinality(BusinessAction):
             self.redirect(context, request, appstruct, args)
 
 
-class MultiInstanceActionDataInput(BusinessAction):
+class DataInput(MultiInstanceAction):
 
     loopDataInputRef = None
-    isSequential = False
+    dataIsPrincipal = True
 
     def __init__(self, parent):
-        super(MultiInstanceActionDataInput, self).__init__(parent)
+        super(DataInput, self).__init__(parent)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
         self.instances = self.loopDataInputRef.im_func(None, self.process, None)
@@ -363,21 +366,22 @@ class MultiInstanceActionDataInput(BusinessAction):
 class ActionInstance(BusinessAction):
 
     # mia = multi instance action
-    def __init__(self, item, mia, parent):
+    def __init__(self, item, principalaction, parent):
         super(ActionInstance, self).__init__(parent)
-        self.mia = mia
-        self.item = item
+        self.principalaction = principalaction
+        self.item = item 
+        self.actionid = self.actionid+'_'+str(get_oid(item))
 
     def beforeexecution(self, request):
         self.lock(request)
-        if self.mia.isSequential:
+        if self.principalaction.isSequential:
             self.__parent__.lock(request)
 
     def afterexecution(self, request):
-        if self.mia.isSequential:
+        if self.principalaction.isSequential:
             self.__parent__.unlock(request)
 
-        if  not self.mia.instances:
+        if  not self.principalaction.instances:
             self.__parent__.node.workItemFinished(self.__parent__)
 
         self.isexecuted = True
@@ -387,19 +391,19 @@ class ActionInstance(BusinessAction):
             args['item'] = self.item
         else:
             args = {'item': self.item}
-        return self.mia.start(context, request, appstruct, args)
+        return self.principalaction.start(context, request, appstruct, args)
 
     def redirect(self, context, request, appstruct, args=None):
         if args is not None:
             args['item'] = self.item
         else:
             args = {'item': self.item}
-        self.mia.redirect(context, request, appstruct, args)
+        self.principalaction.redirect(context, request, appstruct, args)
 
     def execute(self, context, request, appstruct, args=None):
         isFinished = self.start(context, request, appstruct, args)
         if isFinished :
-            self.mia.instances.pop(self.item)
+            self.principalaction.instances.pop(self.item)
             self.afterexecution(request)
             self.redirect(context, request, appstruct, args)
 
@@ -409,6 +413,7 @@ class ActionInstanceAsPrincipal(ActionInstance):
     def validate(self,obj):
         return (obj is self.item) and super(ActionInstanceAsPrincipal, self).validate(obj)
 
+# il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
 
 # La question est comment faire pour les actions multiStep?
 # Je pense que cela peut être géré dans l'action start de l'action. La fonction start se charge d'exécuter la bonne

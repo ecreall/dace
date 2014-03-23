@@ -11,7 +11,7 @@ from dace.util import find_catalog
 
 
 class ActionCall(object):
-
+    # il faut faire ici un delegation des attribut de l'action en question
     def __init__(self, action, obj):
         super(ActionCall, self).__init__()
         self.object = obj
@@ -44,6 +44,8 @@ class Entity(Object):
         for s in state:
             self.state.append(s)
 
+    #les relations avec le processus sont des relations d'agregation multiple bidirectionnelles
+    # il faut donc les difinir comme des properties
     def getCreator(self):
         registry = get_current_registry()
         rcatalog = registry.getUtility(ICatalog)
@@ -83,6 +85,7 @@ class Entity(Object):
         for relation in self._getInvolvedProcessRelations(tag):
             yield relation.source
 
+    
     @property
     def actions(self):
         allactions = []
