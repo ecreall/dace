@@ -10,7 +10,7 @@ from .core import ProcessStarted
 from dace.objectofcollaboration.entity import Entity
 from .gateway import ExclusiveGateway
 from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
-from dace.relations import ICatalog, any, connect
+from dace.relations import find_relations, connect
 from .transition import Transition
 from dace.util import find_catalog
 
@@ -190,15 +190,13 @@ class Process(Entity, Persistent):
             self._addRelation(entities, tags=allTags)
 
     def _getEntityRelations(self, tags):
-        registry = get_current_registry()
         if self.isSubProcess:
             yield self.attachedTo.process._getEntityRelations(tags)
         else:
-            rcatalog = registry.getUtility(ICatalog)
             opts = {u'source_id': get_oid(self)}
             if tags is not None:
-                opts[u'tag'] = any(*tags)
-            for relation in rcatalog.findRelations(opts):
+                opts[u'tag'] = tags
+            for relation in find_relations(opts):
                 yield relation.target
 
     def getCreatedEntity(self, tag, index=-1):

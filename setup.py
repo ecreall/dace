@@ -12,8 +12,6 @@ requires = [
     'pyzmq',
     'rwproperty',
     'substanced',
-    'zc.relation',
-    'zope.schema',
     'zope.annotation',
     'zope.cachedescriptors',
     'zope.container',

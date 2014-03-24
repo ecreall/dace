@@ -1,13 +1,12 @@
 from zope.interface import implements
 from persistent.list import PersistentList
-from pyramid.threadlocal import get_current_registry
 
 from substanced.util import get_oid
 
-from dace.interfaces import IEntity, IBusinessAction, IProcessDefinition
-from dace.relations import ICatalog, any
+from dace.interfaces import IEntity
 from .object import Object
 from dace.util import getAllBusinessAction
+from dace.relations import find_relations
 
 
 class ActionCall(object):
@@ -47,11 +46,9 @@ class Entity(Object):
     #les relations avec le processus sont des relations d'agregation multiple bidirectionnelles
     # il faut donc les difinir comme des properties
     def getCreator(self):
-        registry = get_current_registry()
-        rcatalog = registry.getUtility(ICatalog)
-        relations = rcatalog.findRelations({
+        relations = find_relations({
             u'target_id': get_oid(self),
-            u'tag': any(u"created")})
+            u'tag': u"created"})
         return tuple(relations)[0].source
 
     def setCreator(self, creator, tag, index=-1):
@@ -65,15 +62,13 @@ class Entity(Object):
             proc.addInvolvedEntities(self, tag, index)
 
     def _getInvolvedProcessRelations(self, tag=None, index=-1):
-        registry = get_current_registry()
-        rcatalog = registry.getUtility(ICatalog)
         tags = [u"involved"]
         if tag is not None:
             tags = [t + tag for t in tags]
 
         opts = {u'target_id': get_oid(self)}
-        opts[u'tag'] = any(*tags)
-        for relation in rcatalog.findRelations(opts):
+        opts[u'tag'] = tags
+        for relation in find_relations(opts):
             yield relation
 
     def getInvolvedProcessIds(self, tag=None):
@@ -84,7 +79,7 @@ class Entity(Object):
     def getInvolvedProcesses(self, tag=None):
         for relation in self._getInvolvedProcessRelations(tag):
             yield relation.source
-    
+
     @property
     def actions(self):
         allactions = getAllBusinessAction(self)

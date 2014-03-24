@@ -1,23 +1,18 @@
 # -*- coding: utf-8 -*-
-from BTrees.OOBTree import OOBTree
+from zope.interface import implementer
 from pyramid.threadlocal import get_current_registry
-from pyramid.interfaces import ILocation
-from zope.interface import implements, alsoProvides
+from substanced.folder import Folder
+from substanced.interfaces import IService
 
 from .events import RelationAdded, RelationDeleted
-#from .interfaces import IRelationsContainer
 
-
-class RelationsContainer(OOBTree):
+@implementer(IService)
+class RelationsContainer(Folder):
     """A rough implementation of a relation storage.
     """
-#    implements(IRelationsContainer)
 
     def __setitem__(self, key, value):
-        value.__parent__ = self
-        value.__name__ = key
-        alsoProvides(value, ILocation)
-        OOBTree.__setitem__(self, key, value)
+        super(RelationsContainer, self).__setitem__(key, value)
         registry = get_current_registry()
         registry.notify(RelationAdded(value))
 
@@ -30,6 +25,6 @@ class RelationsContainer(OOBTree):
             # the relation
             registry = get_current_registry()
             registry.notify(RelationDeleted(self.get(key)))
-            OOBTree.__delitem__(self, key)
+            super(RelationsContainer, self).__delitem__(key)
         else:
             KeyError(key)

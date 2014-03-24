@@ -2,13 +2,14 @@
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
 from substanced.event import RootAdded
-from substanced.interfaces import IObjectWillBeRemoved
-from substanced.util import get_oid
+from substanced.event import subscribe_removed
+from substanced.catalog import oid_from_resource
 
+from dace.relations import get_relations_catalog
 from .interfaces import (
-    ICatalog,
     IRelationAdded,
     IRelationModified,
+    IRelationDeleted,
     IRelationValue,
     )
 from .catalog import create_catalog
@@ -21,41 +22,49 @@ def add_relations_catalog(event):
     create_catalog(root)
 
 
-@subscriber(IRelationValue, IRelationModified)
-def update_relation(relation, event):
-    registry = get_current_registry()
-    catalog = registry.getUtility(ICatalog)
-    catalog.unindex(relation)
-    catalog.index_doc(get_oid(relation), relation)
-
-
-@subscriber(IRelationValue, IRelationAdded)
-def add_relation(relation, event):
-    registry = get_current_registry()
-    catalog = registry.getUtility(ICatalog)
-    objectid = get_oid(relation)
+@subscriber(IRelationAdded)
+def add_relation(event):
+    relation = event.object
+    catalog = get_relations_catalog()
+    objectid = oid_from_resource(relation)
     catalog.index_doc(objectid, relation)
 
 
-@subscriber(IObjectWillBeRemoved)
+@subscriber(IRelationModified)
+def update_relation(event):
+    relation = event.object
+    catalog = get_relations_catalog()
+    objectid = oid_from_resource(relation)
+    catalog.reindex_doc(objectid, relation)
+
+
+@subscriber(IRelationDeleted)
+def delete_relation(event):
+    relation = event.object
+    catalog = get_relations_catalog()
+    objectid = oid_from_resource(relation)
+    catalog.unindex_doc(objectid)
+
+
+# FIXME doesn't go in there
+@subscribe_removed
 def object_deleted(event):
     registry = get_current_registry()
     ob = event.object
-    catalog = registry.queryUtility(ICatalog)
+    catalog = get_relations_catalog()
     if catalog is None:
         # We don't have a Catalog installed in this part of the site
         return
 
+    # FIXME do we need this if we have the delete_relation subscriber?
     if IRelationValue.providedBy(ob):
         # We assume relations can't be source or targets of relations
-        catalog.unindex(ob)
+        objectid = oid_from_resource(ob)
+        catalog.unindex_doc(objectid)
         return
 
-    uid = get_oid(ob, None)
-    if uid is None:
-        return
-
-    rels = list(catalog.findRelations({'source_id': uid}))
+    objectid = oid_from_resource(ob)
+    rels = catalog['source_id'].eq(objectid).execute().all()
     for rel in rels:
         registry.notify(RelationSourceDeleted(ob, rel))
         parent = rel.__parent__
@@ -64,7 +73,7 @@ def object_deleted(event):
         except KeyError:
             continue
 
-    rels = list(catalog.findRelations({'target_id': uid}))
+    rels = catalog['target_id'].eq(objectid).execute().all()
     for rel in rels:
         registry.notify(RelationTargetDeleted(ob, rel))
         parent = rel.__parent__

@@ -1,15 +1,36 @@
 from pyramid.threadlocal import get_current_request
 from substanced.util import find_objectmap, set_oid
-from zc.relation.catalog import any  #keep it
-from .interfaces import ICatalog  #keep it
 
 from .values import RelationValue
 
 
 def get_relations_container():
     request = get_current_request()
-    root = request.root
-    return root['relations_container']
+    return request.root['relations_container']
+
+
+def get_relations_catalog():
+    request = get_current_request()
+    return request.root.get('relations', None)
+
+
+def find_relations(query):
+    catalog = get_relations_catalog()
+    request = get_current_request()
+    objectmap = find_objectmap(request.root)
+    queryobject = None
+    for index, value in query.items():
+        if isinstance(value, (tuple, list)):
+            criterion = catalog[index].any(value)
+        else:
+            criterion = catalog[index].eq(value)
+        if queryobject is None:
+            queryobject = criterion
+        else:
+            queryobject &= criterion
+
+    resultset = queryobject.execute(resolver=objectmap.object_for)
+    return resultset
 
 
 def connect(source, target, **kwargs):
@@ -20,3 +41,9 @@ def connect(source, target, **kwargs):
     objectid = objectmap.new_objectid()
     set_oid(relation, objectid)
     container[str(objectid)] = relation
+    return relation
+
+
+def disconnect(relation):
+    parent = relation.__parent__
+    del parent[relation.__name__]

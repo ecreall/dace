@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
-from substanced.event import ObjectAdded, ObjectRemoved
-from zope.interface import implements
+from zope.interface import implementer
 from zope.interface.interfaces import ObjectEvent
 
 from .interfaces import (
@@ -11,28 +10,31 @@ from .interfaces import (
     IRelationTargetDeleted)
 
 
-class RelationAdded(ObjectAdded):
-    implements(IRelationAdded)
+@implementer(IRelationAdded)
+class RelationAdded(ObjectEvent):
+    pass
 
 
-class RelationDeleted(ObjectRemoved):
-    implements(IRelationDeleted)
+@implementer(IRelationDeleted)
+class RelationDeleted(ObjectEvent):
+    pass
 
 
+@implementer(IRelationModified)
 class RelationModified(ObjectEvent):
-    implements(IRelationModified)
+    pass
 
 
+@implementer(IRelationSourceDeleted)
 class RelationSourceDeleted(ObjectEvent):
-    implements(IRelationSourceDeleted)
 
     def __init__(self, object, relation):
         self.object = object
         self.relation = relation
 
 
+@implementer(IRelationTargetDeleted)
 class RelationTargetDeleted(ObjectEvent):
-    implements(IRelationTargetDeleted)
 
     def __init__(self, object, relation):
         self.object = object

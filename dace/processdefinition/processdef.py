@@ -160,8 +160,8 @@ class ProcessDefinition(object):
         setattr(self, '_isIntanciated_%s' % site_id, created)
         return created
 
-
-@subscriber(IProcess, IObjectAdded)
+# TODO pyramid don't support subscriber with two args
+#@subscriber(IProcess, IObjectAdded)
 def invalidate_isInstantiated_cache(obj, event):
     definition = obj.definition
     site_id = getSite().__name__

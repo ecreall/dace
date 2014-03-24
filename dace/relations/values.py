@@ -1,7 +1,6 @@
 from persistent import Persistent
 from substanced.util import find_objectmap
-from zope.interface import implements, providedBy, Declaration
-from zope.schema.fieldproperty import FieldProperty
+from zope.interface import implementer, providedBy, Declaration
 
 from .interfaces import IRelationValue
 
@@ -10,12 +9,8 @@ def _interfaces_flattened(interfaces):
     return [i.__identifier__ for i in Declaration(*interfaces).flattened()]
 
 
+@implementer(IRelationValue)
 class RelationValue(Persistent):
-    implements(IRelationValue)
-    source_id = FieldProperty(IRelationValue['source_id'])
-    target_id = FieldProperty(IRelationValue['target_id'])
-    state = FieldProperty(IRelationValue['state'])
-    tags = FieldProperty(IRelationValue['tags'])
 
     def __init__(self, source_id, target_id, tags=None, state=u""):
         self.source_id = source_id
