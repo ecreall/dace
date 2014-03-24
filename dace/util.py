@@ -138,6 +138,71 @@ def get_current_process_uid(request):
 #    request.response.expireCookie('p_uid')
 #    set the cookie in the update() of a form only
 
+def getBusinessAction(process_id, activity_id, behavior_id, request, context):
+    allactions = []
+    dace_catalog = find_catalog('dace')
+    process_id_index = dace_catalog['process_id']
+    activity_id_index = dace_catalog['node_id']
+    behavior_id_index = dace_catalog['behavior_id']
+    context_id_index = dace_catalog['context_id']
+    object_provides_index = dace_catalog['object_provides']
+    query = process_id_index.eq(process_id) & \
+            activity_id_index.eq(activity_id) & \
+            behavior_id_index.eq(behavior_id) & \
+            object_provides_index.any((IBusinessAction.__identifier__,)) & \
+            context_id_index.any(context.__provides__.declared)
+    results = query.execute().all()
+    if len(results) > 0:
+        for action in results:
+            if action.validate(context):
+                allactions.append(action)
+
+    registry = get_current_registry()
+    pd = registry.getUtility(IProcessDefinition, process_id)
+    # Add start workitem
+    if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
+        wis = pd.createStartWorkItem(None)
+        for key in wis.keys():
+            swisactions = wis[key].actions
+            for action in swisactions:
+                if action.behavior_id == behavior_id and action.validate(context) :
+                    allactions.append(action)
+
+    if allactions:
+        return allactions
+    else:
+        return None
+
+def queryBusinessAction(process_id, activity_id, behavior_id, request, context):
+    return getBusinessAction(process_id, activity_id, behavior_id,
+                 request, context)
+
+def getAllBusinessAction(context):
+    allactions = []
+    dace_catalog = find_catalog('dace')
+    context_id_index = dace_catalog['context_id']
+    object_provides_index = dace_catalog['object_provides']
+    query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
+            context_id_index.any(context.__provides__.declared)
+    results = query.execute().all()
+    if len(results) > 0:
+        for action in results:
+            if action.validate(context):
+                allactions.append(action)
+
+    registry = get_current_registry()
+    allprocess = registry.getUtilitiesFor(IProcessDefinition)
+    # Add start workitem
+    for name, pd in allprocess:
+        if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
+            wis = pd.createStartWorkItem(None)
+            for key in wis.keys():
+                swisactions = wis[key].actions
+                for action in swisactions:
+                    if action.validate(context) :
+                        allactions.append(action)
+
+    return allactions
 
 def getWorkItem(process_id, activity_id, request, context,
                 condition=lambda p, c: True):

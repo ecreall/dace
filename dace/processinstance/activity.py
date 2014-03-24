@@ -9,8 +9,10 @@ from pyramid.interfaces import ILocation
 from substanced.util import get_oid
 
 from pontus.interfaces import IFormView
+from pontus.core import Behavior, Validator, ValidationError
 from .core import EventHandler, WorkItemBehavior
 from .lock import LockableElement
+from dace.util import getBusinessAction
 from dace.interfaces import (
     IParameterDefinition,
     IProcessDefinition,
@@ -97,13 +99,29 @@ class ActionType:
     manual = 2
 
 
-class BusinessAction(LockableElement, Persistent):
+def getBusinessActionValidator(cls):
+
+    class BusinessActionValidator(Validator):
+
+        @classmethod
+        def validate(cls, context, request, args=None):
+            instance = cls.get_instance(context, request, args)
+            if instance is None:
+                e = ValidationError()
+                raise e
+
+            return True
+
+    return BusinessActionValidator
+
+
+class BusinessAction(LockableElement, Behavior,Persistent):
     implements(ILocation, IBusinessAction)
 
     #identification et classification
-    title = NotImplemented
-    description = NotImplemented
     groups = []
+    process_id = NotImplemented
+    node_id = NotImplemented
     #execution
     context = NotImplemented
     view_action =  NotImplemented
@@ -123,6 +141,17 @@ class BusinessAction(LockableElement, Persistent):
         self.__parent__ = parent
         self.isexecuted = False
         
+    @classmethod
+    def get_instance(cls, context, request, args=None):
+        instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
+        if instance is None:
+            return None
+
+        return instance[0]
+
+    @classmethod
+    def get_validator(cls):
+        return getBusinessActionValidator(cls)
 
     @property
     def __name__(self):
@@ -135,14 +164,6 @@ class BusinessAction(LockableElement, Persistent):
     @property
     def view_name(self):
         return self.view_action.__view_name__
-
-    @property
-    def process_id(self):
-        return self.__parent__.process_id
-
-    @property
-    def node_id(self):
-        return self.__parent__.node_id
 
     @property
     def request(self):
@@ -205,20 +226,23 @@ class BusinessAction(LockableElement, Persistent):
         content = (content + view.content())
         return content
 
-    def validate(self,obj):
-        if  self.isexecuted and not obj.__provides__(self.context) or not self.__parent__.validate():
+    def validate(self, context, request, args=None):
+        if self.is_locked(request):
             return False
 
-        if self.relation_validation and not self.relation_validation.im_func(self.process, obj):
+        if  self.isexecuted and not context.__provides__(self.context) or not self.__parent__.validate():
             return False
 
-        if self.roles_validation and not self.roles_validation.im_func(self.process, obj):
+        if self.relation_validation and not self.relation_validation.im_func(self.process, context):
             return False
 
-        if self.processsecurity_validation and not self.processsecurity_validation.im_func(self.process, obj):
+        if self.roles_validation and not self.roles_validation.im_func(self.process, context):
             return False
 
-        if self.state_validation and not self.state_validation.im_func(self.process, obj):
+        if self.processsecurity_validation and not self.processsecurity_validation.im_func(self.process, context):
+            return False
+
+        if self.state_validation and not self.state_validation.im_func(self.process, context):
             return False
 
         return True
@@ -410,8 +434,8 @@ class ActionInstance(BusinessAction):
 
 class ActionInstanceAsPrincipal(ActionInstance):
 
-    def validate(self,obj):
-        return (obj is self.item) and super(ActionInstanceAsPrincipal, self).validate(obj)
+    def validate(self, context, request, args=None):
+        return (context is self.item) and super(ActionInstanceAsPrincipal, self).validate(context, request, args)
 
 # il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
 

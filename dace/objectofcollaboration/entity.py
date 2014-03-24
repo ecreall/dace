@@ -7,7 +7,7 @@ from substanced.util import get_oid
 from dace.interfaces import IEntity, IBusinessAction, IProcessDefinition
 from dace.relations import ICatalog, any
 from .object import Object
-from dace.util import find_catalog
+from dace.util import getAllBusinessAction
 
 
 class ActionCall(object):
@@ -84,32 +84,8 @@ class Entity(Object):
     def getInvolvedProcesses(self, tag=None):
         for relation in self._getInvolvedProcessRelations(tag):
             yield relation.source
-
     
     @property
     def actions(self):
-        allactions = []
-        dace_catalog = find_catalog('dace')
-        context_id_index = dace_catalog['context_id']
-        object_provides_index = dace_catalog['object_provides']
-        query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-                context_id_index.any(self.__provides__.declared)
-        results = query.execute().all()
-        if len(results) > 0:
-            for action in results:
-                if action.validate(self):
-                    allactions.append(action)
-
-        registry = get_current_registry()
-        allprocess = registry.getUtilitiesFor(IProcessDefinition)
-        # Add start workitem
-        for name, pd in allprocess:
-            if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-                wis = pd.createStartWorkItem(None)
-                for key in wis.keys():
-                    swisactions = wis[key].actions
-                    for action in swisactions:
-                        if action.validate(self) :
-                            allactions.append(action)
-
+        allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
