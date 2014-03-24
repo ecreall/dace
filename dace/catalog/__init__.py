@@ -135,9 +135,10 @@ class SearchableObject(Adapter):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
     def object_type(self):
-        if getattr(self.context,'__provides__', None) is not None and not (self.context.__provides__.declared == ()):
-            return self.context.__provides__.declared[0].__identifier__
-        return None
+        if providedBy(self.context).declared:
+            return providedBy(self.context).declared[0].__identifier__
+
+        return ''
 
     def containers_oids(self):
         if type(self.context) == Root:
@@ -162,7 +163,7 @@ class SearchableObject(Adapter):
 
     def oid(self):
         return get_oid(self.context)
-        
+
     def _get_oids(self, obj):
         result = []
         if getattr(obj, '__parent__' , None) is None:
@@ -191,7 +192,7 @@ class StartWorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
@@ -219,7 +220,7 @@ class DecisionWorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
@@ -247,7 +248,7 @@ class WorkItemSearch(Adapter):
                 for i in Declaration(a.context).flattened()]
 
     def context_id(self):
-        return [a.context.__identifier__ for i in self.context.actions]
+        return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
         for a in self.context.actions:
