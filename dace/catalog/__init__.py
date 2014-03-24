@@ -135,9 +135,10 @@ class SearchableObject(Adapter):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
     def object_type(self):
-        if getattr(self.context,'__provides__', None) is not None and not (self.context.__provides__.declared == ()):
-            return self.context.__provides__.declared[0].__identifier__
-        return None
+        if providedBy(self.context).declared:
+            return providedBy(self.context).declared[0].__identifier__
+
+        return ''
 
     def containers_oids(self):
         if type(self.context) == Root:
