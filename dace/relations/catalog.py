@@ -1,6 +1,8 @@
 from hypatia.catalog import Catalog
 from hypatia.field import FieldIndex
 from hypatia.keyword import KeywordIndex
+from substanced.interfaces import IService
+from zope.interface import alsoProvides
 
 from .container import RelationsContainer
 
@@ -15,4 +17,5 @@ def create_catalog(root):
     catalog['from_interfaces_flattened'] = KeywordIndex('from_interfaces_flattened')
     catalog['to_interfaces_flattened'] = KeywordIndex('to_interfaces_flattened')
     root['relations'] = catalog
+    alsoProvides(catalog, IService)
     root['relations_container'] = RelationsContainer()

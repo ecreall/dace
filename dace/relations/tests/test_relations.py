@@ -1,8 +1,9 @@
 from pyramid.threadlocal import get_current_registry
-from substanced.util import get_oid, find_objectmap
+from substanced.util import get_oid, is_service
 
 from dace.relations import connect, disconnect, RelationValue
-from dace.relations import get_relations_catalog, find_relations
+from dace.relations import find_relations
+from dace.relations import get_relations_catalog
 from dace.relations import get_relations_container
 from dace.testing import FunctionalTests
 
@@ -15,6 +16,8 @@ class TestRelationsCatalog(FunctionalTests):
         self.assertIn('relations_container', self.app)
         catalog = get_relations_catalog()
         self.assertIsNotNone(catalog)
+        self.assertTrue(is_service(get_relations_catalog()))
+        self.assertTrue(is_service(get_relations_container()))
 
     def _create_relation(self):
         registry = get_current_registry()
