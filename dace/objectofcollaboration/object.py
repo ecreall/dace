@@ -3,12 +3,14 @@ import colander
 from persistent.list import PersistentList
 
 from substanced.folder import Folder
+from substanced.util import get_oid
 
 from dace.interfaces import INameChooser, IObject
+from dace.relations import connect, disconnect, find_relations
 from pontus.visual import VisualisableElement
 
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
-__compositunique__ = 'cu'
+COMPOSIT_UNIQUE = 'cu'
 
 
 def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
@@ -35,14 +37,15 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             myproperty['init'](self)
 
         keyvalue = self.__dict__[key]
-        if keyvalue is not None and myproperty['get'](self) == value:
+        currentvalue = myproperty['get'](self)
+        if keyvalue is not None and currentvalue == value:
             return
 
         if initiator and opposite is not None:
             getattr(value, opposite, None)['add'](value, self, False)
 
         if keyvalue is not None:
-            myproperty['del'](self, myproperty['get'](self))
+            myproperty['del'](self, currentvalue)
 
         if value is None:
             setattr(self, key, None)
@@ -80,12 +83,12 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             'data':{'name':propertyref,
                     'opposite': opposite,
                     'isunique': isunique,
-                    'type':__compositunique__
+                    'type':COMPOSIT_UNIQUE
                    }
            }
 
 
-__compositmultiple__ = 'cm'
+COMPOSIT_MULTIPLE = 'cm'
 
 
 def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
@@ -173,13 +176,153 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
             'data': {'name':propertyref,
                      'opposite': opposite,
                      'isunique': isunique,
-                     'type':__compositmultiple__
+                     'type':COMPOSIT_MULTIPLE
                     }
            }
 
 
-__properties__ = { __compositunique__: CompositUniqueProperty,
-                   __compositmultiple__: CompositMultipleProperty}
+SHARED_UNIQUE = 'su'
+
+
+def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
+
+    def _get(self,):
+        opts = {u'source_id': get_oid(self)}
+        opts[u'relation_id'] = propertyref
+        try:
+            return [r for r in find_relations(opts).all()][0].target
+        except Exception:
+            return None
+
+    def _add(self, value, initiator=True):
+        self.setproperty(propertyref, value)
+
+    def _set(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        currentvalue = myproperty['get'](self) 
+        if currentvalue == value:
+            return
+
+        if initiator and opposite is not None:
+            getattr(value, opposite, None)['add'](value, self, False)
+
+        myproperty['del'](self, currentvalue)
+        if value is None:
+            return
+        kw = {}
+        kw['relation_id'] = propertyref
+        connect(self, value, **kw)
+
+    def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        currentvalue = myproperty['get'](self) 
+        if currentvalue is not None and currentvalue == value:
+            if initiator and opposite is not None:
+                getattr(value, propertyref, None)['del'](value, self, False)
+
+            opts = {u'target_id': get_oid(value)}
+            opts[u'relation_id'] = propertyref
+            relation = [r for r in find_relations(opts).all()][0]
+            disconnect(relation)
+
+    def init(self):
+        return
+
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'data':{'name':propertyref,
+                    'opposite': opposite,
+                    'isunique': isunique,
+                    'type':SHARED_UNIQUE
+                   }
+           }
+
+
+SHARED_MULTIPLE = 'sm'
+
+def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
+
+    def _get(self):
+        opts = {u'source_id': get_oid(self)}
+        opts[u'relation_id'] = propertyref
+        try:
+            return [r for r in find_relations(opts).all()]
+        except Exception:
+            return None
+
+    def _add(self, value, initiator=True):
+        if value is None:
+            return
+
+        myproperty = self.__class__.properties[propertyref]
+        currentvalue = myproperty['get'](self) 
+        if isunique and value in currentvalue:
+            return
+
+        if initiator and opposite is not None:
+            getattr(value, opposite, None)['add'](value, self, False)
+
+        myproperty['del'](self, currentvalue)
+        kw = {}
+        kw['relation_id'] = propertyref           
+        connect(self, value, **kw)
+
+    def _set(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not isinstance(value, (list, tuple)):
+            value = [value]
+
+        oldvalues = myproperty['get'](self)
+        toremove = []
+        toadd = []
+        if value is None:
+            toremove = oldvalues
+        else:  
+            toremove = [v for v in oldvalues if not (v in value)]
+            toadd = [v for v in value if not (v in oldvalues)]
+
+        myproperty['del'](self, toremove)
+        if toadd:
+            for v in toadd:
+                myproperty['add'](self, v)
+
+    def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not isinstance(value, (list, tuple)):
+            value = [value]
+
+        for v in value:
+            if initiator and opposite is not None:
+                getattr(v, propertyref, None)['del'](v, self, False)
+
+            opts = {u'target_id': get_oid(v)}
+            opts[u'relation_id'] = propertyref
+            relation = [r for r in find_relations(opts).all()][0]
+            disconnect(relation)
+
+    def init(self):
+        return
+
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'data': {'name':propertyref,
+                     'opposite': opposite,
+                     'isunique': isunique,
+                     'type':SHARED_MULTIPLE
+                    }
+           }
+
+
+__properties__ = { COMPOSIT_UNIQUE: CompositUniqueProperty,
+                   SHARED_UNIQUE: SharedUniqueProperty,
+                   COMPOSIT_MULTIPLE: CompositMultipleProperty,
+                   SHARED_MULTIPLE: SharedMultipleProperty }
 
 
 class Object(VisualisableElement, Folder):

@@ -9,6 +9,7 @@ def create_catalog(root):
     catalog = Catalog()
     catalog['source_id'] = FieldIndex('source_id')
     catalog['target_id'] = FieldIndex('target_id')
+    catalog['relation_id'] = FieldIndex('relation_id')
     catalog['reftype'] = FieldIndex('reftype')
     catalog['tags'] = KeywordIndex('tags')
     catalog['from_interfaces_flattened'] = KeywordIndex('from_interfaces_flattened')

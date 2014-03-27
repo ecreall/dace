@@ -5,7 +5,7 @@ from substanced.locking import(
     LockError,
     UnlockError)
 
-DEFAUT_DURATION = 10
+DEFAUT_DURATION = 3600
 
 class LockableElement(object):
 

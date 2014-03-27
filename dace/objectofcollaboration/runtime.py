@@ -5,13 +5,13 @@ from substanced.folder import Folder
 
 from dace.interfaces import IRuntime
 from .entity import Entity
-from .object import __compositmultiple__
+from .object import COMPOSIT_MULTIPLE
 
 
 class Runtime(Entity):
     implements(IRuntime)
 
-    properties_def = {'processes':(__compositmultiple__, None, False)}
+    properties_def = {'processes':(COMPOSIT_MULTIPLE, None, False)}
 
     def __init__(self, **kwargs):
         super(Runtime, self).__init__(**kwargs)

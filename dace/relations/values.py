@@ -12,13 +12,13 @@ def _interfaces_flattened(interfaces):
 @implementer(IRelationValue)
 class RelationValue(Persistent):
 
-    def __init__(self, source_id, target_id, tags=None, state=u""):
+    def __init__(self, source_id, target_id, relation_id, tags=None):
         self.source_id = source_id
         self.target_id = target_id
+        self.relation_id = relation_id
         if tags is None:
             tags = []
         self.tags = tags
-        self.state = state
 
     def __resolve(self, content_id):
         try:
@@ -43,12 +43,10 @@ class RelationValue(Persistent):
         return u"""RelationValue(
     source=%s,
     target=%s,
-    tags=%s,
-    state=%s)""" % (
+    tags=%s)""" % (
                 u"%s <%s>" % (self.source.__name__, self.source.__class__.__name__),
                 u"%s <%s>" % (self.target.__name__, self.target.__class__.__name__),
-                self.tags or "None",
-                self.state or 'u""')
+                self.tags or "None")
 
     @property
     def from_interfaces(self):
