@@ -29,7 +29,8 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
         return None
 
     def _add(self, value, initiator=True):
-        self.setproperty(propertyref, value)
+        myproperty = self.__class__.properties[propertyref]
+        myproperty['set'](self, value, initiator)
 
     def _set(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
@@ -195,7 +196,8 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
             return None
 
     def _add(self, value, initiator=True):
-        self.setproperty(propertyref, value)
+        myproperty = self.__class__.properties[propertyref]
+        myproperty['set'](self, value, initiator)
 
     def _set(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
