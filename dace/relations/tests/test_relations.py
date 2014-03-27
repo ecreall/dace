@@ -36,8 +36,11 @@ class TestRelationsCatalog(FunctionalTests):
         results = find_relations({'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 1)
 
-        results = find_relations({'tags': (u'created', u'involved')})
+        results = find_relations({'tags': ('any', (u'created', u'involved'))})
         self.assertEqual(len(list(results)), 1)
+
+        results = find_relations({'tags': ('all', (u'created', u'involved'))})
+        self.assertEqual(len(list(results)), 0)
 
         results = find_relations({'tags': u'created'})
         self.assertEqual(len(list(results)), 1)

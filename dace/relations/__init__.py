@@ -21,9 +21,12 @@ def find_relations(query):
     queryobject = None
     for index, value in query.items():
         if isinstance(value, (tuple, list)):
-            criterion = catalog[index].any(value)
+            querytype = value[0]
+            value = value[1]
         else:
-            criterion = catalog[index].eq(value)
+            querytype = 'eq'
+
+        criterion = getattr(catalog[index], querytype)(value)
         if queryobject is None:
             queryobject = criterion
         else:

@@ -37,7 +37,7 @@ class IRelationValue(Interface):
     target_id = Attribute("oid of the target object")
     source = Attribute("The source object of the relation.")
     target = Attribute("The target object of the relation.")
-    state = Attribute("State of the relation")
+    reftype = Attribute("Reference type (string)")
     from_interfaces_flattened = Attribute(
         "Interfaces of the from object, flattened. "
         "This includes all base interfaces.")
