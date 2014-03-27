@@ -12,10 +12,12 @@ def _interfaces_flattened(interfaces):
 @implementer(IRelationValue)
 class RelationValue(Persistent):
 
-    def __init__(self, source_id, target_id, relation_id, tags=None):
+    def __init__(self, source_id, target_id, relation_id=None,
+            reftype=None, tags=None):
         self.source_id = source_id
         self.target_id = target_id
-        self.relation_id = relation_id
+        self.relation_id = relation_id or ''
+        self.reftype = reftype or ''
         if tags is None:
             tags = []
         self.tags = tags
