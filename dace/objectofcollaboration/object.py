@@ -10,10 +10,10 @@ from dace.relations import connect, disconnect, find_relations
 from pontus.visual import VisualisableElement
 
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
-COMPOSIT_UNIQUE = 'cu'
+COMPOSITE_UNIQUE = 'cu'
 
 
-def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
+def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     key = propertyref+'_valuekey'
     
@@ -83,15 +83,15 @@ def CompositUniqueProperty(propertyref, opposite=None, isunique=False):
             'data':{'name':propertyref,
                     'opposite': opposite,
                     'isunique': isunique,
-                    'type':COMPOSIT_UNIQUE
+                    'type':COMPOSITE_UNIQUE
                    }
            }
 
 
-COMPOSIT_MULTIPLE = 'cm'
+COMPOSITE_MULTIPLE = 'cm'
 
 
-def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
+def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
     keys = propertyref+'_contents_keys'
 
     def _get(self):
@@ -176,7 +176,7 @@ def CompositMultipleProperty(propertyref, opposite=None, isunique=False):
             'data': {'name':propertyref,
                      'opposite': opposite,
                      'isunique': isunique,
-                     'type':COMPOSIT_MULTIPLE
+                     'type':COMPOSITE_MULTIPLE
                     }
            }
 
@@ -319,9 +319,9 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
            }
 
 
-__properties__ = { COMPOSIT_UNIQUE: CompositUniqueProperty,
+__properties__ = { COMPOSITE_UNIQUE: CompositeUniqueProperty,
                    SHARED_UNIQUE: SharedUniqueProperty,
-                   COMPOSIT_MULTIPLE: CompositMultipleProperty,
+                   COMPOSITE_MULTIPLE: CompositeMultipleProperty,
                    SHARED_MULTIPLE: SharedMultipleProperty }
 
 
