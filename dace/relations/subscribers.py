@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
+from pyramid.threadlocal import get_current_request
+from substanced.catalog import oid_from_resource
 from substanced.event import RootAdded
 from substanced.event import subscribe_removed
-from substanced.catalog import oid_from_resource
+from substanced.util import find_objectmap
 
 from dace.relations import get_relations_catalog
 from .interfaces import (
     IRelationAdded,
     IRelationModified,
-    IRelationDeleted,
     IRelationValue,
     )
 from .catalog import create_catalog
@@ -38,25 +39,17 @@ def update_relation(event):
     catalog.reindex_doc(objectid, relation)
 
 
-@subscriber(IRelationDeleted)
-def delete_relation(event):
-    relation = event.object
-    catalog = get_relations_catalog()
-    objectid = oid_from_resource(relation)
-    catalog.unindex_doc(objectid)
-
-
-# FIXME doesn't go in there
-@subscribe_removed
+@subscribe_removed()
 def object_deleted(event):
     registry = get_current_registry()
+    request = get_current_request()
+    objectmap = find_objectmap(request.root)
     ob = event.object
     catalog = get_relations_catalog()
     if catalog is None:
         # We don't have a Catalog installed in this part of the site
         return
 
-    # FIXME do we need this if we have the delete_relation subscriber?
     if IRelationValue.providedBy(ob):
         # We assume relations can't be source or targets of relations
         objectid = oid_from_resource(ob)
@@ -64,7 +57,7 @@ def object_deleted(event):
         return
 
     objectid = oid_from_resource(ob)
-    rels = catalog['source_id'].eq(objectid).execute().all()
+    rels = catalog['source_id'].eq(objectid).execute(resolver=objectmap.object_for).all()
     for rel in rels:
         registry.notify(RelationSourceDeleted(ob, rel))
         parent = rel.__parent__
@@ -73,7 +66,7 @@ def object_deleted(event):
         except KeyError:
             continue
 
-    rels = catalog['target_id'].eq(objectid).execute().all()
+    rels = catalog['target_id'].eq(objectid).execute(resolver=objectmap.object_for).all()
     for rel in rels:
         registry.notify(RelationTargetDeleted(ob, rel))
         parent = rel.__parent__
