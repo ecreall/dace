@@ -48,7 +48,7 @@ class Entity(Object):
     def getCreator(self):
         relations = find_relations({
             u'target_id': get_oid(self),
-            u'tag': u"created"})
+            u'tags': u"created"})
         return tuple(relations)[0].source
 
     def setCreator(self, creator, tag, index=-1):
@@ -67,7 +67,7 @@ class Entity(Object):
             tags = [t + tag for t in tags]
 
         opts = {u'target_id': get_oid(self)}
-        opts[u'tag'] = tags
+        opts[u'tags'] = tags
         for relation in find_relations(opts):
             yield relation
 
