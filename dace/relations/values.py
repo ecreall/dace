@@ -1,5 +1,11 @@
+import deform
+import colander
 from persistent import Persistent
 from substanced.util import find_objectmap
+from substanced.schema import Schema
+from substanced.content import content
+from substanced.property import PropertySheet
+
 from zope.interface import implementer, providedBy, Declaration
 
 from .interfaces import IRelationValue
@@ -8,7 +14,67 @@ from .interfaces import IRelationValue
 def _interfaces_flattened(interfaces):
     return [i.__identifier__ for i in Declaration(*interfaces).flattened()]
 
+@colander.deferred
+def missing_target(node, kw):
+    context = node.bindings['context']
+    return context.target_id
 
+@colander.deferred
+def missing_source(node, kw):
+    context = node.bindings['context']
+    return context.source_id
+
+class RelationValueSchema(Schema):
+
+    relation_id = colander.SchemaNode(
+                colander.String(),
+                widget = deform.widget.TextInputWidget(),
+                title='name'
+                )
+
+    reftype = colander.SchemaNode(
+                colander.String(),
+                widget = deform.widget.TextInputWidget(),
+                title='Type'
+                )
+
+    source_id = colander.SchemaNode(
+                colander.String(),
+                widget = deform.widget.TextInputWidget(readonly=True),
+                title='Source',
+                missing=missing_source
+                )
+
+    target_id = colander.SchemaNode(
+                colander.String(),
+                widget = deform.widget.TextInputWidget(readonly=True),
+                title='Target',
+                missing=missing_source
+                )
+
+    tags = colander.SchemaNode(
+                colander.Sequence(),
+                colander.SchemaNode(
+                    colander.String(),
+                    name="tag",
+                    widget=deform.widget.TextInputWidget()
+                    ),
+                widget=deform.widget.SequenceWidget(),
+                title='Tags'
+                )
+
+
+class RelationValuePropertySheet(PropertySheet):
+    schema = RelationValueSchema()
+
+
+@content(
+    'relationvalue',
+    icon='glyphicon glyphicon-align-left',
+    propertysheets=(
+        ('Basic', RelationValuePropertySheet),
+        ),
+    )
 @implementer(IRelationValue)
 class RelationValue(Persistent):
 

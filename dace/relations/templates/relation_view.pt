@@ -1,0 +1,18 @@
+<div metal:use-macro="main_template">
+   <div metal:fill-slot="main">
+    <div class="panel panel-primary" >
+        <div class="panel-heading">${relation_id}</div>
+         <div class="panel-body">
+            <h3>${relation_id.capitalize()} <span class="label label-default" tal:condition="reftype">${reftype}</span></h3>
+            <p class="text-muted" tal:condition="tags">
+                <small tal:repeat="tag tags" >${tag}</small>
+            </p>
+            <h4>Source:</h4>
+            <a tal:condition="source" tal:attributes="href source['url']" >${source['title']}</a>
+
+            <h4>Target:</h4>
+            <a tal:condition="target" tal:attributes="href target['url']" >${target['title']}</a>
+         </div>
+     </div>
+   </div>
+</div>
