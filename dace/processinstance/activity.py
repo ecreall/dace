@@ -8,9 +8,12 @@ from pyramid.interfaces import ILocation
 
 from substanced.util import get_oid
 
-from pontus.interfaces import IFormView
-from pontus.core import Behavior, Validator, ValidationError
-from .core import EventHandler, WorkItemBehavior
+from .core import (
+        EventHandler,
+        WorkItemBehavior,
+        Behavior,
+        Validator,
+        ValidationError)
 from .lock import LockableElement
 from dace.util import getBusinessAction
 from dace.interfaces import (
@@ -192,38 +195,17 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     def content(self, obj):
         content = u''
-        registry = get_current_registry()
-        view = registry.getMultiAdapter((obj, self.request), name=self.view_name)
-
-        if not view.__providedBy__(IFormView):
-            return None
-
-        view.update()
-        content = (content + view.content() )
+        # TODO url
         return content
 
     def studyContent(self, obj):
         content = u''
-        registry = get_current_registry()
-        view = registry.getMultiAdapter((obj, self.request), name=self.study.__view_name__)
-
-        if not view.__providedBy__(IFormView):
-            return None
-
-        view.update()
-        content = (content + view.content())
+        # TODO url
         return content
 
     def reportContent(self, obj):
         content = u''
-        registry = get_current_registry()
-        view = registry.getMultiAdapter((obj, self.request), name=self.report.__view_name__)
-
-        if not view.__providedBy__(IFormView):
-            return None
-
-        view.update()
-        content = (content + view.content())
+        # TODO url
         return content
 
     def validate(self, context, request):

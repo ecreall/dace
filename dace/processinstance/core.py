@@ -97,6 +97,54 @@ class FlowNode(BPMNElement, Persistent):
         self.process.transition(self, transitions)
 
 
+class ValidationError(Exception):
+    principalmessage = u""
+    causes = []
+    solutions = []
+    type = 'danger'
+    template='templates/message.pt'
+
+
+class Validator(object):
+
+    @classmethod
+    def validate(cls, context, request ,args=None):
+        return True
+
+
+class Behavior(object):
+
+    behaviorid = NotImplemented
+    title = NotImplemented
+    description = NotImplemented
+
+    @classmethod
+    def get_instance(cls, context, request, args=None):
+        return cls() #raise ValidationError if no action
+
+    @classmethod
+    def get_validator(cls):
+        return Validator #defaultvalidator
+
+    def validate(self, context, request, args=None):
+        return True #action instance validation
+
+    def before_execution(self, context, request):
+        pass
+
+    def start(self, context, request, appstruct):
+        pass
+
+    def execute(self, context, request, appstruct):
+        pass
+
+    def after_execution(self, context, request):
+        pass
+
+    def redirect(self, context, request, appstruct):
+        pass
+
+
 class WorkItemBehavior(object):
 
     def prepare(self):

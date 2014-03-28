@@ -7,7 +7,6 @@ from substanced.util import get_oid
 
 from dace.interfaces import INameChooser, IObject
 from dace.relations import connect, disconnect, find_relations
-from pontus.visual import VisualisableElement
 
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
 COMPOSITE_UNIQUE = 'cu'
@@ -42,9 +41,6 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
         if keyvalue is not None and currentvalue == value:
             return
 
-        if initiator and opposite is not None:
-            value.__class__.properties[opposite]['add'](value, self, False)
-
         if keyvalue is not None:
             myproperty['del'](self, currentvalue)
 
@@ -59,6 +55,8 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
         self.add(name, value)
         value.__property__ = propertyref
         setattr(self, key, name)
+        if initiator and opposite is not None:
+            value.__class__.properties[opposite]['add'](value, self, False)
 
     def _del(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
@@ -116,9 +114,6 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
         if isunique and value in myproperty['get'](self):
             return
 
-        if initiator and opposite is not None:
-            value.__class__.properties[opposite]['add'](value, self, False)
-
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
 
@@ -127,6 +122,9 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
         value.__property__ = propertyref
         contents_keys.append(name)
         setattr(self, keys, contents_keys)
+
+        if initiator and opposite is not None:
+            value.__class__.properties[opposite]['add'](value, self, False)
 
     def _set(self, value, initiator=True):
         
@@ -327,12 +325,11 @@ __properties__ = { COMPOSITE_UNIQUE: CompositeUniqueProperty,
                    SHARED_MULTIPLE: SharedMultipleProperty }
 
 
-class Object(VisualisableElement, Folder):
+class Object(Folder):
 
     implements(IObject)
     properties_def = {}
-    template = 'pontus:templates/visualisable_templates/object.pt'
-
+    
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, 'properties'):
             cls.properties = {}
@@ -342,7 +339,6 @@ class Object(VisualisableElement, Folder):
         return new_instance
 
     def __init__(self, **kwargs):
-        VisualisableElement.__init__(self, **kwargs)
         Folder.__init__(self)
         self.__property__ = None
         for _property in self.properties_def.keys():
@@ -396,10 +392,3 @@ class Object(VisualisableElement, Folder):
                 new_val = appstruct[name]
                 if existing_val != new_val:
                     setattr(self, name, new_val)
-
-    def url(self, request, view=None, args=None):
-        if view is None:
-            #generalement c est la vue de l index associer qu'il faut retourner
-            return request.mgmt_path(self, '@@index')
-        else:
-            return request.mgmt_path(self, '@@'+view)
