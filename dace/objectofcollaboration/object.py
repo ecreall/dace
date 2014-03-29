@@ -50,6 +50,8 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
+        else:
+            value.__parent__.remove(value.__name__)
  
         name = INameChooser(self).chooseName(u'', value)
         self.add(name, value)
@@ -116,6 +118,8 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
+        else:
+            value.__parent__.remove(value.__name__)
 
         name = INameChooser(self).chooseName(u'', value)
         self.add(name, value)
@@ -159,9 +163,9 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             if initiator and opposite is not None:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
-            if self.__contains__(v.name):
-                contents_keys.remove(v.name)
-                self.remove(v.name)
+            if self.__contains__(v.__name__):
+                contents_keys.remove(v.__name__)
+                self.remove(v.__name__)
 
     def init(self):
         if not hasattr(self, keys):
@@ -249,7 +253,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         opts = {u'source_id': get_oid(self)}
         opts[u'relation_id'] = propertyref
         try:
-            return [r for r in find_relations(opts).all()]
+            return [r.target for r in find_relations(opts).all()]
         except Exception:
             return None
 
@@ -265,7 +269,6 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         if initiator and opposite is not None:
             value.__class__.properties[opposite]['add'](value, self, False)
 
-        myproperty['del'](self, currentvalue)
         kw = {}
         kw['relation_id'] = propertyref           
         connect(self, value, **kw)

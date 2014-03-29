@@ -1,5 +1,5 @@
 from substanced.sdi import mgmt_view
-from substanced.sdi import RIGHT
+from substanced.sdi import LEFT
 
 from .values import RelationValue
 
@@ -8,7 +8,8 @@ from .values import RelationValue
 @mgmt_view(
     name = 'Vue',
     context=RelationValue,
-    renderer='templates/relation_view.pt'
+    renderer='templates/relation_view.pt',
+    tab_near=LEFT
     )
 class RelationValueView(object):
 
