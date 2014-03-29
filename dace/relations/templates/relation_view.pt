@@ -7,11 +7,9 @@
             <p class="text-muted" tal:condition="tags">
                 <small tal:repeat="tag tags" >${tag}</small>
             </p>
-            <h4>Source:</h4>
-            <a tal:condition="source" tal:attributes="href source['url']" >${source['title']}</a>
-
-            <h4>Target:</h4>
-            <a tal:condition="target" tal:attributes="href target['url']" >${target['title']}</a>
+            <h3>
+               <a tal:condition="source" tal:attributes="href source['url']" >${source['title']}</a>  <span class="glyphicon glyphicon-arrow-right">  </span> <a tal:condition="target" tal:attributes="href target['url']" >${target['title']}</a>
+           </h3>
          </div>
      </div>
    </div>
