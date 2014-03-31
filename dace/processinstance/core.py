@@ -108,7 +108,7 @@ class ValidationError(Exception):
 class Validator(object):
 
     @classmethod
-    def validate(cls, context, request ,args=None):
+    def validate(cls, context, request, **kw):
         return True
 
 
@@ -119,29 +119,29 @@ class Behavior(object):
     description = NotImplemented
 
     @classmethod
-    def get_instance(cls, context, request, args=None):
+    def get_instance(cls, context, request, **kw):
         return cls() #raise ValidationError if no action
 
     @classmethod
-    def get_validator(cls):
+    def get_validator(cls, **kw):
         return Validator #defaultvalidator
 
-    def validate(self, context, request, args=None):
+    def validate(self, context, request, **kw):
         return True #action instance validation
 
-    def before_execution(self, context, request):
+    def before_execution(self, context, request, **kw):
         pass
 
-    def start(self, context, request, appstruct):
+    def start(self, context, request, appstruct, **kw):
         pass
 
-    def execute(self, context, request, appstruct):
+    def execute(self, context, request, appstruct, **kw):
         pass
 
-    def after_execution(self, context, request):
+    def after_execution(self, context, request, **kw):
         pass
 
-    def redirect(self, context, request, appstruct):
+    def redirect(self, context, request, **kw):
         pass
 
 

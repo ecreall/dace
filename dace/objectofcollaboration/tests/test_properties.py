@@ -1,51 +1,10 @@
-from pyramid.threadlocal import get_current_registry
-from substanced.util import get_oid, is_service
-
-from dace.relations import connect, disconnect, RelationValue
-from dace.relations import find_relations
-from dace.relations import get_relations_catalog
-from dace.relations import get_relations_container
 from dace.testing import FunctionalTests
-from dace.objectofcollaboration.object import (
-                COMPOSITE_UNIQUE, 
-                SHARED_UNIQUE,
-                COMPOSITE_MULTIPLE,
-                SHARED_MULTIPLE,
-                Object)
-
-
-class Object1(Object):
-    properties_def = {'composition_u':(COMPOSITE_UNIQUE, 'schared2_u', False),
-                      'composition_m':(COMPOSITE_MULTIPLE, 'schared21_u', False),
-                      'schared_u':(SHARED_UNIQUE, 'schared22_u', False),
-                      'schared_m':(SHARED_MULTIPLE, 'schared23_u', False)}
-
-    def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
-
-
-class Object2(Object):
-    properties_def = {'schared2_u':(SHARED_UNIQUE, 'composition_u', False),
-                      'schared21_u':(SHARED_UNIQUE, 'composition_m', False),
-                      'schared22_u':(SHARED_UNIQUE, 'schared_u', False),
-                      'schared23_u':(SHARED_UNIQUE, 'schared_m', False)}
-
-    def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
+from .example.objects import Object1, Object2
 
 
 class TestProperties(FunctionalTests):
 
-    def test_properties_creation(self):
-        self.assertIn('relations', self.app)
-        self.assertIn('relations_container', self.app)
-        catalog = get_relations_catalog()
-        self.assertIsNotNone(catalog)
-        self.assertTrue(is_service(get_relations_catalog()))
-        self.assertTrue(is_service(get_relations_container()))
-
     def _create_objects_cu_su(self):
-        registry = get_current_registry()
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
         self.app['object3'] = Object1()
@@ -88,7 +47,6 @@ class TestProperties(FunctionalTests):
         self.assertIs(object2.__parent__, None)
 
     def _create_objects_cm_su(self):
-        registry = get_current_registry()
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
         self.app['object3'] = Object2()
@@ -131,7 +89,6 @@ class TestProperties(FunctionalTests):
 
 
     def _create_objects_su_su(self):
-        registry = get_current_registry()
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
         self.app['object3'] = Object2()
@@ -156,7 +113,6 @@ class TestProperties(FunctionalTests):
 
 
     def _create_objects_sm_su(self):
-        registry = get_current_registry()
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
         self.app['object3'] = Object2()

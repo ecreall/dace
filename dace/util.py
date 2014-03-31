@@ -4,7 +4,7 @@ from zope.annotation.interfaces import IAnnotations, Interface
 from zope.interface import implements
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry, get_current_request
-from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd
+from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd, get_oid
 from .interfaces import (
         IEntity,
         IProcessDefinition,

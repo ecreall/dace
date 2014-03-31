@@ -50,7 +50,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
-        else:
+        elif getattr(value,'__parent__'):
             value.__parent__.remove(value.__name__)
  
         name = INameChooser(self).chooseName(u'', value)
@@ -118,7 +118,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
-        else:
+        elif getattr(value,'__parent__'):
             value.__parent__.remove(value.__name__)
 
         name = INameChooser(self).chooseName(u'', value)
