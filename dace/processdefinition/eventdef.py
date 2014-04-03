@@ -1,6 +1,8 @@
-from .core import FlowNodeDefinition
+from .core import FlowNodeDefinition, Path
 from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
     TimerEvent, SignalEvent, IntermediateCatchEvent, IntermediateThrowEvent, ConditionalEvent)
+from dace.processinstance.workitem import StartWorkItem
+
 
 
 class EventDefinition(FlowNodeDefinition):
@@ -18,6 +20,17 @@ class EventDefinition(FlowNodeDefinition):
 class StartEventDefinition(EventDefinition):
     factory = StartEvent
 
+    def start_process(self, transaction):
+        if self.eventKind is None:
+            for transition in self.outgoing:
+                if transition.condition(None):
+                    nodedef = self.process[transition.target.__name__]
+                    initial_path = Path(transaction)
+                    startable_paths = nodedef.find_startable_paths(initial_path, self)
+                    for startable_path in startable_paths:
+                        swi = StartWorkItem(startable_path)
+                        yield swi
+                
 
 class IntermediateThrowEventDefinition(EventDefinition):
     factory = IntermediateThrowEvent

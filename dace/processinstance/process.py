@@ -7,12 +7,14 @@ import transaction
 
 from .activity import SubProcess
 from .core import ProcessStarted
+from dace.processdefinition.core import Transaction
 from dace.objectofcollaboration.entity import Entity
 from .gateway import ExclusiveGateway
 from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
 from dace.relations import find_relations, connect
 from .transition import Transition
 from dace.util import find_catalog
+from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 
 
 class WorkflowData(Persistent):
@@ -20,8 +22,15 @@ class WorkflowData(Persistent):
     """
 
 
-class Process(Entity, Persistent):
+class Process(Entity):
     implements(IProcess)
+
+    properties_def = {'nodes': (COMPOSITE_MULTIPLE, None, False)}
+
+    @property
+    def nodes(self):
+        return self.getproperty('nodes')
+
     _started = False
     _finished = False
     # l'instance d'activite (SubProcess) le manipulant
@@ -29,11 +38,13 @@ class Process(Entity, Persistent):
     def __init__(self, definition, startTransition, **kwargs):
         super(Process, self).__init__(**kwargs)
         self.id = definition.id
+        self.global_transaction = Transaction()
         self.startTransition = startTransition
-        self.nodes = {}
-        for nodedef in definition.activities.values():
+        for nodedef in definition.nodes:
             node = nodedef.create(self)
-            self.nodes[nodedef.id] = node
+            node.id = nodedef.id
+            node.__name__ = nodedef.__name__
+            self.addtoproperty('nodes', node)
         self._p_changed = True
 
         self.workflowRelevantData = WorkflowData()
@@ -57,6 +68,11 @@ class Process(Entity, Persistent):
     def isSubProcess(self):
         return self.definition.isSubProcess
 
+    def replay_path(self, path, transaction):
+        for transition in path.transitions:
+            node = self[transition.source.__name__]
+            node.replay_path(path, transaction)
+
     def getWorkItems(self):
         dace_catalog = find_catalog('dace')
 
@@ -64,20 +80,18 @@ class Process(Entity, Persistent):
         object_provides_index = dace_catalog['object_provides']
 
         p_uid = get_oid(self, None)
-        # TODO adapt query
         query = object_provides_index.any((IWorkItem.__identifier__,)) & \
                 process_inst_uid_index.any((int(p_uid),))
         workitems = query.execute().all()
+        result = {}
+        for wi in workitems:
+            if isinstance(wi.node, SubProcess):
+                result.update(wi.node.subProcess.getWorkItems())
+            if wi.node.id in result:
+                raise Exception("We have several workitems for %s" % wi.node.id)
+            result[wi.node.id] = wi
 
-        d = {}
-        for w in workitems:
-            if isinstance(w.node, SubProcess):
-                d.update(w.node.subProcess.getWorkItems())
-            if w.node.id in d:
-                raise Exception("We have several workitems for %s" % w.node.id)
-            d[w.node.id] = w
-
-        return d
+        return result
 
 #        return dict([(w.node.id, w) for w in workitems])
 
@@ -100,30 +114,33 @@ class Process(Entity, Persistent):
 
         registry = get_current_registry()
         registry.notify(ProcessStarted(self))
-        self.transition(None, (self.startTransition, ))
+        #self.transition(None, (self.startTransition, ))
 
     def refreshXorGateways(self):
         for node in self.nodes:
             if isinstance(node, ExclusiveGateway):
                 node._refreshWorkItems()
 
-    def transition(self, node, transitions):
+    def play_transitions(self, node, transitions, transaction):
         registry = get_current_registry()
         if transitions:
             for transition in transitions:
-                next = self.nodes[transition.to]
+                next = self[transition.target.__name__]
                 registry.notify(Transition(node, next))
                 next.prepare()
 
             for transition in transitions:
-                next = self.nodes[transition.to]
-                next(transition)
+                next = self[transition.target.__name__]
+                starttransaction = self.global_transaction.start_subtransaction('Start', (transition,))
+                next(starttransaction)
                 if self._finished:
                     break
 
     def __repr__(self):
         return "Process(%r)" % self.id
 
+
+############################################################################# gestion des relation
     def getLastIndex(self, tag):
         if not hasattr(self.workflowRelevantData, tag + u"_index"):
             setattr(self.workflowRelevantData, tag + u"_index", 0)

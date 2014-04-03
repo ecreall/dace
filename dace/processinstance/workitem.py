@@ -6,9 +6,11 @@ from zope.interface import implements, implementedBy
 from zope.component.interfaces import IFactory
 
 from substanced.event import ObjectAdded, ObjectRemoved
+from dace.util import find_service
 
 from dace.interfaces import (
-    IWorkItem, IProcessDefinition, IRuntime, IStartWorkItem, IDecisionWorkItem)
+    IWorkItem, IProcessDefinition, IStartWorkItem, IDecisionWorkItem)
+from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 from .lock import LockableElement
 
 
@@ -28,51 +30,49 @@ class WorkItemFactory(object):
 class StartWorkItem(LockableElement):
     implements(IStartWorkItem)
 
-    def __init__(self, application, gwdef, node_ids):
-        self.application = application
-        self.process_identifier = gwdef.process.id
-        self.node_ids = node_ids
+    def __init__(self, startable_path):
+        self.path = startable_path
+        self.process_id = self.path.source.process.id
+        self.activity = self.path.target
+        self.node_id = self.activity.id
+        self.node_name = self.activity.__name__
+
         self.process = None
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
-                self.process_identifier)
-        self.actions = PersistentList()
-        for a in pd.activities[self.node_ids[-1]].contexts:
+                self.process_id)
+        self.actions = []
+        for a in self.activity.contexts:
             self.actions.append(a(self))
 
-    @property
-    def process_id(self):
-        return self.process_identifier
+    def _pathdefinition_to_pathinstance(self, path, process):
+        newpath = path.clone()
+        newpath.t = ()
+        for node in path.nodes:
+            newpath.add_nodes(process[node.__name__])
 
-    @property
-    def node_id(self):
-        return self.node_ids[-1]
+        return newpath    
 
     def start(self, *args):
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
-                self.process_identifier)
+                self.process_id)
         proc = pd()
-        proc._v_toreplay = self.node_ids
-        proc._v_toreplay_app = self.application
-        proc._v_toreplay_context = getattr(self, 'context', None)
-
-        runtime = registry.getUtility(IRuntime)
-        runtime.addprocesses(proc)
-        definition = pd.applications[self.application]
-        data = proc.workflowRelevantData
-        for parameter in definition.parameters:
-            if parameter.input:
-                arg, args = args[0], args[1:]
-                setattr(data, parameter.__name__, arg)
-        if args:
-            raise TypeError("Too many arguments. Expected %s. got %s" %
-                            (len(definition.parameters), len(args)))
+        runtime = find_service('runtime')
+        runtime.addtoproperty('processes', proc)
         proc.start()
+        start_transaction = proc.global_transaction.start_subtransaction('Start')
+        proc[self.path.source.__name__].start(start_transaction)
+        #pathinstance = self._pathdefinition_to_pathinstance(self.path, proc)
+        replay_transaction = proc.global_transaction.start_subtransaction('Replay')
+
+        proc.replay_path(self.path, replay_transaction)
+        proc.global_transaction.clean()
+        wi = proc[self.path.target.__name__].workitems[0]
         self.process = proc
-        return proc
+        return wi, proc
 
     def lock(self, request):
         pass
@@ -87,25 +87,27 @@ class StartWorkItem(LockableElement):
         # incoming transition is already checked
         return True
 
+    def replay_path(self):
+        pass
 
-class BaseWorkItem(LockableElement, Persistent):
+
+class BaseWorkItem(LockableElement, Object):
     implements(ILocation)
 
+    properties_def = {'actions': (COMPOSITE_MULTIPLE, None, False)}
     context = None
-    __parent__ = None
 
     @property
-    def __name__(self):
-        return self.id
+    def actions(self):
+        return self.getproperty('actions')
 
     def __init__(self, node):
+        super(BaseWorkItem, self).__init__()
         self.node = node
-        self.actions = PersistentList()
+        actions = []
         for a in node.definition.contexts:
-            self.actions.append(a(self))
-        registry = get_current_registry()
-        for action in self.actions:
-            registry.notify(ObjectAdded(action))
+            actions.append(a(self))
+        self.setproperty('actions', actions)
 
     @property
     def process_id(self):
@@ -122,29 +124,12 @@ class BaseWorkItem(LockableElement, Persistent):
     def validate(self):
         raise NotImplementedError
 
-    def remove(self):
-        registry = get_current_registry()
-        for a in self.actions:
-            registry.notify(ObjectRemoved(a))
-        registry.notify(ObjectRemoved(self))
-        # This is used in "system" thread to not process the action
-        # The gateway workitems were removed by a previous action.
-        self._v_removed = True
-        self.__parent__ = None
-
 
 class WorkItem(BaseWorkItem):
     """This is subclassed in generated code.
     """
     implements(IWorkItem)
 
-    def _get_parent(self):
-        return self.node
-
-    def _set_parent(self, value):
-        self.node = None
-
-    __parent__ = property(_get_parent, _set_parent)
 
     def __init__(self, node):
         super(WorkItem, self).__init__(node)
@@ -160,7 +145,7 @@ class WorkItem(BaseWorkItem):
 
         # we don't have incoming transition it's a subprocess
         transition = [t for t in node_def.incoming
-                if activity_id == t.to][0]
+                if activity_id == t.target.id][0]
         proc = self.node.process
         return not transition.sync or transition.condition(proc)
 
@@ -168,23 +153,19 @@ class WorkItem(BaseWorkItem):
 class DecisionWorkItem(BaseWorkItem):
     implements(IDecisionWorkItem)
 
-    def _get_parent(self):
-        return self.gw
+    replay_transaction = None
 
-    def _set_parent(self, value):
-        self.gw = None
-
-    __parent__ = property(_get_parent, _set_parent)
-
-    def __init__(self, application, gw, node_ids, node):
-        self.application = application
-        self.gw = gw
-        self.node_ids = node_ids
+    def __init__(self, path, node):
+        self.path = path
         super(DecisionWorkItem, self).__init__(node)
 
     def start(self, *args):
-        results = args
-        self.gw.workItemFinished(self, *results)
+        self.replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
+        self.process.replay_path(self.path, self.replay_transaction)
+        wi = self.process[self.path.target.__name__].workitems[0]
+        return wi
+        #results = args
+        #self.path.source.workItemFinished(self, *results)
 
     def validate(self):
         """If all transitions (including incoming TODO) are async, return True
@@ -193,19 +174,23 @@ class DecisionWorkItem(BaseWorkItem):
         """
         transitions = []
         # TODO transitions.append(self.gw.incoming_transition)
-        node_def = self.gw.definition
-        proc_def = self.gw.process.definition
-        for node_id in self.node_ids:
+        gw  = self.path.source
+        node_def = gw.definition
+        proc_def = gw.process.definition
+        for node in self.path.nodes:
             transition = [t for t in node_def.outgoing
-                if node_id == t.to][0]
+                if node.id == t.target.id][0]
             transitions.append(transition)
-            node_def = proc_def.activities[transition.to]
+            node_def = proc_def[transition.target.__name__]
         if not [t for t in transitions if t.sync]:
             return True
         else:
-            proc = self.gw.process
+            proc = gw.process
             for transition in transitions:
                 if not transition.condition(proc):
                     return False
 
         return True
+
+    def replay_path(self):
+        pass

@@ -5,6 +5,7 @@ import zmq.eventloop.ioloop
 import transaction
 
 from . import log
+from dace.objectofcollaboration.runtime import Runtime
 
 
 class ConsumeTasks(threading.Thread):
@@ -107,3 +108,4 @@ def add_catalogs(event):
     root = event.object
     catalogs = find_service(root, 'catalogs')
     catalog = catalogs.add_catalog('dace')
+    root['runtime'] = Runtime()

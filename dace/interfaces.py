@@ -8,7 +8,6 @@ from zope.interface import Interface, Attribute
 from substanced.interfaces import IPrincipal, IFolder
 #from dolmen.file import ImageField 
 #from z3c.schema.email import RFC822MailAddress
-#from zope.container.constraints import containers
 #from zope.i18nmessageid import MessageFactory
 
 #_ = MessageFactory("menhir.contenttype.user")
@@ -311,13 +310,3 @@ class IProcessFinished(Interface):
 
 class IBusinessAction(Interface):
     pass
-
-
-class INameChooser(Interface):
-
-    def checkName(name, object):
-        pass
-
-    def chooseName(name, object):
-        pass
-

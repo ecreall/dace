@@ -36,7 +36,8 @@ class FunctionalTests(unittest.TestCase):
         app = main({}, **settings)
         self.db = app.registry._zodb_databases['']
         request = DummyRequest()
-        testing.setUp(registry=app.registry, request=request)
+        self.config = testing.setUp(registry=app.registry, request=request)
+        self.registry = self.config.registry
         self.app = root_factory(request)
         request.root = self.app
 #        from webtest import TestApp

@@ -10,66 +10,57 @@ import thread
 from dace.interfaces import IRuntime, IProcessStarted, IProcessFinished
 from .workitem import DecisionWorkItem, StartWorkItem
 from dace import log
-
-
-#TODO
-#class RuntimeNameChooser(NameChooser, grok.Adapter):
-#    grok.context(IRuntime)
-#    grok.implements(INameChooser)
-
+from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 
 
 class BPMNElement(object):
     def __init__(self, definition):
         self.id = definition.id
 
-class FlowNode(BPMNElement, Persistent):
+class FlowNode(BPMNElement, Object):
     implements(ILocation)
-    workitems = None
+
+    properties_def = {'workitems': (COMPOSITE_MULTIPLE, None, False)}
 
     @property
-    def __parent__(self):
-        return self.process
-
-    @property
-    def __name__(self):
-        return self.id
+    def workitems(self):
+        return self.getproperty('workitems')
 
     def __init__(self, process, definition):
-        super(FlowNode, self).__init__(definition)
+        BPMNElement.__init__(self, definition)
+        Object.__init__(self)
         self.process = process
-        self.workitems = {}
 
     def prepare(self):
         registry = get_current_registry()
         registry.notify(ActivityPrepared(self))
 
-    def __call__(self, transition):
-        self.start(transition)
+    def __call__(self, transaction):
+        self.start(transaction)
 
-    def start(self, transition):
+    def find_executable_paths(self, source_path, source):
+        transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
+        source_path.add_transition(transition_path)
+        yield source_path
+
+    def start(self, transaction):
         raise NotImplementedError
+
+    def play(self, transitions, transaction):
+        registry = get_current_registry()
+        registry.notify(ActivityFinished(self))
+        self.process.play_transitions(self, transitions, transaction)
+
+    def replay_path(self, path, transaction):
+        pass
 
     def stop(self):
         pass
 
     @property
     def definition(self):
-        return self.process.definition.activities[self.id]
+        return self.process.definition[self.__name__]
 
-    def _createWorkItems(self, gw, node_ids):
-        for application, formal, actual in self.definition.applications:
-            workitem = DecisionWorkItem(application, gw, node_ids, self)
-            yield workitem, application, formal, actual
-
-    def _define_next_replay_node(self):
-        self._v_next_replay_node = None
-        if hasattr(self.process, '_v_toreplay') and \
-           self.process._v_toreplay and \
-           self.id == self.process._v_toreplay[0]:
-            self.process._v_toreplay = self.process._v_toreplay[1:]
-            if self.process._v_toreplay:
-                self._v_next_replay_node = self.process._v_toreplay[0]
 
     def __repr__(self):
         return "%s(%r)" % (
@@ -78,24 +69,66 @@ class FlowNode(BPMNElement, Persistent):
             self.id
             )
 
-    def _finish(self):
+class BehavioralFlowNode(object):
+
+
+    def _get_workitem(self):
+        if self.workitems:
+            return self.workitems[0]
+
+        workitems = self.process.getWorkItems()
+        if self.id in workitems.keys():
+            wi = workitems[self.id]
+            if isinstance(wi, DecisionWorkItem):
+                wi = wi.start()
+                if wi is not None:
+                    self.addtoproperty('workitems', wi)
+
+                return wi
+
+    def replay_path(self, path, transaction):
+        workitem = None
+        if self.workitems:
+            workitem = self.workitems[0]
+
+        self.finish_behavior(workitem, transaction)
+
+    def prepare(self):
         registry = get_current_registry()
-        registry.notify(ActivityFinished(self))
+        registry.notify(ActivityPrepared(self))
+        factoryname = self.definition.id
+        workitem = createObject(factoryname, self)
+        workitem.id = 1
+        workitem.__name__ = str(1)
+        self.addtoproperty('workitems', workitem)
 
-        definition = self.definition
+    def start(self, transaction):
+        registry = get_current_registry()
+        registry.notify(ActivityStarted(self))
+        paths = transaction.get_global_transaction().find_allsubpaths_for(self, 'Start')
+        if paths:
+            for p in paths:
+                del p
 
-        transitions = []
-        for transition in definition.outgoing:
-            bypass_condition = hasattr(self, '_v_next_replay_node') and \
-                    transition.to == self._v_next_replay_node
-            # bypass condition on replay mode
-            if bypass_condition or \
-                    transition.sync or \
-                    transition.condition(self.process):
-                transitions.append(transition)
+    def finish_behavior(self, work_item, transaction):
+        if work_item is not None:
+	    self.delproperty('workitems', work_item)
+            # If work_item._p_oid is not set, it means we created and removed it
+            # in the same transaction, so no need to mark the node as changed.
+            if work_item._p_oid is None:
+                self._p_changed = False
+            else:
+                self._p_changed = True
 
-        self.process.transition(self, transitions)
+        registry = get_current_registry()
+        registry.notify(WorkItemFinished(work_item))
+        if not self.workitems:
+            allowed_transitions = []
+            for transition in self.definition.outgoing:
+                if transition.sync or transition.condition(self.process):
+                    allowed_transitions.append(transition)
 
+            self.play(allowed_transitions, transaction)
 
 class ValidationError(Exception):
     principalmessage = u""
@@ -145,109 +178,6 @@ class Behavior(object):
         pass
 
 
-class WorkItemBehavior(object):
-
-    def prepare(self):
-        registry = get_current_registry()
-        registry.notify(ActivityPrepared(self))
-        self._create_workitem()
-
-    def _create_workitem(self):
-        """Used for activity in start and in event in prepare method.
-        """
-        workitems = {}
-        if self.definition.applications:
-            i = 0
-            for application, formal, actual in self.definition.applications:
-                factoryname = self.process.id + '.' + application
-                workitem = createObject(factoryname, self)
-                i += 1
-                workitem.id = i
-                workitems[i] = workitem, application, formal, actual
-
-        self.workitems = workitems
-        # Indexes workitems
-        for wi in self.workitems.values():
-            registry = get_current_registry()
-            registry.notify(ObjectAdded(wi[0]))
-
-    def _clear_workitem(self):
-        """Used only by event in stop method.
-        """
-        for wi in self.workitems.values():
-            wi[0].remove()
-        self.workitems.clear()
-
-    def start(self, transition):
-        self._define_next_replay_node()
-        registry = get_current_registry()
-        registry.notify(ActivityStarted(self))
-
-        if self.workitems:
-            if not hasattr(self.process, '_v_toreplay_app'):
-                return
-            replay_app = self.process._v_toreplay_app
-            for workitem, app, formal, actual in self.workitems.values():
-                if app == replay_app:
-                    delattr(self.process, '_v_toreplay_app')
-                    args = []
-                    for parameter, name in zip(formal, actual):
-                        if parameter.input:
-                            args.append(
-                                getattr(self.process.workflowRelevantData, name))
-                            delattr(self.process.workflowRelevantData, name)
-                    # If form.wi is a start workitem, replace it with real one.
-                    if args:
-                        # TODO WizardStep doesn't exist
-                        if isinstance(args[0], WizardStep):
-                            form = args[0].parent
-                        else:
-                            form = args[0]
-
-                        # form.wi can be a StartWorkItem or DecisionWorkItem
-                        # replace it with the real workitem
-                        form.wi = workitem
-                    if hasattr(self.process, '_v_toreplay_context'):
-                        workitem.context = self.process._v_toreplay_context
-                    workitem.start(*args)
-        else:
-            # Since we don't have any work items, we're done
-            self._finish()
-
-    def workItemFinished(self, work_item, *results):
-        unused, app, formal, actual = self.workitems.pop(work_item.id)
-        # The work_item is not in self.workitems but work_item.__parent__
-        # is still referencing the node
-        work_item.remove()
-        # If work_item._p_oid is not set, it means we created and removed it
-        # in the same transaction, so no need to mark the node as changed.
-        if work_item._p_oid is None:
-            self._p_changed = False
-        else:
-            self._p_changed = True
-        res = results
-        for parameter, name in zip(formal, actual):
-            # Delete args before committing changes
-            # We can't save a FileUpload field or a form instance...
-            if parameter.input:
-                try:
-                    delattr(self.process.workflowRelevantData, name)
-                except AttributeError:
-                    pass
-            if parameter.output:
-                v = res[0]
-                res = res[1:]
-                setattr(self.process.workflowRelevantData, name, v)
-
-        if res:
-            raise TypeError("Too many results")
-
-        registry = get_current_registry()
-        registry.notify(WorkItemFinished(
-            work_item, app, actual, results))
-
-        if not self.workitems:
-            self._finish()
 
 
 class EventHandler(FlowNode):
@@ -280,14 +210,11 @@ class ProcessFinished:
 
 class WorkItemFinished:
 
-    def __init__(self, workitem, application, parameters, results):
+    def __init__(self, workitem):
         self.workitem =  workitem
-        self.application = application
-        self.parameters = parameters
-        self.results = results
 
     def __repr__(self):
-        return "WorkItemFinished(%r)" % self.application
+        return "WorkItemFinished(%r)" % self.node_id
 
 
 class ActivityPrepared:

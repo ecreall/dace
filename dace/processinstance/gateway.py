@@ -3,178 +3,168 @@ from substanced.event import ObjectAdded
 
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event
+from .workitem import DecisionWorkItem
+from dace.processdefinition.core import Path, Transaction
 
 
 class Gateway(FlowNode):
 
     def _refreshWorkItems(self):
         # Unindexes workitems
-        for wi in self.workitems.values():
-            wi[0].remove()
-        self.workitems.clear()
-        workitems = {}
+        self.setproperty('workitems', [])
         i = 0
-        for workitem_tuple in self._createWorkItems(self, ()):
+        for workitem in self._createWorkItems(self, ()):
             i += 1
-            workitem_tuple[0].id = i
-            workitems[i] = workitem_tuple
-
-        self.workitems = workitems
-        # Indexes workitems
-        registry = get_current_registry()
-        for wi in self.workitems.values():
-            registry.notify(ObjectAdded(wi[0]))
-
-    def createWorkItems(self, gw, allowed_transitions):
-        for transition in allowed_transitions:
-            node = self.process.nodes[transition.to]
-            for wi_tuple in node._createWorkItems(gw, (transition.to,)):
-               yield wi_tuple
+            #workitem.id = str(i)
+            workitem.__name__ = str(i)
+            self.addtoproperty('workitems', workitem)
 
 
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway):
-    incoming = ()
-    def start(self, transition):
-        self._define_next_replay_node()
+
+    find_transactions = []
+
+    def find_executable_paths(self, source_path, source):
+        for transition in self.definition.outgoing:
+            if transition.sync or transition.condition(self.process):
+                nodedef = self.process[transition.target.__name__]
+                initial_path = source_path.clone()
+                source_path.transaction.add_paths(initial_path)
+                transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
+                initial_path.add_transition(transition_path)
+                executable_paths = nodedef.find_executable_paths(initial_path, self)
+                for executable_path in executable_paths:
+                    yield executable_path
+
+    def start(self, transaction):
+        subtransaction = transaction.start_subtransaction('Find')
+        self.find_transactions.append(subtransaction)
         definition = self.definition
         registry = get_current_registry()
         notify = registry.notify
         notify(ActivityStarted(self))
-        if self._v_next_replay_node is not None:
-            for transition in definition.outgoing:
-                if transition.to == self._v_next_replay_node:
-                    notify(ActivityFinished(self))
-                    self.process.transition(self, [transition])
-                    return
-
-        # Check all direct transitions
+        workitems = []
         allowed_transitions = []
-        for transition in definition.outgoing:
+        for transition in self.definition.outgoing:
             if transition.sync or transition.condition(self.process):
                 allowed_transitions.append(transition)
-
-        # If we only have one, execute it
-        if len(allowed_transitions) == 1:
-            notify(ActivityFinished(self))
-            self.process.transition(self, allowed_transitions)
-            return
-
-        # We can't decide which transition to execute
-        # We create all possible work items from here
-        workitems = {}
-        i = 0
-        created_workitems = self.createWorkItems(self,
-                                                 allowed_transitions)
-        for workitem_tuple in created_workitems:
-            i += 1
-            workitem_tuple[0].id = i
-            workitems[i] = workitem_tuple
-
+                node = self.process[transition.target.__name__]
+                initial_path = Path(subtransaction)
+                executable_paths = node.find_executable_paths(initial_path, self)
+                for executable_path in executable_paths:
+                    #multiple_target = executable_path.get_multiple_target()
+                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.target.__name__])
+                    workitems.append(dwi)
+        
         if not workitems:
             raise ProcessError("Gateway blocked because there is no workitems")
+        
+        i = 0
+        for workitem in workitems:
+            i += 1
+            workitem.__name__ = i
+            self.addtoproperty('workitems', workitem)
 
-        self.workitems = workitems
-        # Indexes workitems
-        for wi in self.workitems.values():
-            notify(ObjectAdded(wi[0]))
+        for decision_workitem in workitems:
+            node_to_execute = decision_workitem.path.target
+            if isinstance(node_to_execute, Event):
+                node_to_execute.prepare_for_execution()
 
-        for transition in allowed_transitions:
-            next = self.process.nodes[transition.to]
-            if isinstance(next, Event):
-                next.prepare()
+    def replay_path(self, path, transaction):
+        decision = None
+        for dwi in self.workitems:
+            if path.is_segement(dwi.path):
+                decision = dwi
+                break
 
-    def workItemFinished(self, work_item, *results):
+        self.finich_decisions(decision)
+
+    def finich_decisions(self, work_item):
         # beginning exactly the same as Activity
-        unused, app, formal, actual = self.workitems.pop(work_item.id)
+        if work_item is not None:
+            self.delproperty('workitems', work_item)
+            work_item.replay_transaction.__parent__.remove_subtransaction(work_item.replay_transaction)
+            del work_item.replay_transaction
+
         self._p_changed = True
-        work_item.remove()
-        res = results
-        for parameter, name in zip(formal, actual):
-            # save all input parameters as output
-            if parameter.input:
-                v = res[0]
-                res = res[1:]
-                setattr(self.process.workflowRelevantData, name, v)
-
-        if res:
-            raise TypeError("Too many results")
-        # end
-
         # clear other work items
-        for wi in self.workitems.values():
-            wi[0].node.stop()
-            wi[0].remove()
-        self.workitems.clear()
+        for wi in self.workitems:
+            wi.node.stop()
+
+        self.setproperty('workitems', [])
+
         # finish this gateway
+
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
+        transition = work_item.path._get_transitions_source(self.definition)[0]
+        transaction = self.process.global_transaction.start_subtransaction('Start', (transition,))
+        self.process.play_transitions(self, [transition], transaction)
+        for transaction in list(self.find_transactions):
+            transaction.__parent__.remove_subtransaction(transaction)
+            self.find_transactions.remove(transaction)
 
-        self.process._v_toreplay = work_item.node_ids
-        self.process._v_toreplay_app = work_item.application
-        next_node_id = work_item.node_ids[0]
-        transition = [t for t in self.definition.outgoing if t.to == next_node_id][0]
-        self.process.transition(self, [transition])
+        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
+        if paths:
+            for p in paths:
+                del p
 
-    def _createWorkItems(self, gw, node_ids):
-        process = gw.process
-        for transition in self.definition.outgoing:
-            if transition.sync or transition.condition(process):
-                node = process.nodes[transition.to]
-                for wi_tuple in node._createWorkItems(gw,
-                        node_ids + (transition.to,)):
-                    yield wi_tuple
 
 
 # parallel sans condition sans default
 class ParallelGateway(Gateway):
 
-    incoming = ()
-    def start(self, transition):
-        self._define_next_replay_node()
+    def find_executable_paths(self, source_path, source):
+        global_transaction = source_path.transaction.get_global_transaction()
+        incoming_nodes = [t.source for t in self.definition.incoming]
+        paths = []
+        for n in incoming_nodes:
+            paths.extend(global_transaction.find_allsubpaths(n, 'Find'))
+        
+        test_path = Path()
+        for p in paths:
+            test_path.add_transition(p.transitions)
 
-        # Start the activity, if we've had enough incoming transitions
+        multiple_taget = test_path.get_multiple_target()
+        if multiple_target:
+            for m in multiple_target:
+                if isinstance(self.process[m.__name__],ExclusiveGateway):
+                    return 
+ 
+        validated_nodes = set([p.target for p in paths])
+        startepaths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
+        for p in startepaths:
+         validated_nodes.union(set([t.source for t in p._get_transitions_target(self)]))
 
-        definition = self.definition
+        if (len(validated_nodes) == len(incoming_nodes)):
+            for transition in self.definition.outgoing:
+                if transition.sync or transition.condition(self.process):
+                    nodedef = self.process[transition.target.__name__]
+                    for initial_path in paths:
+                        initial_path = source_path.clone()
+                        source_path.transaction.add_paths(initial_path)
+                        transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
+                        initial_path.add_transition(transition_path)
+                        executable_paths = nodedef.find_executable_paths(initial_path, self)
+                        for executable_path in executable_paths:
+                            yield executable_path
 
-        if transition in self.incoming:
-            raise ProcessError(
-                "Repeated incoming %s with id='%s' "
-                "while waiting for and completion"
-                %(transition, transition.id))
-        self.incoming += (transition.id, )
-        self.process.refreshXorGateways()
+    def start(self, transaction):
+        global_transaction = transaction.get_global_transaction()
+        incoming_nodes = [t.source for t in self.definition.incoming]
+        paths = global_transaction.find_allsubpaths_for(self, 'Start')
+        validated_nodes = set()
+        for p in paths:
+         validated_nodes.union(set([t.source for t in p._get_transitions_target(self)]))
 
-        if len(self.incoming) < len(definition.incoming):
-            return  # not enough incoming yet
-
-        registry = get_current_registry()
-        registry.notify(ActivityStarted(self))
-
-        # Execute all possible transitions
-        self._finish()
-
-    def _createWorkItems(self, gw, node_ids):
-        process = gw.process
-        gwdef = gw.definition
-        # If the node is a and-join gateway and we have and instance of it,
-        # and all incoming transitions minus the one we use are there,
-        # we continue
-        # FIXME very that we have all incoming workitems
-#        instances = [n for n in process.nodes.values() if n.definition is self]
-        instances = []
-        if not instances:
-            raise StopIteration
-        gw = instances[0]
-        if len(gw.incoming) + 1 != len(gwdef.incoming):
-            raise StopIteration
-
-        for transition in self.definition.outgoing:
-            if transition.sync or transition.condition(process):
-                node = process.nodes[transition.to]
-                for wi_tuple in node._createWorkItems(gw,
-                        node_ids + (transition.to,)):
-                    yield wi_tuple
+        if (len(validated_nodes) == len(incoming_nodes)):
+            registry = get_current_registry()
+            registry.notify(ActivityStarted(self))
+            self.play()
+            if paths:
+                for p in paths:
+                    del p
 
 
 # parallel avec condition avec default

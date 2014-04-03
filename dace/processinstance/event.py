@@ -8,7 +8,7 @@ import zmq
 from zmq.eventloop.ioloop import DelayedCallback
 from zmq.eventloop.zmqstream import ZMQStream
 
-from .core import FlowNode, WorkItemBehavior, ProcessFinished
+from .core import FlowNode, BehavioralFlowNode, ProcessFinished
 from .workitem import DecisionWorkItem
 #TODO: from .z3 import Job
 from dace import log
@@ -35,7 +35,7 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
     transaction.get().addAfterCommitHook(after_commit_hook, args=(event, callback, callback_params, deadline, job))
 
 
-class Event(WorkItemBehavior, FlowNode):
+class Event(BehavioralFlowNode, FlowNode):
     def __init__(self, process, definition, eventKind):
         super(Event, self).__init__(process, definition)
         self.eventKind = eventKind
@@ -45,16 +45,11 @@ class Event(WorkItemBehavior, FlowNode):
     def __call__(self, transition):
         pass
 
-    def _createWorkItems(self, gw, node_ids):
-        for application, formal, actual in self.definition.applications:
-            workitem = DecisionWorkItem(application, gw, node_ids, self)
-            self.workitems = {1: (workitem, application, formal, actual)}
-            yield workitem, application, formal, actual
-        # TODO We have to clear gw.workitems if the event is started
+    def prepare_for_execution(self):
+        pass
 
-    def start(self, transition):
-        self.process._v_toreplay_app = self.id
-        super(Event, self).start(transition)
+    def start(self, transaction):
+        super(Event, self).start(transaction)
 
     def validate(self):
         pass
@@ -63,8 +58,7 @@ class Event(WorkItemBehavior, FlowNode):
         pass
 
     def stop(self):
-        self.workitems = {}
-#        self._clear_workitem()
+        self.setproperty('workitems', [])
 
 
 class Throwing(Event):
@@ -72,10 +66,14 @@ class Throwing(Event):
     def validate(self):
         return True
 
-    def prepare(self):
-        super(Throwing, self).prepare()
+    def prepare_for_execution(self):
         if self.validate():
-            self.start(None)
+            self.process.get
+            wi = self._get_workitem()
+            if wi is not None:
+                self.start(None)
+            else:
+                self.stop() 
 
     # l' operation est sans parametres (les parametres sont sur la definition est sont calculable)
     def execute(self):
@@ -93,14 +91,17 @@ class Catching(Event):
 
         return self.eventKind.validate()
 
-    def prepare(self):
-        super(Catching, self).prepare()
+    def prepare_for_execution(self):
         # If it's a empty StartEvent, execute the callback directly.
         if self.eventKind is None:
             if self.validate():
-                self.start(None)
+                wi = self._get_workitem()
+                if wi is not None:
+                    self.start(None)
+                else:
+                    self.stop()
         else:
-            self.eventKind.prepare()
+            self.eventKind.prepare_for_execution()
 
     def stop(self):
         super(Catching, self).stop()
@@ -122,28 +123,27 @@ class IntermediateCatchEvent(Catching):
 
 class EndEvent(Throwing):
 
-    def workItemFinished(self, work_item, *results):
-        super(EndEvent, self).workItemFinished(work_item, *results)
+
+    def finish_behavior(self, work_item):
+        super(EndEvent, self).finish_behavior(work_item)
         if isinstance(self.eventKind, TerminateEvent):
             return
         # il faut supprimer les wi des subprocess aussi
         # gerer la suppression dans les noeuds... la suppression dans les subprocess est differente
         # Remove all workitems from process
-        for wi in self.process.getWorkItems().values():
-            parent = wi.__parent__
-            parent.stop()
-            wi.remove()
-            parent.workitems.clear()
+        for node in self.process.nodes:
+            node.stop()
+            node.setproperty('workitems', [])
 
         self.process._finished = True
         registry = get_current_registry()
         registry.notify(ProcessFinished(self))
         # ici test pour les sous processus
         if self.process.definition.isSubProcess:
-            self.process.attachedTo.workItemFinished(self.process.attachedTo.wi)
+            self.process.attachedTo.finish_behavior(self.process.attachedTo.wi)
 
         if self.process.definition.isVolatile:
-            del self.process.__parent__[self.process.__name__]
+            self.process.__parent__.remove(self.process.__name__)
 
 
 class EventKind(object):
@@ -152,7 +152,7 @@ class EventKind(object):
     def validate(self):
         return True
 
-    def prepare(self):
+    def prepare_for_execution(self):
         pass
 
     # cette operation est appelee par les evenements "Throwing"
@@ -173,7 +173,7 @@ class ConditionalEvent(EventKind):
     def validate(self):
         return self.definition.condition(self.event.process)
 
-    def prepare(self):
+    def prepare_for_execution(self):
         self._push_callback()
 
     def _callback(self):
@@ -182,7 +182,11 @@ class ConditionalEvent(EventKind):
 
         if self.validate():
             log.info('%s %s', self.event, "validate ok")
-            self.event.start(None)
+            wi = self._get_workitem()
+            if wi is not None:
+                self.event.start(None)
+            else:
+                self.stop()  
         else:
             log.info('%s %s', self.event, "validate ko, retry in 1s")
             self._push_callback()
@@ -224,7 +228,7 @@ class SignalEvent(EventKind):
     def validate(self):
         return self.definition.refSignal(self.event.process) == self._msg
 
-    def prepare(self):
+    def prepare_for_execution(self):
         ctx = get_zmq_context()
         s = ctx.socket(zmq.SUB)
         s.setsockopt(zmq.SUBSCRIBE, '')
@@ -262,7 +266,11 @@ class SignalEvent(EventKind):
     def _callback(self, msg):
         self._msg = msg[0]
         if self.validate():
-            self.event.start(None)
+            wi = self.event._get_workitem()
+            if wi is not None:
+                self.event.start(None)
+            else:
+                self.event.stop() 
 
     def execute(self):
         ref = self.definition.refSignal(self.event.process)
@@ -298,7 +306,7 @@ class TimerEvent(EventKind):
     def validate(self):
         return True
 
-    def prepare(self):
+    def prepare_for_execution(self):
         self._push_callback()
 
     def _callback(self):
@@ -306,7 +314,11 @@ class TimerEvent(EventKind):
             del callbacks[self.event._p_oid]
 
         if self.validate():
-            self.event.start(None)
+            wi = self.event._get_workitem()
+            if wi is not None:
+                self.event.start(None)
+            else:
+                self.event.stop() 
         else:
             self._push_callback()
 

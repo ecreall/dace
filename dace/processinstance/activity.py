@@ -7,10 +7,11 @@ from pyramid.threadlocal import get_current_registry, get_current_request
 from pyramid.interfaces import ILocation
 
 from substanced.util import get_oid
+from dace.util import find_service
 
 from .core import (
         EventHandler,
-        WorkItemBehavior,
+        BehavioralFlowNode,
         Behavior,
         Validator,
         ValidationError)
@@ -21,53 +22,13 @@ from dace.interfaces import (
     IProcessDefinition,
     IApplicationDefinition,
     IActivity,
-    IBusinessAction,
-    IRuntime)
+    IBusinessAction)
 
 
 ACTIONSTEPID = '__actionstepid__'
 
 
-class Parameter(object):
-
-    implements(IParameterDefinition)
-
-    input = output = False
-
-    def __init__(self, name):
-        self.__name__ = name
-
-
-class OutputParameter(Parameter):
-    output = True
-
-
-class InputParameter(Parameter):
-    input = True
-
-
-class InputOutputParameter(InputParameter, OutputParameter):
-    pass
-
-
-class Application:
-    implements(IApplicationDefinition)
-
-    def __init__(self, *parameters):
-        self.parameters = parameters
-
-    def defineParameters(self, *parameters):
-        self.parameters += parameters
-
-    def __repr__(self):
-        input = u', '.join([param.__name__ for param in self.parameters
-                           if param.input == True])
-        output = u', '.join([param.__name__ for param in self.parameters
-                           if param.output == True])
-        return "<Application %r: (%s) --> (%s)>" %(self.id, input, output)
-
-
-class Activity(WorkItemBehavior, EventHandler):
+class Activity(BehavioralFlowNode, EventHandler):
     implements(IActivity)
 
 
@@ -84,11 +45,9 @@ class SubProcess(Activity):
                 IProcessDefinition,
                 self.definition.processDefinition)
         proc = pd()
-        runtime = registry.getUtility(IRuntime)
-        # TODO Name chooser substanced
-#        chooser = INameChooser(runtime)
-        name = chooser.chooseName(self.definition.processDefinition, proc)
-        runtime[name] = proc
+        runtime = find_service('runtime')
+        proc.__name__ = self.definition.processDefinition
+        runtime.addtoproperty('processes', proc)
         proc.attachedTo = self
         proc.start()
         self.subProcess = proc
@@ -139,9 +98,9 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     state_validation = NotImplemented
      
 
-    def __init__(self, parent):
+    def __init__(self, workitem):
         super(BusinessAction, self).__init__()
-        self.__parent__ = parent
+        self.workitem = workitem
         self.isexecuted = False
         
     @staticmethod
@@ -162,7 +121,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     @property
     def process(self):
-        return self.__parent__.process
+        return self.workitem.process
 
     @property
     def view_name(self):
@@ -186,7 +145,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return False
 
     def url(self, obj):
-        actionuid = get_oid(self.parent) 
+        actionuid = get_oid(self.workitem) 
         if self.process is None:
             # TODO url
             return get_current_request().mgmt_path(obj, self.view_name,  query={'action_uid':actionuid})
@@ -212,7 +171,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         if self.is_locked(request):
             return False
 
-        if  self.isexecuted and not context.__provides__(self.context) or not self.__parent__.validate():
+        if  self.isexecuted and not context.__provides__(self.context) or not self.workitem.validate():
             return False
 
         if self.relation_validation and not self.relation_validation.im_func(self.process, context):
@@ -231,7 +190,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     def before_execution(self, context, request, **kw):
         self.lock(request)
-        self.__parent__.lock(request)
+        self.workitem.lock(request)
 
     def start(self, context, request, appstruct, **kw):
         # il y a probablement un moyen plus simple en cherchant la methode par son nom dans self par exemple..
@@ -245,7 +204,8 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)
-        self.__parent__.node.workItemFinished(self.__parent__)
+        # TODO self.workitem is a real workitem?
+        self.workitem.node.workItemFinished(self.workitem)
         self.isexecuted = True
 
     def redirect(self, context, request, **kw):
@@ -317,14 +277,14 @@ class MultiInstanceAction(BusinessAction):
 class LimitedCardinality(MultiInstanceAction):
 
 
-    def __init__(self, parent):
-        super(LimitedCardinality, self).__init__(parent)
+    def __init__(self, workitem):
+        super(LimitedCardinality, self).__init__(workitem)
         self.numberOfInstances = self.loopCardinality.im_func(None, self.process, None)
         for instance in range(self.numberOfInstances):
-            self.__parent__.actions.append(ActionInstance(instance, self, parent))
+            self.workitem.actions.append(ActionInstance(instance, self, workitem))
 
         if self.numberOfInstances == 0:
-            self.__parent__.node.workItemFinished(self.__parent__)
+            self.workitem.node.workItemFinished(self.workitem)
 
         self.isexecuted = True
 
@@ -336,12 +296,12 @@ class InfiniteCardinality(BusinessAction):
     def before_execution(self, context, request, **kw):
         if self.isSequential:
             self.lock(request)
-            self.__parent__.lock(request)
+            self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
         if self.isSequential:
             self.unlock(request)
-            self.__parent__.unlock(request)
+            self.workitem.unlock(request)
 
     def execute(self, context, request, appstruct, **kw):
         isFinished = self.start(context, request, appstruct, **kw)
@@ -355,16 +315,16 @@ class DataInput(MultiInstanceAction):
     loopDataInputRef = None
     dataIsPrincipal = True
 
-    def __init__(self, parent):
-        super(DataInput, self).__init__(parent)
+    def __init__(self, workitem):
+        super(DataInput, self).__init__(workitem)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
         self.instances = self.loopDataInputRef.im_func(None, self.process, None)
         for instance in self.instances:
             if self.dataIsPrincipal:
-                self.__parent__.actions.append(ActionInstanceAsPrincipal(instance, self, parent))
+                self.workitem.actions.append(ActionInstanceAsPrincipal(instance, self, workitem))
             else:
-                self.__parent__.actions.append(ActionInstance(instance, self, parent))
+                self.workitem.actions.append(ActionInstance(instance, self, workitem))
 
             self.isexecuted = True
 
@@ -372,8 +332,8 @@ class DataInput(MultiInstanceAction):
 class ActionInstance(BusinessAction):
 
     # principalaction = multi instance action
-    def __init__(self, item, principalaction, parent):
-        super(ActionInstance, self).__init__(parent)
+    def __init__(self, item, principalaction, workitem):
+        super(ActionInstance, self).__init__(workitem)
         self.principalaction = principalaction
         self.item = item 
         self.actionid = self.actionid+'_'+str(get_oid(item))
@@ -381,14 +341,14 @@ class ActionInstance(BusinessAction):
     def before_execution(self,context, request, **kw):
         self.lock(request)
         if self.principalaction.isSequential:
-            self.__parent__.lock(request)
+            self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
         if self.principalaction.isSequential:
-            self.__parent__.unlock(request)
+            self.workitem.unlock(request)
 
         if  not self.principalaction.instances:
-            self.__parent__.node.workItemFinished(self.__parent__)
+            self.workitem.node.workItemFinished(self.workitem)
 
         self.isexecuted = True
 

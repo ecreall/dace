@@ -5,7 +5,7 @@ from persistent.list import PersistentList
 from substanced.folder import Folder
 from substanced.util import get_oid
 
-from dace.interfaces import INameChooser, IObject
+from dace.interfaces import IObject
 from dace.relations import connect, disconnect, find_relations
 
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
@@ -50,13 +50,12 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
-        elif getattr(value,'__parent__'):
+        elif hasattr(value,'__parent__') and value.__parent__ is not None :
             value.__parent__.remove(value.__name__)
  
-        name = INameChooser(self).chooseName(u'', value)
-        self.add(name, value)
+        self.add(value.__name__, value)
         value.__property__ = propertyref
-        setattr(self, key, name)
+        setattr(self, key, value.__name__)
         if initiator and opposite is not None:
             value.__class__.properties[opposite]['add'](value, self, False)
 
@@ -118,13 +117,13 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
-        elif getattr(value,'__parent__'):
+        elif hasattr(value,'__parent__') and value.__parent__ is not None:
             value.__parent__.remove(value.__name__)
 
-        name = INameChooser(self).chooseName(u'', value)
-        self.add(name, value)
+
+        self.add(value.__name__, value)
         value.__property__ = propertyref
-        contents_keys.append(name)
+        contents_keys.append(value.__name__)
         setattr(self, keys, contents_keys)
 
         if initiator and opposite is not None:
@@ -332,7 +331,85 @@ class Object(Folder):
 
     implements(IObject)
     properties_def = {}
-    
+
+    def choose_name(self, name, object):
+        """See zope.container.interfaces.INameChooser
+
+        The name chooser is expected to choose a name without error
+
+        We create and populate a dummy container
+
+        >>> from zope.container.sample import SampleContainer
+        >>> container = SampleContainer()
+        >>> container['foobar.old'] = 'rst doc'
+
+        >>> from zope.container.contained import NameChooser
+
+        the suggested name is converted to unicode:
+
+        >>> NameChooser(container).chooseName(u'foobar', object())
+        u'foobar'
+
+        >>> NameChooser(container).chooseName(b'foobar', object())
+        u'foobar'
+
+        If it already exists, a number is appended but keeps the same extension:
+
+        >>> NameChooser(container).chooseName('foobar.old', object())
+        u'foobar-2.old'
+
+        Bad characters are turned into dashes:
+
+        >>> NameChooser(container).chooseName('foo/foo', object())
+        u'foo-foo'
+
+        If no name is suggested, it is based on the object type:
+
+        >>> NameChooser(container).chooseName('', [])
+        u'list'
+
+        """
+
+        container = self.data
+
+        # convert to unicode and remove characters that checkName does not allow
+        if isinstance(name, bytes):
+            name = name.decode()
+        if not isinstance(name, unicode):
+            try:
+                name = unicode(name)
+            except:
+                name = u''
+        name = name.replace('/', '-').lstrip('+@')
+
+        if not name:
+            name = object.__class__.__name__
+            if isinstance(name, bytes):
+                name = name.decode()
+
+        # for an existing name, append a number.
+        # We should keep client's os.path.extsep (not ours), we assume it's '.'
+        dot = name.rfind('.')
+        if dot >= 0:
+            suffix = name[dot:]
+            name = name[:dot]
+        else:
+            suffix = ''
+
+        n = name + suffix
+        i = 1
+        while n in container:
+            i += 1
+            n = name + u'-' + str(i) + suffix
+
+        return n
+
+    def add(self, name, other, send_events=True, reserved_names=(),
+            duplicating=None, moving=None, loading=False, registry=None):
+        name = self.choose_name(name, other)
+        super(Object, self).add(name, other, send_events, reserved_names,
+                duplicating, moving, loading, registry)
+
     def __new__(cls, *args, **kwargs):
         if not hasattr(cls, 'properties'):
             cls.properties = {}
@@ -343,6 +420,10 @@ class Object(Folder):
 
     def __init__(self, **kwargs):
         Folder.__init__(self)
+        self.title = None
+        if 'title' in kwargs:
+            self.title = kwargs['title']
+
         self.__property__ = None
         for _property in self.properties_def.keys():
             if kwargs.has_key(_property):
@@ -370,6 +451,7 @@ class Object(Folder):
             self.setproperty(name, value)
         else:
             super(Folder, self).__setattr__(name, value)
+                
 
     def getproperty(self, name):
         return self.__class__.properties[name]['get'](self)
@@ -379,6 +461,9 @@ class Object(Folder):
 
     def addtoproperty(self, name, value):
         self.__class__.properties[name]['add'](self, value)
+
+    def delproperty(self, name, value):
+        self.__class__.properties[name]['del'](self, value)
 
     def get_data(self, node):
         result = {}

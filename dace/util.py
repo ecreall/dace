@@ -1,19 +1,17 @@
 import venusian
-from zope.container.contained import NameChooser as NC
 from zope.annotation.interfaces import IAnnotations, Interface
-from zope.interface import implements
+from zope.interface import implements, providedBy, implementedBy
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry, get_current_request
 from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd, get_oid
+from substanced.util import find_service as fssd
 from .interfaces import (
         IEntity,
         IProcessDefinition,
         IDecisionWorkItem,
         IWorkItem,
-        INameChooser,
         IObject)
 from . import log
-
 
 
 class Adapter(object):
@@ -31,13 +29,25 @@ def get_obj(oid):
 
 class utility(object):
 
-    def __init__(self, name):
+    def __init__(self, name, provides=None, direct=False, **kw):
        self.name = name
+       self.provides = provides
+       self.direct = direct
+       self.kw = kw
 
     def __call__(self, wrapped):
-        def callback(scanner, ob, name=u''):
-            instance = ob()
-            scanner.config.registry.registerUtility(component=instance, name=self.name)
+        def callback(scanner, name, ob):
+            provides = self.provides
+            if self.direct:
+                component = ob
+                if self.provides is None:
+                    provides = list(implementedBy(component))[0]
+            else:
+                component = ob(**self.kw)
+                if self.provides is None:
+                    provides = list(providedBy(component))[0]
+
+            scanner.config.registry.registerUtility(component, provides, self.name)
 
         venusian.attach(wrapped, callback)
         return wrapped
@@ -61,6 +71,11 @@ class adapter(object):
 def find_catalog(name=None):
     resource = get_current_request().root
     return fcsd(resource, name)
+
+
+def find_service(name=None):
+    resource = get_current_request().root
+    return fssd(resource, name)
 
 
 def allSubobjectsOfType(root = None, interface = None):
@@ -210,12 +225,12 @@ def getWorkItem(process_id, activity_id, request, context,
     # and returned a workitem from a gateway, search first in the
     # same gateway
 
-    annotations = IAnnotations(request)
-    workitems = annotations.get('workitems', None)
-    if workitems is not None:
-        wi = workitems.get('%s.%s' % (process_id, activity_id), None)
-        if wi is not None and condition(wi.__parent__.__parent__, context):
-            return wi
+    #annotations = IAnnotations(request)
+    #workitems = annotations.get('workitems', None)
+    #if workitems is not None:
+    #    wi = workitems.get('%s.%s' % (process_id, activity_id), None)
+    #    if wi is not None and condition(wi.__parent__.__parent__, context):
+    #        return wi
 
     # Not found in gateway, we search in catalog
     dace_catalog = find_catalog('dace')
@@ -242,7 +257,7 @@ def getWorkItem(process_id, activity_id, request, context,
             object_provides_index.any((IWorkItem.__identifier__,)) & \
             process_inst_uid_index.any(process_ids)
 
-    results = query.execute().all()
+    results = [w for w in query.execute().all()]
     if len(results) > 0:
         wi = None
         for wv in results:
@@ -266,7 +281,7 @@ def getWorkItem(process_id, activity_id, request, context,
 
     # Not found in catalog, we return a start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-        wi = pd.createStartWorkItem(activity_id)
+        wi = pd.start_process(activity_id)
         if wi is None:
             raise Forbidden
         else:
@@ -304,8 +319,3 @@ def workItemAvailable(menu_entry, process_id, activity_id, condition=lambda p, c
         log.exception(e)
         return False
     return True
-
-
-@adapter(IObject)
-class NameChooser(NC):
-    implements(INameChooser)
