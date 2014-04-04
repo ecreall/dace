@@ -43,7 +43,7 @@ class ExclusiveGateway(Gateway):
         registry = get_current_registry()
         notify = registry.notify
         notify(ActivityStarted(self))
-        workitems = []
+        workitems = {}
         allowed_transitions = []
         for transition in self.definition.outgoing:
             if transition.sync or transition.condition(self.process):
@@ -53,21 +53,22 @@ class ExclusiveGateway(Gateway):
                 initial_path.add_transition(transition)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
-                    #multiple_target = executable_path.get_multiple_target()
                     dwi = DecisionWorkItem(executable_path, self.process[executable_path.target.__name__])
-                    workitems.append(dwi)
+                    if dwi.node.__name__ in workitems:
+                        workitems[dwi.node.__name__].merge(dwi)
+                    else:    
+                        workitems[dwi.node.__name__] = dwi
 
-        #workitems = self._init_commun_decitionworkitems(workitems)
         if not workitems:
             raise ProcessError("Gateway blocked because there is no workitems")
         
         i = 0
-        for workitem in workitems:
+        for workitem in workitems.values():
             i += 1
             workitem.__name__ = i
             self.addtoproperty('workitems', workitem)
 
-        for decision_workitem in workitems:
+        for decision_workitem in workitems.values():
             node_to_execute = decision_workitem.path.target
             if isinstance(node_to_execute, Event):
                 node_to_execute.prepare_for_execution()
@@ -94,6 +95,13 @@ class ExclusiveGateway(Gateway):
             wi.node.stop()
 
         self.setproperty('workitems', [])
+
+        # clear commun work items
+        allconcernedkitems = self.get_allconcernedworkitems()
+        for cdecision in allconcernedkitems:
+            cdecision.node.stop()
+            cdecision.__parent__.delproperty('workitems', cdecision)
+
         if work_item is not None:
             transition = work_item.path._get_transitions_source(self.definition)[0]
             transaction = self.process.global_transaction.start_subtransaction('Start', (transition,))
@@ -108,10 +116,16 @@ class ExclusiveGateway(Gateway):
             for p in paths:
                 del p
 
-    def _init_commun_decitionworkitems(self, workitems):
-        pass
+    def get_allconcernedworkitems(self):
+        result = []
+        allprocessworkitems = self.process.getWorkItems()
+        for wi in allprocessworkitems:
+            if isinstance(wi, DecisionWorkItem) and self.definition in wi.concerned_nodes():
+                result.append(wi)
 
+        return result       
 
+        
 # parallel sans condition sans default
 class ParallelGateway(Gateway):
 

@@ -135,6 +135,7 @@ class Transaction(Persistent):
         self.path = []
         self.sub_transactions = []
 
+
 class Path(object):
 
     def __init__(self, transaction=None):
@@ -165,7 +166,7 @@ class Path(object):
         return None
 
     @property
-    def furst(self):
+    def first(self):
         if self.transitions:
             return self.transitions[0]
        

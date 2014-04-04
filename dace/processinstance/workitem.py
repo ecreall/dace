@@ -47,32 +47,28 @@ class StartWorkItem(LockableElement):
         for a in self.activity.contexts:
             self.actions.append(a(self))
 
-    def _pathdefinition_to_pathinstance(self, path, process):
-        newpath = path.clone()
-        newpath.t = ()
-        for node in path.nodes:
-            newpath.add_nodes(process[node.__name__])
-
-        return newpath    
+    def merge(self, decision):
+        self.path = self.path.merge(decision.path)
 
     def start(self, *args):
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
                 self.process_id)
+
         proc = pd()
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
         proc.start()
+        self.process = proc
+
         start_transaction = proc.global_transaction.start_subtransaction('Start')
         proc[self.path.source.__name__].start(start_transaction)
-        #pathinstance = self._pathdefinition_to_pathinstance(self.path, proc)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
         proc.replay_path(self.path, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
-        proc.global_transaction.clean()
         wi = proc[self.path.target.__name__].workitems[0]
-        self.process = proc
+        #wi.start(*args)
         return wi, proc
 
     def lock(self, request):
@@ -90,6 +86,9 @@ class StartWorkItem(LockableElement):
 
     def replay_path(self):
         pass
+     
+    def concerned_nodes(self):
+        return self.path.sourcies
 
 
 class BaseWorkItem(LockableElement, Object):
@@ -125,6 +124,10 @@ class BaseWorkItem(LockableElement, Object):
     def validate(self):
         raise NotImplementedError
 
+    def concerned_nodes(self):
+        return [self.node]
+
+
 
 class WorkItem(BaseWorkItem):
     """This is subclassed in generated code.
@@ -147,16 +150,24 @@ class WorkItem(BaseWorkItem):
         # we don't have incoming transition it's a subprocess
         transition = [t for t in node_def.incoming
                 if activity_id == t.target.id][0]
-        proc = self.node.process
+        proc = self.process
         return not transition.sync or transition.condition(proc)
 
 
 class DecisionWorkItem(BaseWorkItem):
     implements(IDecisionWorkItem)
 
+
     def __init__(self, path, node):
         self.path = path
         super(DecisionWorkItem, self).__init__(node)
+
+    def concerned_nodes(self):
+        return self.path.sourcies
+
+    def merge(self, decision):
+        pass
+        #self.path = self.path.merge(decision.path)
 
     def start(self, *args):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
@@ -172,22 +183,13 @@ class DecisionWorkItem(BaseWorkItem):
         Else if a one transition in the chain is sync,
         verify all transitions condition.
         """
-        transitions = []
-        # TODO transitions.append(self.gw.incoming_transition)
-        gw  = self.path.source
-        node_def = gw.definition
-        proc_def = gw.process.definition
-        for node in self.path.nodes:
-            transition = [t for t in node_def.outgoing
-                if node.id == t.target.id][0]
-            transitions.append(transition)
-            node_def = proc_def[transition.target.__name__]
+        transitions = self.path.transitions
+        # TODO il faut verifier la condition
         if not [t for t in transitions if t.sync]:
             return True
         else:
-            proc = gw.process
             for transition in transitions:
-                if not transition.condition(proc):
+                if not transition.condition(self.process):
                     return False
 
         return True
