@@ -57,5 +57,5 @@ class TransitionDefinition(Object):
         return self.source is transition.source and self.target is transition.target
 
     def __repr__(self):
-        return "%s(source=%r, target=%r)" % (self.__class__.__name__,
+        return "%s(%r, %r)" % (self.__class__.__name__,
                 self.source, self.target)

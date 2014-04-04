@@ -493,6 +493,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.a', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
+
 ##############################################################################################
 
 

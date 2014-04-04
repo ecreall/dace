@@ -1,17 +1,9 @@
 from persistent import Persistent
-from pyramid.threadlocal import get_current_registry
-from pyramid.interfaces import ILocation
-from pyramid.events import subscriber
-from zope.interface import implements, Attribute
-from zope.component import createObject
-from substanced.event import ObjectAdded
-import thread
+from zope.interface import Attribute
 
-from dace.interfaces import IRuntime, IProcessStarted, IProcessFinished
-from dace.processinstance.workitem import DecisionWorkItem, StartWorkItem
 from dace.processinstance.core import EventHandler
-from dace import log
 from dace.objectofcollaboration.object import Object, SHARED_MULTIPLE, SHARED_UNIQUE
+
 
 class BPMNElementDefinition(Object):
     def __init__(self):
@@ -24,8 +16,8 @@ class FlowNodeDefinition(BPMNElementDefinition):
                       'outgoing': (SHARED_MULTIPLE, 'source', False),
                       'process': (SHARED_UNIQUE, 'nodes', False)
                       }
-    #relation s_u opposite s_m avec les transitions 
-    #relation s_u opposite c_m avec les Processdef 
+    #relation s_u opposite s_m avec les transitions
+    #relation s_u opposite c_m avec les Processdef
     factory = Attribute("factory")
     incoming = ()
     outgoing = ()
@@ -76,7 +68,7 @@ class Transaction(Persistent):
 
         for sub_t in subtransactions:
             sub_t.__parent__ = self
-    
+
         self.sub_transactions.extend(subtransactions)
 
     def remove_subtransaction(self, transaction):
@@ -129,21 +121,24 @@ class Transaction(Persistent):
 
         self. add_subtransactions(transaction)
         return transaction
-        
+
 
     def clean(self):
         self.path = []
         self.sub_transactions = []
 
 
-class Path(object):
+class Path(Persistent):
 
-    def __init__(self, transaction=None):
+    def __init__(self, transitions=None, transaction=None):
         self.transaction = transaction
         if transaction is not None:
             transaction.add_paths(self)
 
-        self.transitions = ()
+        if transitions is None:
+            self.transitions = ()
+        else:
+            self.transitions = tuple(transitions)
 
     def add_transition(self, transition):
         if not isinstance(transition, (list, tuple)):
@@ -155,28 +150,28 @@ class Path(object):
     def source(self):
         if self.transitions:
             return self.transitions[0].source
-       
+
         return None
 
     @property
     def target(self):
         if self.transitions:
             return self.transitions[-1].target
-       
+
         return None
 
     @property
     def first(self):
         if self.transitions:
             return self.transitions[0]
-       
+
         return None
 
     @property
     def last(self):
         if self.transitions:
             return self.transitions[-1]
-       
+
         return None
 
     def clone(self):
@@ -234,6 +229,39 @@ class Path(object):
                 results.add(t.source)
 
         return results
+
+    def merge(self, other):
+        other_transitions = list(other.transitions)
+        ordered_transitions = []
+        for transition in self.transitions:
+            ordered_transitions.append(transition)
+            for t in other_transitions[:]:
+                if transition == t:
+                    other_transitions.remove(t)
+                elif transition.target is t.target:
+                    other_transitions.remove(t)
+                    ordered_transitions.append(t)
+
+        # include all remaining transitions
+        for t in other_transitions[:]:
+            for idx, transition in enumerate(ordered_transitions):
+                if transition.source is t.target:
+                    other_transitions.remove(t)
+                    ordered_transitions.insert(idx, t)
+                    break
+
+        for t in other_transitions:
+            ordered_transitions.append(t)
+
+        merged_path = Path(ordered_transitions)
+        return merged_path
+
+    def __repr__(self):
+        return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
+
+    def __eq__(self, other):
+        return self.transitions == other.transitions
+
 
 class EventHandlerDefinition(FlowNodeDefinition):
     factory = EventHandler
