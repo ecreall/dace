@@ -21,7 +21,7 @@ from dace.processdefinition.eventdef import (
 from dace.testing import FunctionalTests
 
 
-class TestsWorkItems(FunctionalTests):
+class OldTests(FunctionalTests):
 
     def tearDown(self):
         registry = get_current_registry()

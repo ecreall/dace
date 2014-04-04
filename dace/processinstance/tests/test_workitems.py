@@ -497,6 +497,7 @@ class TestsWorkItems(FunctionalTests):
 
 
 
+class OldTests(FunctionalTests):
 
     def test_blocked_gateway_because_no_workitems(self):
         pd = self._process_a_g_bc()
