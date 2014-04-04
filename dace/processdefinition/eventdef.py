@@ -26,6 +26,7 @@ class StartEventDefinition(EventDefinition):
                 if transition.condition(None):
                     nodedef = self.process[transition.target.__name__]
                     initial_path = Path(transaction)
+                    initial_path.add_transition(transition)
                     startable_paths = nodedef.find_startable_paths(initial_path, self)
                     for startable_path in startable_paths:
                         swi = StartWorkItem(startable_path)

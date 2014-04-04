@@ -39,8 +39,6 @@ class FlowNode(BPMNElement, Object):
         self.start(transaction)
 
     def find_executable_paths(self, source_path, source):
-        transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
-        source_path.add_transition(transition_path)
         yield source_path
 
     def start(self, transaction):

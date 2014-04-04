@@ -31,8 +31,7 @@ class ExclusiveGateway(Gateway):
                 nodedef = self.process[transition.target.__name__]
                 initial_path = source_path.clone()
                 source_path.transaction.add_paths(initial_path)
-                transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
-                initial_path.add_transition(transition_path)
+                initial_path.add_transition(transition)
                 executable_paths = nodedef.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
                     yield executable_path
@@ -51,12 +50,14 @@ class ExclusiveGateway(Gateway):
                 allowed_transitions.append(transition)
                 node = self.process[transition.target.__name__]
                 initial_path = Path(subtransaction)
+                initial_path.add_transition(transition)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
                     #multiple_target = executable_path.get_multiple_target()
                     dwi = DecisionWorkItem(executable_path, self.process[executable_path.target.__name__])
                     workitems.append(dwi)
-        
+
+        #workitems = self._init_commun_decitionworkitems(workitems)
         if not workitems:
             raise ProcessError("Gateway blocked because there is no workitems")
         
@@ -81,11 +82,11 @@ class ExclusiveGateway(Gateway):
         self.finich_decisions(decision)
 
     def finich_decisions(self, work_item):
+        registry = get_current_registry()
+        registry.notify(ActivityFinished(self))
         # beginning exactly the same as Activity
         if work_item is not None:
             self.delproperty('workitems', work_item)
-            work_item.replay_transaction.__parent__.remove_subtransaction(work_item.replay_transaction)
-            del work_item.replay_transaction
 
         self._p_changed = True
         # clear other work items
@@ -93,23 +94,22 @@ class ExclusiveGateway(Gateway):
             wi.node.stop()
 
         self.setproperty('workitems', [])
+        if work_item is not None:
+            transition = work_item.path._get_transitions_source(self.definition)[0]
+            transaction = self.process.global_transaction.start_subtransaction('Start', (transition,))
+            self.process.play_transitions(self, [transition], transaction)
 
-        # finish this gateway
-
-        registry = get_current_registry()
-        registry.notify(ActivityFinished(self))
-        transition = work_item.path._get_transitions_source(self.definition)[0]
-        transaction = self.process.global_transaction.start_subtransaction('Start', (transition,))
-        self.process.play_transitions(self, [transition], transaction)
         for transaction in list(self.find_transactions):
             transaction.__parent__.remove_subtransaction(transaction)
             self.find_transactions.remove(transaction)
 
-        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
+        paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
         if paths:
             for p in paths:
                 del p
 
+    def _init_commun_decitionworkitems(self, workitems):
+        pass
 
 
 # parallel sans condition sans default
@@ -118,34 +118,30 @@ class ParallelGateway(Gateway):
     def find_executable_paths(self, source_path, source):
         global_transaction = source_path.transaction.get_global_transaction()
         incoming_nodes = [t.source for t in self.definition.incoming]
-        paths = []
-        for n in incoming_nodes:
-            paths.extend(global_transaction.find_allsubpaths(n, 'Find'))
-        
+        paths = global_transaction.find_allsubpaths_for(self.definition, 'Find')
         test_path = Path()
         for p in paths:
             test_path.add_transition(p.transitions)
 
-        multiple_taget = test_path.get_multiple_target()
+        multiple_target = test_path.get_multiple_target()
         if multiple_target:
             for m in multiple_target:
-                if isinstance(self.process[m.__name__],ExclusiveGateway):
-                    return 
+                if isinstance(self.process[m.__name__], ExclusiveGateway):
+                    return
  
-        validated_nodes = set([p.target for p in paths])
+        validated_nodes = set([p.last.source for p in paths])
         startepaths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
         for p in startepaths:
-         validated_nodes.union(set([t.source for t in p._get_transitions_target(self)]))
+         validated_nodes.union(set([t.source for t in p._get_transitions_target(self.definition)]))
 
         if (len(validated_nodes) == len(incoming_nodes)):
             for transition in self.definition.outgoing:
                 if transition.sync or transition.condition(self.process):
                     nodedef = self.process[transition.target.__name__]
-                    for initial_path in paths:
-                        initial_path = source_path.clone()
-                        source_path.transaction.add_paths(initial_path)
-                        transition_path = [t for t in self.definition.incoming if t.source.id is source.id][0]
-                        initial_path.add_transition(transition_path)
+                    for p in paths:
+                        initial_path = p.clone()
+                        p.transaction.add_paths(initial_path)
+                        initial_path.add_transition(transition)
                         executable_paths = nodedef.find_executable_paths(initial_path, self)
                         for executable_path in executable_paths:
                             yield executable_path
@@ -153,15 +149,17 @@ class ParallelGateway(Gateway):
     def start(self, transaction):
         global_transaction = transaction.get_global_transaction()
         incoming_nodes = [t.source for t in self.definition.incoming]
-        paths = global_transaction.find_allsubpaths_for(self, 'Start')
+        paths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
         validated_nodes = set()
         for p in paths:
-         validated_nodes.union(set([t.source for t in p._get_transitions_target(self)]))
+            source_nodes = set([t.source for t in p._get_transitions_target(self.definition)])
+            validated_nodes = validated_nodes.union(source_nodes)
 
         if (len(validated_nodes) == len(incoming_nodes)):
             registry = get_current_registry()
             registry.notify(ActivityStarted(self))
-            self.play()
+            
+            self.play(self.definition.outgoing, transaction)
             if paths:
                 for p in paths:
                     del p

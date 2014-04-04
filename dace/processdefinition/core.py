@@ -50,8 +50,6 @@ class FlowNodeDefinition(BPMNElementDefinition):
         return self.getproperty('process')
 
     def find_startable_paths(self, source_path, source):
-        transition_path = [t for t in self.incoming if t.source is source][0]
-        source_path.add_transition(transition_path)
         yield source_path
 
     def __repr__(self):
@@ -139,9 +137,11 @@ class Transaction(Persistent):
 
 class Path(object):
 
-    def __init__(self, transaction):
+    def __init__(self, transaction=None):
         self.transaction = transaction
-        transaction.add_paths(self)
+        if transaction is not None:
+            transaction.add_paths(self)
+
         self.transitions = ()
 
     def add_transition(self, transition):
@@ -161,6 +161,20 @@ class Path(object):
     def target(self):
         if self.transitions:
             return self.transitions[-1].target
+       
+        return None
+
+    @property
+    def furst(self):
+        if self.transitions:
+            return self.transitions[0]
+       
+        return None
+
+    @property
+    def last(self):
+        if self.transitions:
+            return self.transitions[-1]
        
         return None
 
@@ -192,7 +206,7 @@ class Path(object):
             for t in result:
                 eqs = [tt for tt in result_set if tt.equal(t)]
                 if not eqs:
-                    result_set.add(t)
+                    result_set.append(t)
                     result.remove(t)
 
         return result_set
@@ -206,7 +220,7 @@ class Path(object):
             for t in result:
                 eqs = [tt for tt in result_set if tt.equal(t)]
                 if not eqs:
-                    result_set.add(t)
+                    result_set.append(t)
                     result.remove(t)
 
         return result_set
@@ -214,7 +228,7 @@ class Path(object):
     def get_multiple_target(self):
         results = set()
         for t in self.transitions:
-            transitions = self._get_transitions(t.source)
+            transitions = self._get_transitions_source(t.source)
             if len(transitions)>1:
                 results.add(t.source)
 

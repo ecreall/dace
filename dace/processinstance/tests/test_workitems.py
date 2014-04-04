@@ -305,6 +305,196 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.b', nodes_workitems)
 
+
+    def _process_start_complex_Exclusive_process(self):
+        """
+        S: start event
+        E: end event
+        G, 0, 1, 2(x): XOR Gateway
+        P(+): Parallel Gateway
+        A, B, C, D: activities
+                                      -----
+                                   -->| A |------------\
+                                  /   -----             \
+    -----   ---------  --------- /                       \        ---------   -----
+    | S |-->| G(x) |-->| G0(x) |-                         ------->| G2(+) |-->| E |
+    -----   ---------\ ---------\     --------    -----        /  ---------   -----
+                      \         / \-->| P(+) |--->| B |-------/
+                       \       /      --------\   -----      /
+                   ---------  /                \    -----   / 
+                   | G1(x) |-/                  \-->| C |--/
+                   ---------                        ----- /
+                         \    -----                      /
+                          \-->| D |---------------------/
+                              -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                g = ExclusiveGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'g'),
+                TransitionDefinition('g', 'g0'),
+                TransitionDefinition('g', 'g1'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g1', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g2'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('g2', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_start_complex_Exclusive_workitem_a(self):
+        pd = self._process_start_complex_Exclusive_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 2)
+        self.assertIn('a', start_wis)
+        self.assertIn('d', start_wis)
+        start_a = start_wis['a']
+        wi, proc = start_a.start()
+        self.assertEqual(u'sample.a', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 1)
+        self.assertIn(u'sample.a', nodes_workitems)
+
+
+    def test_start_complex_Exclusive_workitem_d(self):
+        pd = self._process_start_complex_Exclusive_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 2)
+        self.assertIn('a', start_wis)
+        self.assertIn('d', start_wis)
+        start_d = start_wis['d']
+        wi, proc = start_d.start()
+        self.assertEqual(u'sample.d', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 1)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+
+
+    def  _process_start_complex_Parallel_process(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, 2(x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D: activities
+                                      -----
+                                   -->| A |------------\
+                                  /   -----             \
+    -----   ---------  --------- /                       \        ---------   -----
+    | S |-->| P0(+) |-->| G0(x) |-                         ------->| G2(+) |-->| E |
+    -----   ---------\ ---------\     --------    -----        /  ---------   -----
+                      \         / \-->| P(+) |--->| B |-------/
+                       \       /      --------\   -----      /
+                   ---------  /                \    -----   / 
+                   | G1(x) |-/                  \-->| C |--/
+                   ---------                        ----- /
+                         \    -----                      /
+                          \-->| D |---------------------/
+                              -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                p0 = ParallelGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'p0'),
+                TransitionDefinition('p0', 'g0'),
+                TransitionDefinition('p0', 'g1'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g1', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g2'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('g2', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_start_complex_Parallel_workitem_a(self):
+        pd = self._process_start_complex_Parallel_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 4)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+        self.assertIn('d', start_wis)
+
+        start_a = start_wis['a']
+        wi, proc = start_a.start()
+        self.assertEqual(u'sample.a', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+
+    def test_start_complex_Parallel_workitem_d(self):
+        pd = self._process_start_complex_Parallel_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 4)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+        self.assertIn('d', start_wis)
+
+        start_d = start_wis['d']
+        wi, proc = start_d.start()
+        self.assertEqual(u'sample.d', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
 ##############################################################################################
 
 

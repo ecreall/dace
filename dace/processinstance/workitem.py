@@ -30,6 +30,7 @@ class WorkItemFactory(object):
 class StartWorkItem(LockableElement):
     implements(IStartWorkItem)
 
+
     def __init__(self, startable_path):
         self.path = startable_path
         self.process_id = self.path.source.process.id
@@ -67,8 +68,8 @@ class StartWorkItem(LockableElement):
         proc[self.path.source.__name__].start(start_transaction)
         #pathinstance = self._pathdefinition_to_pathinstance(self.path, proc)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
-
         proc.replay_path(self.path, replay_transaction)
+        proc.global_transaction.remove_subtransaction(replay_transaction)
         proc.global_transaction.clean()
         wi = proc[self.path.target.__name__].workitems[0]
         self.process = proc
@@ -153,15 +154,14 @@ class WorkItem(BaseWorkItem):
 class DecisionWorkItem(BaseWorkItem):
     implements(IDecisionWorkItem)
 
-    replay_transaction = None
-
     def __init__(self, path, node):
         self.path = path
         super(DecisionWorkItem, self).__init__(node)
 
     def start(self, *args):
-        self.replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
-        self.process.replay_path(self.path, self.replay_transaction)
+        replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
+        self.process.replay_path(self.path, replay_transaction)
+        self.process.global_transaction.remove_subtransaction(replay_transaction)
         wi = self.process[self.path.target.__name__].workitems[0]
         return wi
         #results = args
