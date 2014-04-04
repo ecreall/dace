@@ -143,7 +143,7 @@ def subobjectsOfKind(root = None, interface = None):
 
 
 def get_current_process_uid(request):
-    p_uid = request.form.get('p_uid', None)
+    p_uid = request.params.get('p_uid', None)
 #    if p_uid is not None:
 #        request.response.setCookie('p_uid', p_uid)
 #    else:
