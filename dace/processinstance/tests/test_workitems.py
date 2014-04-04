@@ -1,9 +1,7 @@
 import transaction
 import zope.component
-from zope.publisher.browser import TestRequest
-from zope.security.interfaces import Forbidden
+from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
-
 
 from dace.interfaces import IProcessDefinition, IStartWorkItem
 from dace.catalog.interfaces import ISearchableObject
@@ -272,12 +270,12 @@ class TestsWorkItems(FunctionalTests):
     def test_getWorkItem_startworkitem(self):
         pd = self._process_a_g_bc()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
-        wi = queryWorkItem('sample', 'a', TestRequest(), None)
+        wi = queryWorkItem('sample', 'a', self.request, None)
         self.assertIsNot(wi, None)
         self.assertTrue(IStartWorkItem.providedBy(wi))
-        wi = queryWorkItem('sample', 'b', TestRequest(), None)
+        wi = queryWorkItem('sample', 'b', self.request, None)
         self.assertIs(wi, None)
-        wi = queryWorkItem('sample', 'c', TestRequest(), None)
+        wi = queryWorkItem('sample', 'c', self.request, None)
         self.assertIs(wi, None)
 
 
@@ -534,7 +532,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_catalogued_workitems(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
-        request = TestRequest()
+        request = self.request
         self.assertIs(b_wi, getWorkItem('sample', 'b', request, None))
         self.assertIs(c_wi, getWorkItem('sample', 'c', request, None))
 
@@ -556,13 +554,13 @@ class TestsWorkItems(FunctionalTests):
     def test_no_start_workitem_for_pd_subprocessOnly(self):
         pd = self._process_a_g_bc_with_bc_applications()
         self.registry.registerUtility(pd, name=pd.id)
-        start_wi = queryWorkItem('sample', 'a', TestRequest(), None)
+        start_wi = queryWorkItem('sample', 'a', self.request, None)
         self.assertIsNot(start_wi, None)
         pd.isControlled = True
-        start_wi = queryWorkItem('sample', 'a', TestRequest(), None)
+        start_wi = queryWorkItem('sample', 'a', self.request, None)
         self.assertIs(start_wi, None)
         with self.assertRaises(Forbidden):
-            start_wi = getWorkItem('sample', 'a', TestRequest(), None)
+            start_wi = getWorkItem('sample', 'a', self.request, None)
 
     def xtest_conditional_start_event(self):
         pd = self._process_a_g_bc_with_bc_applications()
