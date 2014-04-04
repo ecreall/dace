@@ -49,7 +49,7 @@ class RelationValueSchema(Schema):
                 colander.String(),
                 widget = deform.widget.TextInputWidget(readonly=True),
                 title='Target',
-                missing=missing_source
+                missing=missing_target
                 )
 
     tags = colander.SchemaNode(
