@@ -34,16 +34,16 @@ class StartWorkItem(LockableElement):
     def __init__(self, startable_path):
         self.path = startable_path
         self.process_id = self.path.sources[0].process.id
-        self.activity = self.path.targets[0]
-        self.node_id = self.activity.id
-        self.node_name = self.activity.__name__
+        self.node = self.path.targets[0]
+        self.node_id = self.node.id
+        self.node_name = self.node.__name__
         self.process = None
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
                 self.process_id)
         self.actions = []
-        for a in self.activity.contexts:
+        for a in self.node.contexts:
             self.actions.append(a(self))
 
     def merge(self, decision):

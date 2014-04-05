@@ -76,6 +76,7 @@ class Process(Entity):
         for t in first_transitions:
             next_transitions = next_transitions.union(set(path.next(t)))
 
+        
         for nt in next_transitions:
             if nt in executed_transitions:
                 next_transitions.remove(nt)
@@ -85,7 +86,7 @@ class Process(Entity):
             executed_transitions.extend(next_transitions)
             next_ts = set()
             for t in next_transitions:
-                next_ts = next_transitions.union(set(path.next(t)))
+                next_ts = next_ts.union(set(path.next(t)))
 
             for nt in list(next_ts):
                 if nt in executed_transitions:
@@ -94,9 +95,12 @@ class Process(Entity):
             next_transitions = next_ts
 
     def replay_transitions(self,path, transitions, transaction):
+        executed_nodes = []
         for transition in transitions:
             node = self[transition.source.__name__]
-            node.replay_path(path, transaction)
+            if not (node in executed_nodes):
+                executed_nodes.append(node)
+                node.replay_path(path, transaction)
 
     def getWorkItems(self):
         dace_catalog = find_catalog('dace')
