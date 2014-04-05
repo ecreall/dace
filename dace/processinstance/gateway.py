@@ -69,7 +69,7 @@ class ExclusiveGateway(Gateway):
             self.addtoproperty('workitems', workitem)
 
         for decision_workitem in workitems.values():
-            node_to_execute = decision_workitem.path.target
+            node_to_execute = self.process[decision_workitem.path.target.__name__]
             if isinstance(node_to_execute, Event):
                 node_to_execute.prepare_for_execution()
 

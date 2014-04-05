@@ -37,7 +37,6 @@ class StartWorkItem(LockableElement):
         self.activity = self.path.target
         self.node_id = self.activity.id
         self.node_name = self.activity.__name__
-
         self.process = None
         registry = get_current_registry()
         pd = registry.getUtility(
@@ -88,7 +87,7 @@ class StartWorkItem(LockableElement):
         pass
      
     def concerned_nodes(self):
-        return self.path.sourcies
+        return self.path.sources
 
 
 class BaseWorkItem(LockableElement, Object):
@@ -163,7 +162,7 @@ class DecisionWorkItem(BaseWorkItem):
         super(DecisionWorkItem, self).__init__(node)
 
     def concerned_nodes(self):
-        return self.path.sourcies
+        return self.path.sources
 
     def merge(self, decision):
         pass

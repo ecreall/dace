@@ -45,6 +45,10 @@ class Event(BehavioralFlowNode, FlowNode):
     def __call__(self, transition):
         pass
 
+    def prepare(self):
+        super(Event, self).prepare()
+        self.prepare_for_execution()
+
     def prepare_for_execution(self):
         pass
 
@@ -68,10 +72,11 @@ class Throwing(Event):
 
     def prepare_for_execution(self):
         if self.validate():
-            self.process.get
             wi = self._get_workitem()
             if wi is not None:
-                self.start(None)
+                starttransaction = self.process.global_transaction.start_subtransaction('Start')
+                self.start(starttransaction)
+                self.finish_behavior(wi, starttransaction)
             else:
                 self.stop() 
 
@@ -124,8 +129,9 @@ class IntermediateCatchEvent(Catching):
 class EndEvent(Throwing):
 
 
-    def finish_behavior(self, work_item):
-        super(EndEvent, self).finish_behavior(work_item)
+    def finish_behavior(self, work_item, transaction):
+        super(EndEvent, self).finish_behavior(work_item, transaction)
+        import pdb; pdb.set_trace()
         if isinstance(self.eventKind, TerminateEvent):
             return
         # il faut supprimer les wi des subprocess aussi
