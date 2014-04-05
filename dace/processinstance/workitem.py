@@ -165,8 +165,7 @@ class DecisionWorkItem(BaseWorkItem):
         return self.path.sources
 
     def merge(self, decision):
-        pass
-        #self.path = self.path.merge(decision.path)
+        self.path = self.path.merge(decision.path)
 
     def start(self, *args):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay')

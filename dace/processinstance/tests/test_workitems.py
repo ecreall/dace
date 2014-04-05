@@ -494,6 +494,26 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.a', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
 
+    def test_start_complex_Parallel_workitem_b(self):
+        pd = self._process_start_complex_Parallel_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 4)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+        self.assertIn('d', start_wis)
+
+        start_b = start_wis['b']
+        wi, proc = start_b.start()
+        self.assertEqual(u'sample.b', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
 ##############################################################################################
 
 

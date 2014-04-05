@@ -114,7 +114,7 @@ class ExclusiveGateway(Gateway):
     def get_allconcernedworkitems(self):
         result = []
         allprocessworkitems = self.process.getWorkItems()
-        for wi in allprocessworkitems:
+        for wi in allprocessworkitems.values():
             if isinstance(wi, DecisionWorkItem) and self.definition in wi.concerned_nodes():
                 result.append(wi)
 

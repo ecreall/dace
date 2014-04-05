@@ -69,7 +69,32 @@ class Process(Entity):
         return self.definition.isSubProcess
 
     def replay_path(self, path, transaction):
-        for transition in path.transitions:
+        first_transitions = path.first
+        self.replay_transitions(path, first_transitions, transaction)
+        executed_transitions = first_transitions
+        next_transitions = set()
+        for t in first_transitions:
+            next_transitions = next_transitions.union(set(path.next(t)))
+
+        for nt in next_transitions:
+            if nt in executed_transitions:
+                next_transitions.remove(nt)
+
+        while next_transitions:
+            self.replay_transitions(path, next_transitions, transaction)
+            executed_transitions.extend(next_transitions)
+            next_ts = set()
+            for t in next_transitions:
+                next_ts = next_transitions.union(set(path.next(t)))
+
+            for nt in list(next_ts):
+                if nt in executed_transitions:
+                    next_ts.remove(nt)
+
+            next_transitions = next_ts
+
+    def replay_transitions(self,path, transitions, transaction):
+        for transition in transitions:
             node = self[transition.source.__name__]
             node.replay_path(path, transaction)
 

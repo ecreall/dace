@@ -200,7 +200,11 @@ class Path(Persistent):
 
         return []
 
+    def next(self, transition):
+        if not self.contains_transition(transition):
+            return None
 
+        return self._get_transitions_source(transition.target)
 
     def clone(self):
         cloned = Path(self.transitions, self.transaction)
@@ -237,7 +241,6 @@ class Path(Persistent):
                 eqs = [tt for tt in result_set if tt.equal(t)]
                 if not eqs:
                     result_set.append(t)
-                    result.remove(t)
 
         return result_set
 
@@ -251,7 +254,6 @@ class Path(Persistent):
                 eqs = [tt for tt in result_set if tt.equal(t)]
                 if not eqs:
                     result_set.append(t)
-                    result.remove(t)
 
         return result_set
 
@@ -265,6 +267,16 @@ class Path(Persistent):
         return results
 
     def merge(self, other):
+        result = list(self.transitions)
+        xor_result = []
+        for t in other.transitions:
+            if not self.contains_transition(t):
+                xor_result.append(t)
+
+        result.extend(xor_result)
+        result_path = Path(transitions=result)
+        return result_path
+            
         other_transitions = list(other.transitions)
         ordered_transitions = []
         for transition in self.transitions:
