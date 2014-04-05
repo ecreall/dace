@@ -138,11 +138,11 @@ class ParallelGateway(Gateway):
                 if isinstance(self.process[m.__name__], ExclusiveGateway):
                     return
  
-        alllasts_transitions = []
+        alllatest_transitions = []
         for p in paths:
-            alllasts_transitions.extend(p.lasts)
+            alllatest_transitions.extend(p.latest)
 
-        validated_nodes = set([t.source for t in alllasts_transitions])
+        validated_nodes = set([t.source for t in alllatest_transitions])
         startpaths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
         for p in startpaths:
             source_nodes = set([t.source for t in p._get_transitions_target(self.definition)])

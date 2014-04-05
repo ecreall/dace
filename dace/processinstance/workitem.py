@@ -61,7 +61,7 @@ class StartWorkItem(LockableElement):
         proc.start()
         self.process = proc
 
-        start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.firsts[0]))
+        start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.first[0]))
         proc[self.path.sources[0].__name__].start(start_transaction)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
         proc.replay_path(self.path, replay_transaction)

@@ -158,14 +158,14 @@ class Path(Persistent):
 
     @property
     def sources(self):
-        return [t.source for t in self.firsts]
+        return [t.source for t in self.first]
 
     @property
     def targets(self):
-        return [t.target for t in self.lasts]
+        return [t.target for t in self.latest]
 
     @property
-    def firsts(self):
+    def first(self):
         if self.transitions:
             source_transitions = []
             for t in self.transitions:
@@ -183,7 +183,7 @@ class Path(Persistent):
         return []
 
     @property
-    def lasts(self):
+    def latest(self):
         if self.transitions:
             target_transitions = []
             for t in self.transitions:
@@ -199,6 +199,8 @@ class Path(Persistent):
             return target_transitions
 
         return []
+
+
 
     def clone(self):
         cloned = Path(self.transitions, self.transaction)

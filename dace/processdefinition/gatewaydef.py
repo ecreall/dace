@@ -40,11 +40,11 @@ class ParallelGatewayDefinition(GatewayDefinition):
                 if isinstance(self.process[m.__name__], ExclusiveGatewayDefinition):
                     return
 
-        alllasts_transitions = []
+        alllatest_transitions = []
         for p in paths:
-            alllasts_transitions.extend(p.lasts)
+            alllatest_transitions.extend(p.latest)
 
-        validated_nodes = set([t.source for t in alllasts_transitions])
+        validated_nodes = set([t.source for t in alllatest_transitions])
         validated = True
         for n in incoming_nodes:
             if not (n in  validated_nodes):
