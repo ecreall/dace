@@ -289,7 +289,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_wi.start()
         self.assertIs(wi.node, proc['a'])
 
-        wi.node.finish_behavior(wi, proc.global_transaction)
+        wi.node.finish_behavior(wi)
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)

@@ -53,8 +53,11 @@ class TransitionDefinition(Object):
         self.id = '%s-%s' % (self.source_id, self.target_id)
         self.setproperty('source', newsource)
 
-    def equal(self, transition):
-        return self.source is transition.source and self.target is transition.target
+    def equal(self, other): #deprecated
+        return self.source is other.source and self.target is other.target
+
+   # def __eq__(self, other):
+   #     return self.source is other.source and self.target is other.target
 
     def __repr__(self):
         return "%s(%r, %r)" % (self.__class__.__name__,

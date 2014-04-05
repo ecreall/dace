@@ -121,7 +121,7 @@ class Process(Entity):
             if isinstance(node, ExclusiveGateway):
                 node._refreshWorkItems()
 
-    def play_transitions(self, node, transitions, transaction):
+    def play_transitions(self, node, transitions):
         registry = get_current_registry()
         if transitions:
             for transition in transitions:
@@ -131,7 +131,7 @@ class Process(Entity):
 
             for transition in transitions:
                 next = self[transition.target.__name__]
-                starttransaction = self.global_transaction.start_subtransaction('Start', (transition,))
+                starttransaction = self.global_transaction.start_subtransaction('Start', transitions=(transition,))
                 next(starttransaction)
                 if self._finished:
                     break

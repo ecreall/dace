@@ -23,22 +23,21 @@ class Gateway(FlowNode):
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway):
 
-    find_transactions = []
-
     def find_executable_paths(self, source_path, source):
         for transition in self.definition.outgoing:
             if transition.sync or transition.condition(self.process):
                 nodedef = self.process[transition.target.__name__]
                 initial_path = source_path.clone()
-                source_path.transaction.add_paths(initial_path)
+                source_transaction = source_path.transaction.__parent__
+                source_transaction.remove_subtransaction(source_path.transaction)
+                source_transaction.start_subtransaction(type='Find', path=initial_path)
                 initial_path.add_transition(transition)
                 executable_paths = nodedef.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
                     yield executable_path
 
     def start(self, transaction):
-        subtransaction = transaction.start_subtransaction('Find')
-        self.find_transactions.append(subtransaction)
+        global_transaction = transaction.get_global_transaction()
         definition = self.definition
         registry = get_current_registry()
         notify = registry.notify
@@ -49,11 +48,11 @@ class ExclusiveGateway(Gateway):
             if transition.sync or transition.condition(self.process):
                 allowed_transitions.append(transition)
                 node = self.process[transition.target.__name__]
-                initial_path = Path(subtransaction)
-                initial_path.add_transition(transition)
+                initial_path = Path([transition])
+                subtransaction = global_transaction.start_subtransaction(type='Find', path=initial_path)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
-                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.target.__name__])
+                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__])
                     if dwi.node.__name__ in workitems:
                         workitems[dwi.node.__name__].merge(dwi)
                     else:    
@@ -69,7 +68,7 @@ class ExclusiveGateway(Gateway):
             self.addtoproperty('workitems', workitem)
 
         for decision_workitem in workitems.values():
-            node_to_execute = self.process[decision_workitem.path.target.__name__]
+            node_to_execute = self.process[decision_workitem.path.targets[0].__name__]
             if isinstance(node_to_execute, Event):
                 node_to_execute.prepare_for_execution()
 
@@ -104,17 +103,13 @@ class ExclusiveGateway(Gateway):
 
         if work_item is not None:
             transition = work_item.path._get_transitions_source(self.definition)[0]
-            transaction = self.process.global_transaction.start_subtransaction('Start', (transition,))
-            self.process.play_transitions(self, [transition], transaction)
-
-        for transaction in list(self.find_transactions):
-            transaction.__parent__.remove_subtransaction(transaction)
-            self.find_transactions.remove(transaction)
+            self.process.play_transitions(self, [transition])
 
         paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
         if paths:
-            for p in paths:
-                del p
+            for p in set(paths):
+                source_transaction = p.transaction.__parent__
+                source_transaction.remove_subtransaction(p.transaction)
 
     def get_allconcernedworkitems(self):
         result = []
@@ -143,18 +138,31 @@ class ParallelGateway(Gateway):
                 if isinstance(self.process[m.__name__], ExclusiveGateway):
                     return
  
-        validated_nodes = set([p.last.source for p in paths])
-        startepaths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
-        for p in startepaths:
-         validated_nodes.union(set([t.source for t in p._get_transitions_target(self.definition)]))
+        alllasts_transitions = []
+        for p in paths:
+            alllasts_transitions.extend(p.lasts)
 
-        if (len(validated_nodes) == len(incoming_nodes)):
+        validated_nodes = set([t.source for t in alllasts_transitions])
+        startpaths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
+        for p in startpaths:
+            source_nodes = set([t.source for t in p._get_transitions_target(self.definition)])
+            validated_nodes = validated_nodes.union(source_nodes)
+
+        validated = True
+        for n in incoming_nodes:
+            if not (n in  validated_nodes):
+                validated = False
+                break
+
+        if validated:
             for transition in self.definition.outgoing:
                 if transition.sync or transition.condition(self.process):
                     nodedef = self.process[transition.target.__name__]
-                    for p in paths:
+                    for p in list(paths):
                         initial_path = p.clone()
-                        p.transaction.add_paths(initial_path)
+                        source_transaction = p.transaction.__parent__
+                        source_transaction.remove_subtransaction(p.transaction)
+                        source_transaction.start_subtransaction(type='Find', path=initial_path)
                         initial_path.add_transition(transition)
                         executable_paths = nodedef.find_executable_paths(initial_path, self)
                         for executable_path in executable_paths:
@@ -173,10 +181,11 @@ class ParallelGateway(Gateway):
             registry = get_current_registry()
             registry.notify(ActivityStarted(self))
             
-            self.play(self.definition.outgoing, transaction)
+            self.play(self.definition.outgoing)
             if paths:
-                for p in paths:
-                    del p
+                for p in set(paths):
+                    source_transaction = p.transaction.__parent__
+                    source_transaction.remove_subtransaction(p.transaction)
 
 
 # parallel avec condition avec default

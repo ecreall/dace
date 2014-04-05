@@ -12,7 +12,7 @@ from dace.interfaces import IProcessDefinition
 class WorkItemS(workitem.WorkItem):
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name='sample.s')
 class WorkItemFactoryS(workitem.WorkItemFactory):
@@ -21,7 +21,7 @@ class WorkItemFactoryS(workitem.WorkItemFactory):
 
 class WorkItemA(workitem.WorkItem):
     def start(self):
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name='sample.a')
 class WorkItemFactoryA(workitem.WorkItemFactory):
@@ -30,7 +30,7 @@ class WorkItemFactoryA(workitem.WorkItemFactory):
 
 class WorkItemD(workitem.WorkItem):
     def start(self):
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.d')
 class WorkItemFactoryD(workitem.WorkItemFactory):
@@ -42,7 +42,7 @@ class WorkItemB(workitem.WorkItem):
     def start(self):
         # should not set a variable directly bu should use a output parameter
         self.node.process.workflowRelevantData.choice = "b"
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.b')
 class WorkItemFactoryB(workitem.WorkItemFactory):
@@ -52,7 +52,7 @@ class WorkItemFactoryB(workitem.WorkItemFactory):
 class WorkItemC(workitem.WorkItem):
 
     def start(self, layouts):
-        self.node.finish_behavior(self, None, "c: %s" % layouts[0])
+        self.node.finish_behavior(self, "c: %s" % layouts[0])
 
 @utility(name ='sample.c')
 class WorkItemFactoryC(workitem.WorkItemFactory):
@@ -63,7 +63,7 @@ class WorkItemE(workitem.WorkItem):
 
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.e')
 class WorkItemFactoryE(workitem.WorkItemFactory):
@@ -74,7 +74,7 @@ class WorkItemSc(workitem.WorkItem):
 
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.sc')
 class WorkItemFactorySc(workitem.WorkItemFactory):
@@ -85,7 +85,7 @@ class WorkItemSt(workitem.WorkItem):
 
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.st')
 class WorkItemFactorySt(workitem.WorkItemFactory):
@@ -96,7 +96,7 @@ class WorkItemCIE(workitem.WorkItem):
 
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.cie')
 class WorkItemFactoryCIE(workitem.WorkItemFactory):
@@ -107,7 +107,7 @@ class WorkItemTIE(workitem.WorkItem):
 
     def start(self):
         self.node.execute()
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.tie')
 class WorkItemFactoryTIE(workitem.WorkItemFactory):
@@ -117,7 +117,7 @@ class WorkItemFactoryTIE(workitem.WorkItemFactory):
 class WorkItemD(workitem.WorkItem):
 
     def start(self):
-        self.node.finish_behavior(self, None)
+        self.node.finish_behavior(self)
 
 
 @utility(name ='sample.d')

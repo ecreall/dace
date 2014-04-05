@@ -33,8 +33,8 @@ class StartWorkItem(LockableElement):
 
     def __init__(self, startable_path):
         self.path = startable_path
-        self.process_id = self.path.source.process.id
-        self.activity = self.path.target
+        self.process_id = self.path.sources[0].process.id
+        self.activity = self.path.targets[0]
         self.node_id = self.activity.id
         self.node_name = self.activity.__name__
         self.process = None
@@ -61,12 +61,12 @@ class StartWorkItem(LockableElement):
         proc.start()
         self.process = proc
 
-        start_transaction = proc.global_transaction.start_subtransaction('Start')
-        proc[self.path.source.__name__].start(start_transaction)
+        start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.firsts[0]))
+        proc[self.path.sources[0].__name__].start(start_transaction)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
         proc.replay_path(self.path, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
-        wi = proc[self.path.target.__name__].workitems[0]
+        wi = proc[self.path.targets[0].__name__].workitems[0]
         #wi.start(*args)
         return wi, proc
 
@@ -172,7 +172,7 @@ class DecisionWorkItem(BaseWorkItem):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
         self.process.replay_path(self.path, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
-        wi = self.process[self.path.target.__name__].workitems[0]
+        wi = self.process[self.path.targets[0].__name__].workitems[0]
         return wi
         #results = args
         #self.path.source.workItemFinished(self, *results)

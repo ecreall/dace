@@ -39,15 +39,18 @@ class FlowNode(BPMNElement, Object):
         self.start(transaction)
 
     def find_executable_paths(self, source_path, source):
-        yield source_path
+        decision_path = source_path.clone()
+        source_transaction = source_path.transaction.__parent__
+        source_transaction.remove_subtransaction(source_path.transaction)
+        yield decision_path
 
     def start(self, transaction):
         raise NotImplementedError
 
-    def play(self, transitions, transaction):
+    def play(self, transitions):
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
-        self.process.play_transitions(self, transitions, transaction)
+        self.process.play_transitions(self, transitions)
 
     def replay_path(self, path, transaction):
         pass
@@ -89,7 +92,7 @@ class BehavioralFlowNode(object):
         if self.workitems:
             workitem = self.workitems[0]
 
-        self.finish_behavior(workitem, transaction)
+        self.finish_behavior(workitem)
 
     def prepare(self):
         registry = get_current_registry()
@@ -103,12 +106,8 @@ class BehavioralFlowNode(object):
     def start(self, transaction):
         registry = get_current_registry()
         registry.notify(ActivityStarted(self))
-        paths = transaction.get_global_transaction().find_allsubpaths_for(self, 'Start')
-        if paths:
-            for p in paths:
-                del p
 
-    def finish_behavior(self, work_item, transaction):
+    def finish_behavior(self, work_item):
         if work_item is not None:
 	    self.delproperty('workitems', work_item)
             # If work_item._p_oid is not set, it means we created and removed it
@@ -120,13 +119,20 @@ class BehavioralFlowNode(object):
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
+
+        paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
+        if paths:
+            for p in set(paths):
+                source_transaction = p.transaction.__parent__
+                source_transaction.remove_subtransaction(p.transaction)
+
         if not self.workitems:
             allowed_transitions = []
             for transition in self.definition.outgoing:
                 if transition.sync or transition.condition(self.process):
                     allowed_transitions.append(transition)
 
-            self.play(allowed_transitions, transaction)
+            self.play(allowed_transitions)
 
 class ValidationError(Exception):
     principalmessage = u""

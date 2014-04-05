@@ -50,17 +50,17 @@ class FlowNodeDefinition(BPMNElementDefinition):
 
 class Transaction(Persistent):
 
-    def __init__(self, type='Normal'):
-        self.paths = []
+    def __init__(self, path=None ,type='Normal'):
+        self.path = path
+        if self.path is not None:
+            self.path.set_transaction(self)
+
         self.sub_transactions = []
         self.__parent__ = None
         self.type = type
 
-    def add_paths(self, paths):
-        if not isinstance(paths, (list, tuple)):
-            paths = (paths, )
-
-        self.paths.extend(paths)
+    def set_path(self, path):
+        self.path = path
 
     def add_subtransactions(self, subtransactions):
         if not isinstance(subtransactions, (list, tuple)):
@@ -76,30 +76,38 @@ class Transaction(Persistent):
            self.sub_transactions.remove(transaction)
 
     def find_allsubpaths_for(self, node, type=None):
-        result = self.find_subpaths_for(node, type)
+        path = self.get_path_for(node, type)
+        result = []
+        if path is not None:
+            result.append(path)
+
         for subtransaction in self.sub_transactions:
             result.extend(subtransaction.find_allsubpaths_for(node, type))
 
         return result
 
-    def find_subpaths_for(self, node, type=None):
-        if type is None or type == self.type:
-            return [p for p in self.paths if p.target is node]
-        else:
-            return []
+    def get_path_for(self, node, type=None):
+        if (type is None or type == self.type) and node in self.path.targets:
+            return self.path
 
-    def find_allsubpaths(self, node, type=None):
-        result = self.find_subpaths(node, type)
+        return None
+
+    def find_allsubpaths_cross(self, node, type=None):
+        path = self.get_path_cross(node, type)
+        result = []
+        if path is not None:
+            result.append(path)
+
         for subtransaction in self.sub_transactions:
             result.extend(subtransaction.find_allsubpaths(node, type))
 
         return result
 
-    def find_subpaths(self, node, type=None):
-        if type is None or type == self.type:
-            return [p for p in self.paths if p.contains(node)]
-        else:
-            return []
+    def get_path_cross(self, node, type=None):
+        if type is None or type == self.type and self.path.contains(node):
+            return self.path
+
+        return None
 
     def get_global_transaction(self):
         if self.__parent__ is None:
@@ -107,25 +115,24 @@ class Transaction(Persistent):
 
         return self.__parent__.get_global_transaction()
 
-    def start_subtransaction(self, type='Normal', paths=None):
-        path = None
-        if paths is not None:
-            if not isinstance(paths, (tuple, list)):
-                paths = [paths]
-            path = Path(self)
-            path.add_transition(paths)
+    def start_subtransaction(self, type='Normal', transitions=None, path=None):
+        transaction = Transaction(path=path, type=type)
+        if path is None:
+            if transitions is not None:
+                if not isinstance(transitions, (tuple, list)):
+                    transitions = [transitions]
 
-        transaction = Transaction(type)
-        if path is not None:
-            transaction.add_paths(path)
+                Path(transitions, transaction)
 
-        self. add_subtransactions(transaction)
+        self.add_subtransactions(transaction)
         return transaction
 
-
     def clean(self):
-        self.path = []
+        self.path = None
         self.sub_transactions = []
+
+    #def __eq__(self, other):
+    #    return self.path == other.path
 
 
 class Path(Persistent):
@@ -133,12 +140,15 @@ class Path(Persistent):
     def __init__(self, transitions=None, transaction=None):
         self.transaction = transaction
         if transaction is not None:
-            transaction.add_paths(self)
+            transaction.set_path(self)
 
         if transitions is None:
             self.transitions = ()
         else:
             self.transitions = tuple(transitions)
+
+    def set_transaction(self, transaction):
+        self.transaction = transaction
 
     def add_transition(self, transition):
         if not isinstance(transition, (list, tuple)):
@@ -147,47 +157,69 @@ class Path(Persistent):
         self.transitions += transition
 
     @property
-    def source(self):
-        if self.transitions:
-            return self.transitions[0].source
-
-        return None
+    def sources(self):
+        return [t.source for t in self.firsts]
 
     @property
-    def target(self):
-        if self.transitions:
-            return self.transitions[-1].target
-
-        return None
+    def targets(self):
+        return [t.target for t in self.lasts]
 
     @property
-    def first(self):
+    def firsts(self):
         if self.transitions:
-            return self.transitions[0]
+            source_transitions = []
+            for t in self.transitions:
+                is_source = True
+                for inc in t.source.incoming:
+                    if  self.contains_transition(inc):
+                        is_source = False
+                        break
+               
+                if is_source:
+                    source_transitions.append(t)
+                    
+            return source_transitions
 
-        return None
+        return []
 
     @property
-    def last(self):
+    def lasts(self):
         if self.transitions:
-            return self.transitions[-1]
+            target_transitions = []
+            for t in self.transitions:
+                is_target = True
+                for inc in t.target.outgoing:
+                    if  self.contains_transition(inc):
+                        is_target = False
+                        break
+               
+                if is_target:
+                    target_transitions.append(t)
+                    
+            return target_transitions
 
-        return None
+        return []
 
     def clone(self):
-        cloned = Path(self.transaction)
-        cloned.add_transition(self.transitions)
+        cloned = Path(self.transitions, self.transaction)
         return cloned
 
     def is_segement(self, path):
         for transition in path.transitions:
-            eqs = [t for t in self.transitions if t.equal(transition)]
+            eqs = self.contains_transition(transition)
             if not eqs:
                 return False
 
         return True
 
-    def contains(self, node):
+    def contains_transition(self, transition):
+        for t in self.transitions:
+            if t.equal(transition):
+                return True
+
+        return False
+
+    def contains_node(self, node):
         for t in self.transitions:
             if t.source is node or t.target is node:
                 return True
@@ -259,8 +291,8 @@ class Path(Persistent):
     def __repr__(self):
         return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
-    def __eq__(self, other):
-        return self.transitions == other.transitions
+    #def __eq__(self, other):
+    #    return self.transitions == other.transitions
 
 
 class EventHandlerDefinition(FlowNodeDefinition):

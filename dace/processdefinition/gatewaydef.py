@@ -14,7 +14,9 @@ class ExclusiveGatewayDefinition(GatewayDefinition):
             if transition.condition(None):
                 nodedef = self.process[transition.target.__name__]
                 initial_path = source_path.clone()
-                source_path.transaction.add_paths(initial_path)
+                source_transaction = source_path.transaction.__parent__
+                source_transaction.remove_subtransaction(source_path.transaction)
+                source_transaction.start_subtransaction(type='Find', path=initial_path)
                 initial_path.add_transition(transition)
                 startable_paths = nodedef.find_startable_paths(initial_path, self)
                 for startable_path in startable_paths:
@@ -38,14 +40,26 @@ class ParallelGatewayDefinition(GatewayDefinition):
                 if isinstance(self.process[m.__name__], ExclusiveGatewayDefinition):
                     return
 
-        validated_nodes = set([p.last.source for p in paths])
-        if (len(validated_nodes) == len(incoming_nodes)):
+        alllasts_transitions = []
+        for p in paths:
+            alllasts_transitions.extend(p.lasts)
+
+        validated_nodes = set([t.source for t in alllasts_transitions])
+        validated = True
+        for n in incoming_nodes:
+            if not (n in  validated_nodes):
+                validated = False
+                break
+
+        if validated:
             for transition in self.outgoing:
                 if transition.condition(None):
                     nodedef = self.process[transition.target.__name__]
-                    for initial_path in paths:
-                        initial_path = source_path.clone()
-                        source_path.transaction.add_paths(initial_path)
+                    for p in list(paths):
+                        initial_path = p.clone()
+                        source_transaction = p.transaction.__parent__
+                        source_transaction.remove_subtransaction(p.transaction)
+                        source_transaction.start_subtransaction(type='Find', path=initial_path)
                         initial_path.add_transition(transition)
                         startable_paths = nodedef.find_startable_paths(initial_path, self)
                         for startable_path in startable_paths:

@@ -76,7 +76,7 @@ class Throwing(Event):
             if wi is not None:
                 starttransaction = self.process.global_transaction.start_subtransaction('Start')
                 self.start(starttransaction)
-                self.finish_behavior(wi, starttransaction)
+                self.finish_behavior(wi)
             else:
                 self.stop() 
 
