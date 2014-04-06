@@ -87,7 +87,7 @@ class Transaction(Persistent):
         return result
 
     def get_path_for(self, node, type=None):
-        if (type is None or type == self.type) and node in self.path.targets:
+        if self.path is not None and (type is None or type == self.type) and node in self.path.targets:
             return self.path
 
         return None
@@ -104,7 +104,7 @@ class Transaction(Persistent):
         return result
 
     def get_path_cross(self, node, type=None):
-        if type is None or type == self.type and self.path.contains(node):
+        if self.path is not None and type is None or type == self.type and self.path.contains(node):
             return self.path
 
         return None

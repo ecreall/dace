@@ -39,18 +39,15 @@ class Event(BehavioralFlowNode, FlowNode):
     def __init__(self, process, definition, eventKind):
         super(Event, self).__init__(process, definition)
         self.eventKind = eventKind
+        self.execution_prepared = False
         if eventKind:
             eventKind.event = self
 
     def __call__(self, transition):
         pass
 
-    def prepare(self):
-        super(Event, self).prepare()
-        self.prepare_for_execution()
-
     def prepare_for_execution(self):
-        pass
+        self.execution_prepared = True
 
     def start(self, transaction):
         super(Event, self).start(transaction)
@@ -71,14 +68,16 @@ class Throwing(Event):
         return True
 
     def prepare_for_execution(self):
-        if self.validate():
-            wi = self._get_workitem()
-            if wi is not None:
-                starttransaction = self.process.global_transaction.start_subtransaction('Start')
-                self.start(starttransaction)
-                self.finish_behavior(wi)
-            else:
-                self.stop() 
+        if not self.execution_prepared:
+            super(Throwing, self).prepare_for_execution()
+            if self.validate():
+                wi = self._get_workitem()
+                if wi is not None:
+                    starttransaction = self.process.global_transaction.start_subtransaction('Start')
+                    self.start(starttransaction)
+                    self.finish_behavior(wi)
+                else:
+                    self.stop() 
 
     # l' operation est sans parametres (les parametres sont sur la definition est sont calculable)
     def execute(self):
@@ -98,15 +97,19 @@ class Catching(Event):
 
     def prepare_for_execution(self):
         # If it's a empty StartEvent, execute the callback directly.
-        if self.eventKind is None:
-            if self.validate():
-                wi = self._get_workitem()
-                if wi is not None:
-                    self.start(None)
-                else:
-                    self.stop()
-        else:
-            self.eventKind.prepare_for_execution()
+        if not self.execution_prepared:
+            super(Throwing, self).prepare_for_execution()
+            if self.eventKind is None:
+                if self.validate():
+                    wi = self._get_workitem()
+                    if wi is not None:
+                        starttransaction = self.process.global_transaction.start_subtransaction('Start')
+                        self.start(starttransaction)
+                        self.finish_behavior(wi)
+                    else:
+                        self.stop()
+            else:
+                self.eventKind.prepare_for_execution()
 
     def stop(self):
         super(Catching, self).stop()
@@ -129,9 +132,8 @@ class IntermediateCatchEvent(Catching):
 class EndEvent(Throwing):
 
 
-    def finish_behavior(self, work_item, transaction):
-        super(EndEvent, self).finish_behavior(work_item, transaction)
-        import pdb; pdb.set_trace()
+    def finish_behavior(self, work_item):
+        super(EndEvent, self).finish_behavior(work_item)
         if isinstance(self.eventKind, TerminateEvent):
             return
         # il faut supprimer les wi des subprocess aussi

@@ -514,6 +514,180 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
 
+
+class TestGatewayChain(FunctionalTests):
+
+    def tearDown(self):
+        registry = get_current_registry()
+        registry.unregisterUtility(provided=IProcessDefinition)
+        super(TestGatewayChain, self).tearDown()
+
+    def _process(self):
+        """
+        S: start event
+        E: end event
+        G1,3, 4(x): XOR Gateway
+        G2(+): Parallel Gateway
+        A, B, D: activities
+                                       -----
+                                    -->| A |------------\
+                                   /   -----             \
+    -----   ---------   --------- /                       \   ---------   -----
+    | S |-->| G1(x) |-->| G2(+) |-                         -->| G4(x) |-->| E |
+    -----   --------- \ --------- \    ---------   -----   /  ---------   -----
+                       \           \-->| G3(x) |-->| B |--/
+                        \              /--------   -----
+                         \    -----   /
+                          \-->| D |--/
+                              -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                d = ActivityDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                g2 = ParallelGatewayDefinition(),
+                g3 = ExclusiveGatewayDefinition(),
+                g4 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'g1'),
+                TransitionDefinition('g1', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('g2', 'a'),
+                TransitionDefinition('g2', 'g3'),
+                TransitionDefinition('d', 'g3'),
+                TransitionDefinition('g3', 'b'),
+                TransitionDefinition('b', 'g4'),
+                TransitionDefinition('a', 'g4'),
+                TransitionDefinition('g4', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_gateway_chain_end_event_a(self):
+        pd = self._process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('a')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+
+    def test_gateway_chain_end_event_d_b(self):
+        pd = self._process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('d')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(sorted(workitems.keys()), ['sample.b'])
+        workitems['sample.b'].start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+
+    def test_gateway_chain_end_event_b(self):
+        pd = self._process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('b')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+
+    def _process_parallel_join(self):
+        """
+        S: start event
+        E: end event
+        G1,3(x): XOR Gateway
+        G2,4(+): Parallel Gateway
+        A, B, D: activities
+                                       -----
+                                    -->| A |------------\
+                                   /   -----             \
+    -----   ---------   --------- /                       \   ---------   -----
+    | S |-->| G1(x) |-->| G2(+) |-                         -->| G4(+) |-->| E |
+    -----   --------- \ --------- \    ---------   -----   /  ---------   -----
+                       \           \-->| G3(x) |-->| B |--/
+                        \              /--------   -----
+                         \    -----   /
+                          \-->| D |--/
+                              -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                d = ActivityDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                g2 = ParallelGatewayDefinition(),
+                g3 = ExclusiveGatewayDefinition(),
+                g4 = ParallelGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'g1'),
+                TransitionDefinition('g1', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('g2', 'a'),
+                TransitionDefinition('g2', 'g3'),
+                TransitionDefinition('d', 'g3'),
+                TransitionDefinition('g3', 'b'),
+                TransitionDefinition('b', 'g4'),
+                TransitionDefinition('a', 'g4'),
+                TransitionDefinition('g4', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+
+    def test_gateway_chain_parallel_d_b_and_blocked(self):
+        pd = self._process_parallel_join()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('d')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(sorted(workitems.keys()), ['sample.b'])
+        
+        workitems['sample.b'].start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+        self.assertFalse(proc._finished)
+
+    def test_gateway_chain_parallel_a_b(self):
+        pd = self._process_parallel_join()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('a')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(sorted(workitems.keys()), ['sample.b'])
+        workitems['sample.b'].start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+        self.assertTrue(proc._finished)
+
+    def test_gateway_chain_parallel_b_a(self):
+        pd = self._process_parallel_join()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('b')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(sorted(workitems.keys()), ['sample.a'])
+        workitems['sample.a'].start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+        self.assertTrue(proc._finished)
 ##############################################################################################
 
 
@@ -522,7 +696,7 @@ class OldTests(FunctionalTests):
 
     def test_blocked_gateway_because_no_workitems(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, name=pd.id)
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         proc = pd()
         self.app['proc'] = proc
         workitems = proc.getWorkItems()
@@ -720,7 +894,7 @@ class OldTests(FunctionalTests):
                                      -----
         """
         pd = ProcessDefinition(u'sample')
-        pd.defineActivities(
+        pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 g = ParallelGatewayDefinition(),
@@ -752,173 +926,6 @@ class OldTests(FunctionalTests):
         b_wi.start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
-
-class TestGatewayChain(FunctionalTests):
-
-    def tearDown(self):
-        registry = get_current_registry()
-        registry.unregisterUtility(provided=IProcessDefinition)
-        super(TestGatewayChain, self).tearDown()
-
-    def _process(self):
-        """
-        S: start event
-        E: end event
-        G1,3, 4(x): XOR Gateway
-        G2(+): Parallel Gateway
-        A, B, D: activities
-                                       -----
-                                    -->| A |------------\
-                                   /   -----             \
-    -----   ---------   --------- /                       \   ---------   -----
-    | S |-->| G1(x) |-->| G2(+) |-                         -->| G4(x) |-->| E |
-    -----   --------- \ --------- \    ---------   -----   /  ---------   -----
-                       \           \-->| G3(x) |-->| B |--/
-                        \              /--------   -----
-                         \    -----   /
-                          \-->| D |--/
-                              -----
-        """
-        pd = ProcessDefinition(u'sample')
-        pd.defineActivities(
-                s = StartEventDefinition(),
-                a = ActivityDefinition(),
-                b = ActivityDefinition(),
-                d = ActivityDefinition(),
-                g1 = ExclusiveGatewayDefinition(),
-                g2 = ParallelGatewayDefinition(),
-                g3 = ExclusiveGatewayDefinition(),
-                g4 = ExclusiveGatewayDefinition(),
-                e = EndEventDefinition(),
-        )
-        pd.defineTransitions(
-                TransitionDefinition('s', 'g1'),
-                TransitionDefinition('g1', 'g2'),
-                TransitionDefinition('g1', 'd'),
-                TransitionDefinition('g2', 'a'),
-                TransitionDefinition('g2', 'g3'),
-                TransitionDefinition('d', 'g3'),
-                TransitionDefinition('g3', 'b'),
-                TransitionDefinition('b', 'g4'),
-                TransitionDefinition('a', 'g4'),
-                TransitionDefinition('g4', 'e'),
-        )
-
-        self.config.scan(example)
-        return pd
-
-    def test_gateway_chain_end_event_a(self):
-        pd = self._process()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('a')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-
-    def test_gateway_chain_end_event_d_b(self):
-        pd = self._process()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('d')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['b'])
-        workitems['b'].start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-
-    def test_gateway_chain_end_event_b(self):
-        pd = self._process()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('b')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-
-    def _process_parallel_join(self):
-        """
-        S: start event
-        E: end event
-        G1,3(x): XOR Gateway
-        G2,4(+): Parallel Gateway
-        A, B, D: activities
-                                       -----
-                                    -->| A |------------\
-                                   /   -----             \
-    -----   ---------   --------- /                       \   ---------   -----
-    | S |-->| G1(x) |-->| G2(+) |-                         -->| G4(+) |-->| E |
-    -----   --------- \ --------- \    ---------   -----   /  ---------   -----
-                       \           \-->| G3(x) |-->| B |--/
-                        \              /--------   -----
-                         \    -----   /
-                          \-->| D |--/
-                              -----
-        """
-        pd = ProcessDefinition(u'sample')
-        self.app['pd'] = pd
-        pd.defineNodes(
-                s = StartEventDefinition(),
-                a = ActivityDefinition(),
-                b = ActivityDefinition(),
-                d = ActivityDefinition(),
-                g1 = ExclusiveGatewayDefinition(),
-                g2 = ParallelGatewayDefinition(),
-                g3 = ExclusiveGatewayDefinition(),
-                g4 = ParallelGatewayDefinition(),
-                e = EndEventDefinition(),
-        )
-        pd.defineTransitions(
-                TransitionDefinition('s', 'g1'),
-                TransitionDefinition('g1', 'g2'),
-                TransitionDefinition('g1', 'd'),
-                TransitionDefinition('g2', 'a'),
-                TransitionDefinition('g2', 'g3'),
-                TransitionDefinition('d', 'g3'),
-                TransitionDefinition('g3', 'b'),
-                TransitionDefinition('b', 'g4'),
-                TransitionDefinition('a', 'g4'),
-                TransitionDefinition('g4', 'e'),
-        )
-
-        self.config.scan(example)
-        return pd
-
-
-    def test_gateway_chain_parallel_d_b_and_blocked(self):
-        pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('d')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['b'])
-        
-        workitems['b'].start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-        self.assertFalse(proc._finished)
-
-    def test_gateway_chain_parallel_a_b(self):
-        pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('a')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['b'])
-        workitems['b'].start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-        self.assertTrue(proc._finished)
-
-    def test_gateway_chain_parallel_b_a(self):
-        pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('b')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['a'])
-        workitems['a'].start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
-        self.assertTrue(proc._finished)
 
 
 # TODO: test event behind a xor gateway

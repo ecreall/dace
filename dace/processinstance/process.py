@@ -6,6 +6,7 @@ from zope.interface import implements
 import transaction
 
 from .activity import SubProcess
+from .event import Event
 from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
 from dace.objectofcollaboration.entity import Entity
@@ -158,6 +159,10 @@ class Process(Entity):
                 next = self[transition.target.__name__]
                 registry.notify(Transition(node, next))
                 next.prepare()
+                if isinstance(next, Event):
+                    next.prepare_for_execution()
+
+
 
             for transition in transitions:
                 next = self[transition.target.__name__]

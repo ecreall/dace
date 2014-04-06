@@ -119,7 +119,6 @@ class BehavioralFlowNode(object):
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
-
         paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
         if paths:
             for p in set(paths):
@@ -132,7 +131,8 @@ class BehavioralFlowNode(object):
                 if transition.sync or transition.condition(self.process):
                     allowed_transitions.append(transition)
 
-            self.play(allowed_transitions)
+            if allowed_transitions:
+                self.play(allowed_transitions)
 
 class ValidationError(Exception):
     principalmessage = u""
