@@ -52,7 +52,7 @@ class FlowNode(BPMNElement, Object):
         registry.notify(ActivityFinished(self))
         self.process.play_transitions(self, transitions)
 
-    def replay_path(self, path, transaction):
+    def replay_path(self, decision, transaction):
         pass
 
     def stop(self):
@@ -87,7 +87,7 @@ class BehavioralFlowNode(object):
 
                 return wi
 
-    def replay_path(self, path, transaction):
+    def replay_path(self, decision, transaction):
         workitem = None
         if self.workitems:
             workitem = self.workitems[0]

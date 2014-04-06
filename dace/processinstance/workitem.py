@@ -64,7 +64,7 @@ class StartWorkItem(LockableElement):
         start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.first[0]))
         proc[self.path.sources[0].__name__].start(start_transaction)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
-        proc.replay_path(self.path, replay_transaction)
+        proc.replay_path(self, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
         wi = proc[self.path.targets[0].__name__].workitems[0]
         #wi.start(*args)
@@ -159,17 +159,22 @@ class DecisionWorkItem(BaseWorkItem):
 
     def __init__(self, path, node):
         self.path = path
+        self.validations = []
         super(DecisionWorkItem, self).__init__(node)
 
     def concerned_nodes(self):
-        return self.path.sources
+        return [n for n in self.path.sources if not (n in self.validations)] 
+
+    @property
+    def is_finished(self):
+        return not self.concerned_nodes()
 
     def merge(self, decision):
         self.path = self.path.merge(decision.path)
 
     def start(self, *args):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay')
-        self.process.replay_path(self.path, replay_transaction)
+        self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
         wi = self.process[self.path.targets[0].__name__].workitems[0]
         return wi

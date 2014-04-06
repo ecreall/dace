@@ -3,7 +3,7 @@ from substanced.event import ObjectAdded
 
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event
-from .workitem import DecisionWorkItem
+from .workitem import DecisionWorkItem, StartWorkItem
 from dace.processdefinition.core import Path, Transaction
 
 
@@ -72,34 +72,36 @@ class ExclusiveGateway(Gateway):
             if isinstance(node_to_execute, Event):
                 node_to_execute.prepare_for_execution()
 
-    def replay_path(self, path, transaction):
-        decision = None
-        for dwi in self.workitems:
-            if path.is_segement(dwi.path):
-                decision = dwi
-                break
+    def replay_path(self, decision, transaction):
+        allconcernedkitems = self.get_allconcernedworkitems()
+        if isinstance(decision, StartWorkItem):
+            for wi in allconcernedkitems:
+                if decision.path.is_segement(wi.path):
+                    decision = wi
+                    break
 
-        self.finich_decisions(decision)
+        if decision in allconcernedkitems:
+            self.finich_decisions(decision)
+        else:
+            self.finich_decisions(None)
 
     def finich_decisions(self, work_item):
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
-        # beginning exactly the same as Activity
-        if work_item is not None:
-            self.delproperty('workitems', work_item)
+        if work_item is not None :
+            work_item.validations.append(self.definition)
+            if work_item.is_finished:
+                work_item.__parent__.delproperty('workitems', work_item)
 
-        self._p_changed = True
-        # clear other work items
-        for wi in self.workitems:
-            wi.node.stop()
-
-        self.setproperty('workitems', [])
-
+        self._p_changed = True #TODO
         # clear commun work items
         allconcernedkitems = self.get_allconcernedworkitems()
         for cdecision in allconcernedkitems:
-            cdecision.node.stop()
-            cdecision.__parent__.delproperty('workitems', cdecision)
+            if cdecision is not work_item:
+               cdecision.validations.append(self.definition)
+               cdecision.node.stop()
+               if cdecision.is_finished or not cdecision.path.is_segement(work_item.path):
+                   cdecision.__parent__.delproperty('workitems', cdecision)
 
         if work_item is not None:
             transition = work_item.path._get_transitions_source(self.definition)[0]
@@ -180,7 +182,6 @@ class ParallelGateway(Gateway):
         if (len(validated_nodes) == len(incoming_nodes)):
             registry = get_current_registry()
             registry.notify(ActivityStarted(self))
-            
             self.play(self.definition.outgoing)
             if paths:
                 for p in set(paths):

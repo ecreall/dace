@@ -68,9 +68,10 @@ class Process(Entity):
     def isSubProcess(self):
         return self.definition.isSubProcess
 
-    def replay_path(self, path, transaction):
+    def replay_path(self, decision, transaction):
+        path = decision.path
         first_transitions = path.first
-        self.replay_transitions(path, first_transitions, transaction)
+        self.replay_transitions(decision, first_transitions, transaction)
         executed_transitions = first_transitions
         next_transitions = set()
         for t in first_transitions:
@@ -82,7 +83,7 @@ class Process(Entity):
                 next_transitions.remove(nt)
 
         while next_transitions:
-            self.replay_transitions(path, next_transitions, transaction)
+            self.replay_transitions(decision, next_transitions, transaction)
             executed_transitions.extend(next_transitions)
             next_ts = set()
             for t in next_transitions:
@@ -94,13 +95,13 @@ class Process(Entity):
 
             next_transitions = next_ts
 
-    def replay_transitions(self,path, transitions, transaction):
+    def replay_transitions(self,decision, transitions, transaction):
         executed_nodes = []
         for transition in transitions:
             node = self[transition.source.__name__]
             if not (node in executed_nodes):
                 executed_nodes.append(node)
-                node.replay_path(path, transaction)
+                node.replay_path(decision, transaction)
 
     def getWorkItems(self):
         dace_catalog = find_catalog('dace')
