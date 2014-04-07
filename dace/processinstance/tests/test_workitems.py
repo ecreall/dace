@@ -644,6 +644,10 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
 
+        self.assertEqual(len(all_workitems['sample.d']), 1)
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
+
         workitems['sample.d'].start().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
