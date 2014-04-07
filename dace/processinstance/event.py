@@ -9,8 +9,7 @@ from zmq.eventloop.ioloop import DelayedCallback
 from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
-from .workitem import DecisionWorkItem
-#TODO: from .z3 import Job
+from dace.z3 import Job
 from dace import log
 
 # shared between threads
@@ -77,7 +76,7 @@ class Throwing(Event):
                     self.start(starttransaction)
                     self.finish_behavior(wi)
                 else:
-                    self.stop() 
+                    self.stop()
 
     # l' operation est sans parametres (les parametres sont sur la definition est sont calculable)
     def execute(self):
@@ -98,7 +97,7 @@ class Catching(Event):
     def prepare_for_execution(self):
         # If it's a empty StartEvent, execute the callback directly.
         if not self.execution_prepared:
-            super(Throwing, self).prepare_for_execution()
+            super(Catching, self).prepare_for_execution()
             if self.eventKind is None:
                 if self.validate():
                     wi = self._get_workitem()
@@ -194,7 +193,7 @@ class ConditionalEvent(EventKind):
             if wi is not None:
                 self.event.start(None)
             else:
-                self.stop()  
+                self.stop()
         else:
             log.info('%s %s', self.event, "validate ko, retry in 1s")
             self._push_callback()
@@ -278,7 +277,7 @@ class SignalEvent(EventKind):
             if wi is not None:
                 self.event.start(None)
             else:
-                self.event.stop() 
+                self.event.stop()
 
     def execute(self):
         ref = self.definition.refSignal(self.event.process)
@@ -326,7 +325,7 @@ class TimerEvent(EventKind):
             if wi is not None:
                 self.event.start(None)
             else:
-                self.event.stop() 
+                self.event.stop()
         else:
             self._push_callback()
 

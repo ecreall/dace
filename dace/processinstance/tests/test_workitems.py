@@ -1,5 +1,4 @@
 import transaction
-import zope.component
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
 
@@ -18,7 +17,6 @@ from dace.processdefinition.eventdef import (
     IntermediateCatchEventDefinition,
     ConditionalEventDefinition,
     TimerEventDefinition)
-from dace.processinstance.core import ProcessError
 
 from dace.testing import FunctionalTests
 
@@ -85,10 +83,10 @@ class TestsWorkItems(FunctionalTests):
         A, B, D: activities
                                        -----
                                     -->| A |
-                                   /   -----             
-                        --------- /                       
-                        | G2(+) |-                         
-                        --------- \    ---------   -----   
+                                   /   -----
+                        --------- /
+                        | G2(+) |-
+                        --------- \    ---------   -----
                                    \-->| G3(x) |-->| B |
                                        /--------   -----
                               -----   /
@@ -319,7 +317,7 @@ class TestsWorkItems(FunctionalTests):
     -----   ---------\ ---------\     --------    -----        /  ---------   -----
                       \         / \-->| P(+) |--->| B |-------/
                        \       /      --------\   -----      /
-                   ---------  /                \    -----   / 
+                   ---------  /                \    -----   /
                    | G1(x) |-/                  \-->| C |--/
                    ---------                        ----- /
                          \    -----                      /
@@ -411,7 +409,7 @@ class TestsWorkItems(FunctionalTests):
     -----   ---------\ ---------\     --------    -----        /  ---------   -----
                       \         / \-->| P(+) |--->| B |-------/
                        \       /      --------\   -----      /
-                   ---------  /                \    -----   / 
+                   ---------  /                \    -----   /
                    | G1(x) |-/                  \-->| C |--/
                    ---------                        ----- /
                          \    -----                      /
@@ -530,7 +528,7 @@ class TestsWorkItems(FunctionalTests):
     -----   ---------\ ---------\     --------    -----        /   ---------   -----
                |      \          /--->| P(+) |--->| B |-------/
                |       \        /     --------\   -----      /
-            -----   ---------  /               \    -----   / 
+            -----   ---------  /               \    -----   /
             | Ea|---| G1(x) |-/                 \-->| C |--/
             -----   ---------                       ----- /
                          \    -----                      /
@@ -652,39 +650,6 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
-    def _process_a_g_bc(self):
-        """
-        S: start event
-        E: end event
-        G(X): XOR Gateway
-        A, B, C: activities
-                                     -----   -----
-                                  -->| B |-->| E |
-        -----   -----   -------- /   -----   -----
-        | S |-->| A |-->| G(X) |-    -----
-        -----   -----   -------- \-->| C |
-                                     -----
-        """
-        pd = ProcessDefinition(u'sample')
-        self.app['pd'] = pd
-        pd.defineNodes(
-                s = StartEventDefinition(),
-                a = ActivityDefinition(),
-                g = ExclusiveGatewayDefinition(),
-                b = ActivityDefinition(),
-                c = ActivityDefinition(),
-                e = EndEventDefinition(),
-        )
-        pd.defineTransitions(
-                TransitionDefinition('s', 'a'),
-                TransitionDefinition('a', 'g'),
-                TransitionDefinition('g', 'b'),
-                TransitionDefinition('g', 'c'),
-                TransitionDefinition('b', 'e'),
-        )
-        self.config.scan(example)
-        return pd
-
     def test_blocked_gateway_because_no_workitems(self):
         pd = self._process_a_g_bc()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
@@ -802,10 +767,10 @@ class TestsWorkItems(FunctionalTests):
     -----   ---------  ---------\     --------    -----        /   ---------   -----
                |                 /--->| P(+) |--->| B |-------/
                |                /     --------\   -----      /
-            -----              /               \    -----   / 
+            -----              /               \    -----   /
             | Ea|-------------/                 \-->| C |--/
             -----                                   ----- /
-                    
+
         """
         pd = ProcessDefinition(u'sample')
         self.app['pd'] = pd
@@ -880,6 +845,7 @@ class TestsWorkItems(FunctionalTests):
         workitems['sample.b'].start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
+
 
 class TestGatewayChain(FunctionalTests):
 
@@ -1022,7 +988,7 @@ class TestGatewayChain(FunctionalTests):
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
-        
+
         workitems['sample.b'].start().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
@@ -1058,6 +1024,18 @@ class TestGatewayChain(FunctionalTests):
 ##############################################################################################
 
 
+from datetime import timedelta, datetime
+def time_date(process):
+    return datetime.today() + timedelta(seconds=2)
+
+def time_duration(process):
+    return timedelta(seconds=2)
+
+def return_false(process):
+    return False
+
+def return_true(process):
+    return True
 
 class EventsTests(FunctionalTests):
 
@@ -1066,7 +1044,7 @@ class EventsTests(FunctionalTests):
         pd = self._process_a_g_bc()
         # override start event s with a condition (this is a rule start)
         pd.defineNodes(
-                s = StartEventDefinition(ConditionalEventDefinition(condition=lambda self: False)),
+                s = StartEventDefinition(ConditionalEventDefinition(condition=return_false)),
         )
         pd.defineTransitions(
                 TransitionDefinition('s', 'a'),
@@ -1075,7 +1053,7 @@ class EventsTests(FunctionalTests):
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('s')
         self.assertIs(start_wi, None)
-        pd.set_start_condition(lambda self: True)
+        pd.set_start_condition(return_true)
         start_wi = pd.start_process('s')
         self.assertIsNot(start_wi, None)
 
@@ -1096,7 +1074,7 @@ class EventsTests(FunctionalTests):
         """
         pd = ProcessDefinition(u'sample')
         self.app['pd'] = pd
-        ced = ConditionalEventDefinition(condition=lambda self: False)
+        ced = ConditionalEventDefinition(condition=return_false)
         from dace.processinstance import event
         self.assertEqual(len(event.callbacks), 0)
         pd.defineNodes(
@@ -1121,7 +1099,7 @@ class EventsTests(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 1)
         self.assertEqual(sorted(workitems.keys()), ['cie'])
-        workitems['cie'].node.eventKind.definition.condition = lambda self: True
+        workitems['cie'].node.eventKind.definition.condition = return_true
         import time
         time.sleep(6)
         transaction.begin()
@@ -1130,14 +1108,12 @@ class EventsTests(FunctionalTests):
         self.assertEqual(len(event.callbacks), 0)
 
     def test_timer_intermediate_event_time_duration(self):
-        from datetime import timedelta
-        ted = TimerEventDefinition(time_duration=lambda process: timedelta(seconds=2))
+        ted = TimerEventDefinition(time_duration=time_duration)
         self._test_timer_intermediate_event(ted)
 
     def test_timer_intermediate_event_time_start(self):
-        from datetime import timedelta, datetime
         ted = TimerEventDefinition(
-                time_date=lambda process: datetime.today() + timedelta(seconds=2))
+                time_date=time_date)
         self._test_timer_intermediate_event(ted)
 
     def _test_timer_intermediate_event(self, ted):
@@ -1156,7 +1132,8 @@ class EventsTests(FunctionalTests):
         workitem B is created, else the work item is blocked.
         """
         pd = ProcessDefinition(u'sample')
-        pd.defineActivities(
+        self.app['pd'] = pd
+        pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 tie = IntermediateCatchEventDefinition(ted),
@@ -1170,11 +1147,12 @@ class EventsTests(FunctionalTests):
                 TransitionDefinition('b', 'e'),
         )
         self.config.scan(example)
-        self.registry.registerUtility(pd, name=pd.id)
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         # commit the application
         transaction.commit()
-        start_wi = pd.createStartWorkItem('a')
-        proc = start_wi.start()
+        start_wi = pd.start_process('a')
+        a_wi, proc = start_wi.start()
+        a_wi.start()
         transaction.commit()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['tie'])

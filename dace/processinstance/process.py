@@ -170,7 +170,7 @@ class Process(Entity):
                     break
 
     def __repr__(self):
-        return "Process(%r)" % self.id
+        return "Process(%r)" % self.definition.id
 
 
 ############################################################################# gestion des relation

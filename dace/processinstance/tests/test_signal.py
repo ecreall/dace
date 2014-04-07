@@ -1,4 +1,3 @@
-import zope.component
 import transaction
 from pyramid.threadlocal import get_current_registry
 
@@ -6,27 +5,26 @@ from dace.interfaces import IProcessDefinition
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition
-from dace.processdefinition.gatewaydef import (
-    ExclusiveGatewayDefinition, ParallelGatewayDefinition)
+from dace.processdefinition.gatewaydef import ParallelGatewayDefinition
 from dace.processdefinition.transitiondef import TransitionDefinition
 from dace.processdefinition.eventdef import (
     StartEventDefinition,
     EndEventDefinition,
     IntermediateCatchEventDefinition,
     IntermediateThrowEventDefinition,
-    SignalEventDefinition,
-    ConditionalEventDefinition,
-    TimerEventDefinition)
+    SignalEventDefinition)
 
 from dace.testing import FunctionalTests
 
+def ref_signal(process):
+    return "X"
 
-class OldTests(FunctionalTests):
+class TestsSignal(FunctionalTests):
 
     def tearDown(self):
         registry = get_current_registry()
         registry.unregisterUtility(provided=IProcessDefinition)
-        super(TestsWorkItems, self).tearDown()
+        super(TestsSignal, self).tearDown()
 
     def _process_definition(self):
         """
@@ -43,11 +41,9 @@ class OldTests(FunctionalTests):
         -----   --------- \-->| Sc |->| D |---/ ---------   -----
                               ------  -----
         """
-        def ref_signal(process):
-            return "X"
-
         pd = ProcessDefinition(u'sample')
-        pd.defineActivities(
+        self.app['pd'] = pd
+        pd.defineNodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
@@ -75,19 +71,21 @@ class OldTests(FunctionalTests):
 
     def xtest_signal_event_start_sc(self):
         pd = self._process_definition()
-        zope.component.provideUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('sc')
-        proc = start_wi.start()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('sc')
+        sc_wi, proc = start_wi.start()
+        sc_wi.start()
         self.assertEqual(len(proc.getWorkItems()), 2)
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['a', 'sc'])
 
     def test_signal_event(self):
         pd = self._process_definition()
-        zope.component.provideUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('a')
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('a')
         # commit the application
         transaction.commit()
-        proc = start_wi.start()
+        a_wi, proc = start_wi.start()
+        a_wi.start()
         transaction.commit()
 
         import time
@@ -114,11 +112,10 @@ class OldTests(FunctionalTests):
         -----   -----   --------- \-->| Sc |->| D |---/ ---------   -----
                                       ------  -----
         """
-        def ref_signal(process):
-            return "X"
 
         pd = ProcessDefinition(u'sample')
-        pd.defineActivities(
+        self.app['pd'] = pd
+        pd.defineNodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
@@ -149,11 +146,13 @@ class OldTests(FunctionalTests):
     def test_start_intermediate_events_on_startup(self):
         from zope.processlifetime import DatabaseOpenedWithRoot
         pd = self._process_definition_with_activity_after_start_event()
-        zope.component.provideUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('b')
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('b')
+
         # commit the application
         transaction.commit()
-        proc = start_wi.start()
+        b_wi, proc = start_wi.start()
+        b_wi.start()
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['a', 'sc'])
 

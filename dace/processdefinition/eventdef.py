@@ -32,12 +32,12 @@ class StartEventDefinition(EventDefinition):
                         swi = StartWorkItem(startable_path)
                         if swi.node.__name__ in start_workitems:
                             start_workitems[swi.node.__name__].merge(swi)
-                        else:    
+                        else:
                             start_workitems[swi.node.__name__] = swi
 
-            for swi in start_workitems.values():            
+            for swi in start_workitems.values():
                 yield swi
-                
+
 
 class IntermediateThrowEventDefinition(EventDefinition):
     factory = IntermediateThrowEvent
