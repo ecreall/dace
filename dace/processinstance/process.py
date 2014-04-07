@@ -115,13 +115,15 @@ class Process(Entity):
                 process_inst_uid_index.any((int(p_uid),))
         workitems = query.execute().all()
         result = {}
+        self.result_multiple = {} # for tests
         for wi in workitems:
             if isinstance(wi.node, SubProcess):
                 result.update(wi.node.subProcess.getWorkItems())
             if wi.node.id in result:
-                pass#result[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
+                self.result_multiple[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
             else:
                 result[wi.node.id] = wi
+                self.result_multiple[wi.node.id] = [wi]
 
         return result
 

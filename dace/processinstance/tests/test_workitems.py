@@ -592,12 +592,17 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(u'sample.ea', wi.node.id)
         wi.start()
         workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
-        self.assertIn(u'sample.b', nodes_workitems)#* 2
-        self.assertIn(u'sample.c', nodes_workitems)#* 2
-        self.assertIn(u'sample.d', nodes_workitems)#* 2
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+        self.assertEqual(len(all_workitems['sample.d']), 2)#* 2
+        self.assertEqual(len(all_workitems['sample.b']), 1)#* 1 (G0) une seule execution
+        self.assertEqual(len(all_workitems['sample.c']), 1)#* 1 (G0) une seule execution
 
     def test_start_complex_MultiDecision_workitem_b(self):
         pd = self._process_start_complex_MultiDecision_process()
@@ -615,11 +620,16 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(u'sample.b', wi.node.id)
 
         workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIn(u'sample.ea', nodes_workitems)
+
+        self.assertEqual(len(all_workitems['sample.ea']), 1)
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
 
 class TestGatewayChain(FunctionalTests):
 
@@ -754,7 +764,6 @@ class TestGatewayChain(FunctionalTests):
         self.config.scan(example)
         return pd
 
-
     def test_gateway_chain_parallel_d_b_and_blocked(self):
         pd = self._process_parallel_join()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
@@ -794,6 +803,7 @@ class TestGatewayChain(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
         self.assertTrue(proc._finished)
+
 ##############################################################################################
 
 
