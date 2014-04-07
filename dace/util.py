@@ -252,10 +252,12 @@ def getWorkItem(process_id, activity_id, request, context,
             if filter_by_involved:
                 process_ids = tuple(context.getInvolvedProcessIds())
 
-    query = process_id_index.eq(process_id) & \
-            activity_id_index.eq(activity_id) & \
-            object_provides_index.any((IWorkItem.__identifier__,)) & \
-            process_inst_uid_index.any(process_ids)
+
+    query =  process_id_index.eq(process_id) & \
+            activity_id_index.eq(process_id+'.'+activity_id) & \
+            object_provides_index.any((IWorkItem.__identifier__,))
+    if process_ids: 
+        query = query & process_inst_uid_index.any(process_ids)
 
     results = [w for w in query.execute().all()]
     if len(results) > 0:
@@ -267,14 +269,14 @@ def getWorkItem(process_id, activity_id, request, context,
 
         if IDecisionWorkItem.providedBy(wi):
             gw = wi.__parent__
-            for workitem in gw.workitems.values():
-                workitems = annotations.setdefault('workitems', {})
+            #for workitem in gw.workitems:
+                #workitems = annotations.setdefault('workitems', {})
                 # TODO: I think node_id is a callable here, can't we just
                 # use workitem[0].node_id?
-                from .catalog.interfaces import ISearchableObject
-                key = '%s.%s' % (process_id,
-                                 ISearchableObject(workitem[0]).node_id)
-                workitems[key] = workitem[0]
+                #from .catalog.interfaces import ISearchableObject
+                #key = '%s.%s' % (process_id,
+                #                 ISearchableObject(workitem[0]).node_id)
+                #workitems[key] = workitem[0]
         if wi is None:
             raise Forbidden
         return wi
