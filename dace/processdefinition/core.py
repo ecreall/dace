@@ -92,6 +92,23 @@ class Transaction(Persistent):
 
         return None
 
+    def find_allsubpaths_by_source(self, node, type=None):
+        path = self.get_path_by_source(node, type)
+        result = []
+        if path is not None:
+            result.append(path)
+
+        for subtransaction in self.sub_transactions:
+            result.extend(subtransaction.find_allsubpaths_by_source(node, type))
+
+        return result
+
+    def get_path_by_source(self, node, type=None):
+        if self.path is not None and (type is None or type == self.type) and node in self.path.sources:
+            return self.path
+
+        return None
+
     def find_allsubpaths_cross(self, node, type=None):
         path = self.get_path_cross(node, type)
         result = []
@@ -305,8 +322,12 @@ class Path(Persistent):
     def __repr__(self):
         return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
-    #def __eq__(self, other):
-    #    return self.transitions == other.transitions
+    def equal(self, other):
+        for transition in other.transitions:
+            if not (transition in self.transitions):
+                return False
+
+        return len(self.transitions) == len(other.transitions)
 
 
 class EventHandlerDefinition(FlowNodeDefinition):

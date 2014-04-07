@@ -652,6 +652,234 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
+    def _process_a_g_bc(self):
+        """
+        S: start event
+        E: end event
+        G(X): XOR Gateway
+        A, B, C: activities
+                                     -----   -----
+                                  -->| B |-->| E |
+        -----   -----   -------- /   -----   -----
+        | S |-->| A |-->| G(X) |-    -----
+        -----   -----   -------- \-->| C |
+                                     -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                g = ExclusiveGatewayDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'a'),
+                TransitionDefinition('a', 'g'),
+                TransitionDefinition('g', 'b'),
+                TransitionDefinition('g', 'c'),
+                TransitionDefinition('b', 'e'),
+        )
+        self.config.scan(example)
+        return pd
+
+    def test_blocked_gateway_because_no_workitems(self):
+        pd = self._process_a_g_bc()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        proc = pd()
+        self.app['process'] = proc
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 0)
+
+    def _test_waiting_workitem_to_finish(self):
+        pd = self._process_a_g_bc()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('a')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 2)
+        b_wi = workitems['sample.b']
+        c_wi = workitems['sample.c']
+        self.assertEqual(b_wi.node.id, 'sample.b')
+        self.assertEqual(c_wi.node.id, 'sample.c')
+
+        b_swi = ISearchableObject(b_wi)
+        c_swi = ISearchableObject(c_wi)
+        self.assertEqual(b_swi.process_id(), 'sample')
+        self.assertEqual(b_swi.node_id(), 'sample.b')
+        self.assertEqual(c_swi.process_id(), 'sample')
+        self.assertEqual(c_swi.node_id(), 'sample.c')
+        return b_wi, c_wi, proc
+
+    def test_catalogued_workitems(self):
+        b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
+        request = self.request
+        self.assertIs(b_wi, getWorkItem('sample', 'b', request, None))
+        self.assertIs(c_wi, getWorkItem('sample', 'c', request, None))
+
+    def test_waiting_workitem_b_to_finish(self):
+        b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
+        b_wi.start().start()
+        #self.assertEqual(proc.workflowRelevantData.choice, "b")
+        self.assertEqual(len(proc.getWorkItems()), 0)
+
+
+    def test_no_start_workitem_for_pd_subprocessOnly(self):
+        pd = self._process_a_g_bc()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = queryWorkItem('sample', 'a', self.request, None)
+        self.assertIsNot(start_wi, None)
+        pd.isControlled = True
+        start_wi = queryWorkItem('sample', 'a', self.request, None)
+        self.assertIs(start_wi, None)
+        with self.assertRaises(Forbidden):
+            start_wi = getWorkItem('sample', 'a', self.request, None)
+
+    def _process_a_pg_bc(self):
+        """
+        S: start event
+        E: end event
+        G(+): Parallel Gateway
+        A, B, C: activities
+                                     -----   -----
+                                  -->| B |-->| E |
+        -----   -----   -------- /   -----   -----
+        | S |-->| A |-->| G(+) |-    -----
+        -----   -----   -------- \-->| C |
+                                     -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                g = ParallelGatewayDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'a'),
+                TransitionDefinition('a', 'g'),
+                TransitionDefinition('g', 'b'),
+                TransitionDefinition('g', 'c'),
+                TransitionDefinition('b', 'e'),
+        )
+        self.config.scan(example)
+        return pd
+
+    def test_end_event_delete_all_workitems(self):
+        pd = self._process_a_pg_bc()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        proc = pd()
+        self.app['proc'] = proc
+        self.assertEqual(len(proc.getWorkItems()), 0)
+        start_wi = pd.start_process('a')
+        wi, proc = start_wi.start()
+        wi.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 2)
+        b_wi = workitems['sample.b']
+        b_wi.start()
+        self.assertEqual(len(proc.getWorkItems()), 0)
+
+
+    def  _process_start_refresh_decision(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, 2(x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D, Ea: activities
+                                      -----
+                                   -->| A |------------\
+                                  /   -----             \
+    -----   ---------  --------- /                       \         ---------   -----
+    | S |-->| P0(+) |-->| G0(x) |                         \------->| G2(+) |-->| E |
+    -----   ---------  ---------\     --------    -----        /   ---------   -----
+               |                 /--->| P(+) |--->| B |-------/
+               |                /     --------\   -----      /
+            -----              /               \    -----   / 
+            | Ea|-------------/                 \-->| C |--/
+            -----                                   ----- /
+                    
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                ea = ActivityDefinition(),
+                p0 = ParallelGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'p0'),
+                TransitionDefinition('p0', 'g0'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g2'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('p0', 'ea'),
+                TransitionDefinition('ea', 'p'),
+                TransitionDefinition('g2', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+
+    def test_refresh_decision(self):
+        pd = self._process_start_refresh_decision()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 2)
+        self.assertIn('a', start_wis)
+        self.assertIn('ea', start_wis)
+
+        start_ea = start_wis['ea']
+        wi, proc = start_ea.start()
+        self.assertEqual(u'sample.ea', wi.node.id)
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.a', nodes_workitems)
+
+        self.assertEqual(len(all_workitems['sample.a']), 1)
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
+
+        workitems['sample.b'].start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
+
+        workitems['sample.b'].start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
 
 class TestGatewayChain(FunctionalTests):
 
@@ -831,120 +1059,24 @@ class TestGatewayChain(FunctionalTests):
 
 
 
-class OldTests(FunctionalTests):
+class EventsTests(FunctionalTests):
 
-    def _process_a_g_bc(self):
-        """
-        S: start event
-        E: end event
-        G(X): XOR Gateway
-        A, B, C: activities
-                                     -----   -----
-                                  -->| B |-->| E |
-        -----   -----   -------- /   -----   -----
-        | S |-->| A |-->| G(X) |-    -----
-        -----   -----   -------- \-->| C |
-                                     -----
-        """
-        pd = ProcessDefinition(u'sample')
-        self.app['pd'] = pd
-        pd.defineNodes(
-                s = StartEventDefinition(),
-                a = ActivityDefinition(),
-                g = ExclusiveGatewayDefinition(),
-                b = ActivityDefinition(),
-                c = ActivityDefinition(),
-                e = EndEventDefinition(),
-        )
-        pd.defineTransitions(
-                TransitionDefinition('s', 'a'),
-                TransitionDefinition('a', 'g'),
-                TransitionDefinition('g', 'b'),
-                TransitionDefinition('g', 'c'),
-                TransitionDefinition('b', 'e'),
-        )
-        self.config.scan(example)
-        return pd
-
-    def test_blocked_gateway_because_no_workitems(self):
-        pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
-        proc = pd()
-        self.app['process'] = proc
-        workitems = proc.getWorkItems()
-        self.assertEqual(len(workitems), 0)
-
-    def _test_waiting_workitem_to_finish(self):
-        pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
-        start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
-        wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(len(workitems), 2)
-        b_wi = workitems['sample.b']
-        c_wi = workitems['sample.c']
-        self.assertEqual(b_wi.node.id, 'sample.b')
-        self.assertEqual(c_wi.node.id, 'sample.c')
-
-        b_swi = ISearchableObject(b_wi)
-        c_swi = ISearchableObject(c_wi)
-        self.assertEqual(b_swi.process_id(), 'sample')
-        self.assertEqual(b_swi.node_id(), 'sample.b')
-        self.assertEqual(c_swi.process_id(), 'sample')
-        self.assertEqual(c_swi.node_id(), 'sample.c')
-        return b_wi, c_wi, proc
-
-    def test_catalogued_workitems(self):
-        b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
-        request = self.request
-        self.assertIs(b_wi, getWorkItem('sample', 'b', request, None))
-        self.assertIs(c_wi, getWorkItem('sample', 'c', request, None))
-
-    def test_waiting_workitem_b_to_finish(self):
-        b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
-        b_wi.start().start()
-        #self.assertEqual(proc.workflowRelevantData.choice, "b")
-        self.assertEqual(len(proc.getWorkItems()), 0)
-
-    def test_waiting_workitem_c_to_finish(self):
-        b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
-        class Form(object):
-            pass
-        form = Form()
-        data = {'layouts': ["azerty", "qwerty"]}
-        c_wi.start(form, data)
-        self.assertEqual(proc.workflowRelevantData.choice, "c: azerty")
-
-    def test_no_start_workitem_for_pd_subprocessOnly(self):
-        pd = self._process_a_g_bc_with_bc_applications()
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = queryWorkItem('sample', 'a', self.request, None)
-        self.assertIsNot(start_wi, None)
-        pd.isControlled = True
-        start_wi = queryWorkItem('sample', 'a', self.request, None)
-        self.assertIs(start_wi, None)
-        with self.assertRaises(Forbidden):
-            start_wi = getWorkItem('sample', 'a', self.request, None)
 
     def xtest_conditional_start_event(self):
-        pd = self._process_a_g_bc_with_bc_applications()
+        pd = self._process_a_g_bc()
         # override start event s with a condition (this is a rule start)
-        pd.defineActivities(
+        pd.defineNodes(
                 s = StartEventDefinition(ConditionalEventDefinition(condition=lambda self: False)),
         )
         pd.defineTransitions(
                 TransitionDefinition('s', 'a'),
         )
-        pd.defineApplications(
-                s = Application(),
-        )
-        pd.activities['s'].addApplication('s')
-        self.registry.registerUtility(pd, name=pd.id)
-        start_wi = pd.createStartWorkItem('s')
+
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('s')
         self.assertIs(start_wi, None)
         pd.set_start_condition(lambda self: True)
-        start_wi = pd.createStartWorkItem('s')
+        start_wi = pd.start_process('s')
         self.assertIsNot(start_wi, None)
 
     def test_conditional_intermediate_event(self):
@@ -963,10 +1095,11 @@ class OldTests(FunctionalTests):
         We need to start all coroutines at application startup.
         """
         pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
         ced = ConditionalEventDefinition(condition=lambda self: False)
         from dace.processinstance import event
         self.assertEqual(len(event.callbacks), 0)
-        pd.defineActivities(
+        pd.defineNodes(
                 a = ActivityDefinition(),
                 cie = IntermediateCatchEventDefinition(ced),
                 b = ActivityDefinition(),
@@ -975,12 +1108,14 @@ class OldTests(FunctionalTests):
                 TransitionDefinition('a', 'cie'),
                 TransitionDefinition('cie', 'b'),
         )
+        pd._normalize_definition()
         self.config.scan(example)
-        self.registry.registerUtility(pd, name=pd.id)
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         # commit the application
         transaction.commit()
-        start_wi = pd.createStartWorkItem('a')
-        proc = start_wi.start()
+        start_wi = pd.start_process('a')
+        wi, proc = start_wi.start()
+        wi.start()
         transaction.commit()
         self.assertEqual(len(event.callbacks), 1)
         workitems = proc.getWorkItems()
@@ -991,7 +1126,7 @@ class OldTests(FunctionalTests):
         time.sleep(6)
         transaction.begin()
         workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['b'])
+        self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         self.assertEqual(len(event.callbacks), 0)
 
     def test_timer_intermediate_event_time_duration(self):
@@ -1048,53 +1183,6 @@ class OldTests(FunctionalTests):
         transaction.begin()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['b'])
-
-    def _process_a_pg_bc(self):
-        """
-        S: start event
-        E: end event
-        G(+): Parallel Gateway
-        A, B, C: activities
-                                     -----   -----
-                                  -->| B |-->| E |
-        -----   -----   -------- /   -----   -----
-        | S |-->| A |-->| G(+) |-    -----
-        -----   -----   -------- \-->| C |
-                                     -----
-        """
-        pd = ProcessDefinition(u'sample')
-        pd.defineNodes(
-                s = StartEventDefinition(),
-                a = ActivityDefinition(),
-                g = ParallelGatewayDefinition(),
-                b = ActivityDefinition(),
-                c = ActivityDefinition(),
-                e = EndEventDefinition(),
-        )
-        pd.defineTransitions(
-                TransitionDefinition('s', 'a'),
-                TransitionDefinition('a', 'g'),
-                TransitionDefinition('g', 'b'),
-                TransitionDefinition('g', 'c'),
-                TransitionDefinition('b', 'e'),
-        )
-        self.config.scan(example)
-        return pd
-
-    def test_end_event_delete_all_workitems(self):
-        pd = self._process_a_pg_bc()
-        self.registry.registerUtility(pd, name=pd.id)
-        proc = pd()
-        self.app['proc'] = proc
-        self.assertEqual(len(proc.getWorkItems()), 0)
-        start_wi = pd.createStartWorkItem('a')
-        proc = start_wi.start()
-        workitems = proc.getWorkItems()
-        self.assertEqual(len(workitems), 2)
-        b_wi = workitems['b']
-        b_wi.start()
-        self.assertEqual(len(proc.getWorkItems()), 0)
-
 
 
 # TODO: test event behind a xor gateway

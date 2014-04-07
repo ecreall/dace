@@ -150,11 +150,6 @@ class Process(Entity):
         registry.notify(ProcessStarted(self))
         #self.transition(None, (self.startTransition, ))
 
-    def refreshXorGateways(self):
-        for node in self.nodes:
-            if isinstance(node, ExclusiveGateway):
-                node._refreshWorkItems()
-
     def play_transitions(self, node, transitions):
         registry = get_current_registry()
         if transitions:

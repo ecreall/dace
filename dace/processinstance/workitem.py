@@ -193,5 +193,8 @@ class DecisionWorkItem(BaseWorkItem):
 
         return True
 
+    def __eq__(self, other):
+        return self.path.equal(other.path) and self.node is other.node
+
     def replay_path(self):
         pass

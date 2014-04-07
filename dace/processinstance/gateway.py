@@ -7,20 +7,31 @@ from dace.processdefinition.core import Path
 
 
 class Gateway(FlowNode):
-
-    def _refreshWorkItems(self):
-        # Unindexes workitems
-        self.setproperty('workitems', [])
-        i = 0
-        for workitem in self._createWorkItems(self, ()):
-            i += 1
-            #workitem.id = str(i)
-            workitem.__name__ = str(i)
-            self.addtoproperty('workitems', workitem)
-
+    pass
 
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway):
+
+    def refresh_decisions(self, transaction):
+        workitems = self._calculate_decisions(transaction)
+        new_workitems = []
+        for wi in workitems.values():
+            if not (wi in self.workitems):
+                new_workitems.append(wi)  
+  
+        if not  new_workitems:
+            return
+       
+        for decision_workitem in new_workitems:
+            node_to_execute = self.process[decision_workitem.path.targets[0].__name__]
+            if isinstance(node_to_execute, Event):
+                node_to_execute.prepare_for_execution()
+
+        i = len(self.workitems)
+        for workitem in new_workitems:
+            i += 1
+            workitem.__name__ = i
+            self.addtoproperty('workitems', workitem)
 
     def find_executable_paths(self, source_path, source):
         for transition in self.definition.outgoing:
@@ -35,11 +46,8 @@ class ExclusiveGateway(Gateway):
                 for executable_path in executable_paths:
                     yield executable_path
 
-    def start(self, transaction):
+    def _calculate_decisions(self, transaction):
         global_transaction = transaction.get_global_transaction()
-        registry = get_current_registry()
-        notify = registry.notify
-        notify(ActivityStarted(self))
         workitems = {}
         allowed_transitions = []
         for transition in self.definition.outgoing:
@@ -56,8 +64,15 @@ class ExclusiveGateway(Gateway):
                     else:
                         workitems[dwi.node.__name__] = dwi
 
+        return workitems
+
+    def start(self, transaction):
+        registry = get_current_registry()
+        notify = registry.notify
+        notify(ActivityStarted(self))
+        workitems = self._calculate_decisions(transaction)
         if not workitems:
-            raise ProcessError("Gateway blocked because there is no workitems")
+            return
 
         i = 0
         for workitem in workitems.values():
@@ -107,6 +122,7 @@ class ExclusiveGateway(Gateway):
             self.process.play_transitions(self, [transition])
 
         paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
+        paths.extend(self.process.global_transaction.find_allsubpaths_by_source(self.definition, 'Find'))
         if paths:
             for p in set(paths):
                 source_transaction = p.transaction.__parent__
@@ -170,6 +186,7 @@ class ParallelGateway(Gateway):
                             yield executable_path
 
     def start(self, transaction):
+        self._refresh_find_transactions(transaction)
         global_transaction = transaction.get_global_transaction()
         incoming_nodes = [t.source for t in self.definition.incoming]
         paths = global_transaction.find_allsubpaths_for(self.definition, 'Start')
@@ -186,6 +203,20 @@ class ParallelGateway(Gateway):
                 for p in set(paths):
                     source_transaction = p.transaction.__parent__
                     source_transaction.remove_subtransaction(p.transaction)
+
+    def _refresh_find_transactions(self, transaction):
+        global_transaction = transaction.get_global_transaction()
+        find_nodes = set()
+        startpaths = global_transaction.find_allsubpaths_for(self.definition, 'Find')
+        for p in startpaths:
+            source_nodes = set(p.sources)
+            find_nodes = find_nodes.union(source_nodes)
+
+        for fn in find_nodes:
+            if fn.__class__.__name__ == 'ExclusiveGatewayDefinition':
+                self.process[fn.__name__].refresh_decisions(global_transaction)
+        
+    
 
 
 # parallel avec condition avec default
