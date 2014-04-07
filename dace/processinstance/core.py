@@ -8,7 +8,7 @@ import thread
 from dace.interfaces import IProcessStarted, IProcessFinished
 from .workitem import DecisionWorkItem
 from dace import log
-from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE
 
 
 class BPMNElement(object):
@@ -19,16 +19,29 @@ class BPMNElement(object):
 class FlowNode(BPMNElement, Object):
     implements(ILocation)
 
-    properties_def = {'workitems': (COMPOSITE_MULTIPLE, None, False)}
+    properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
+                      'outgoing': (SHARED_MULTIPLE, 'source', False),
+                      'workitems': (COMPOSITE_MULTIPLE, None, False)
+                      }
 
-    @property
-    def workitems(self):
-        return self.getproperty('workitems')
+
 
     def __init__(self, process, definition):
         BPMNElement.__init__(self, definition)
         Object.__init__(self)
         self.process = process
+
+    @property
+    def workitems(self):
+        return self.getproperty('workitems')
+
+    @property
+    def incoming(self):
+        return self.getproperty('incoming')
+
+    @property
+    def outgoing(self):
+        return self.getproperty('outgoing')
 
     def prepare(self):
         registry = get_current_registry()
@@ -110,7 +123,7 @@ class BehavioralFlowNode(object):
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
-        paths = self.process.global_transaction.find_allsubpaths_for(self.definition, 'Start')
+        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
         if paths:
             for p in set(paths):
                 source_transaction = p.transaction.__parent__
@@ -118,7 +131,7 @@ class BehavioralFlowNode(object):
 
         if not self.workitems:
             allowed_transitions = []
-            for transition in self.definition.outgoing:
+            for transition in self.outgoing:
                 if transition.sync or transition.condition(self.process):
                     allowed_transitions.append(transition)
 

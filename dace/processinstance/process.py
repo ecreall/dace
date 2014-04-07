@@ -26,11 +26,9 @@ class WorkflowData(Persistent):
 class Process(Entity):
     implements(IProcess)
 
-    properties_def = {'nodes': (COMPOSITE_MULTIPLE, None, False)}
-
-    @property
-    def nodes(self):
-        return self.getproperty('nodes')
+    properties_def = {'nodes': (COMPOSITE_MULTIPLE, None, True),
+                      'transitions': (COMPOSITE_MULTIPLE, None, True),
+                      }
 
     _started = False
     _finished = False
@@ -41,13 +39,6 @@ class Process(Entity):
         self.id = definition.id
         self.global_transaction = Transaction()
         self.startTransition = startTransition
-        for nodedef in definition.nodes:
-            node = nodedef.create(self)
-            node.id = nodedef.id
-            node.__name__ = nodedef.__name__
-            self.addtoproperty('nodes', node)
-        self._p_changed = True
-
         self.workflowRelevantData = WorkflowData()
         self.workflowRelevantData.__parent__ = self
         if not self.title:
@@ -56,6 +47,28 @@ class Process(Entity):
         # do a commit so all events have a _p_oid
         # mail delivery doesn't support savepoint
         transaction.commit()
+
+    def defineGraph(self, definition):
+        for nodedef in definition.nodes:
+            node = nodedef.create(self)
+            node.id = nodedef.id
+            node.__name__ = nodedef.__name__
+            self.addtoproperty('nodes', node)
+
+        for trabsitiondef in definition.transitions:
+            transition = trabsitiondef.creat(self)
+            transition.__name__ = transition.id
+            self.addtoproperty('transitions', transition)
+            transition._init_ends(self, trabsitiondef)
+
+    @property
+    def nodes(self):
+        return self.getproperty('nodes')
+
+
+    @property
+    def transitions(self):
+        return self.getproperty('transitions')
 
     def definition(self):
         registry = get_current_registry()
@@ -99,7 +112,7 @@ class Process(Entity):
     def replay_transitions(self,decision, transitions, transaction):
         executed_nodes = []
         for transition in transitions:
-            node = self[transition.source.__name__]
+            node = transition.source
             if not (node in executed_nodes):
                 executed_nodes.append(node)
                 node.replay_path(decision, transaction)
@@ -152,18 +165,17 @@ class Process(Entity):
 
     def play_transitions(self, node, transitions):
         registry = get_current_registry()
+        #transitions = [t.creat(self.process) for t in transitions]
         if transitions:
             for transition in transitions:
-                next = self[transition.target.__name__]
-                registry.notify(Transition(node, next))
+                next = transition.target
+                registry.notify(transition)
                 next.prepare()
                 if isinstance(next, Event):
                     next.prepare_for_execution()
 
-
-
             for transition in transitions:
-                next = self[transition.target.__name__]
+                next = transition.target
                 starttransaction = self.global_transaction.start_subtransaction('Start', transitions=(transition,))
                 next(starttransaction)
                 if self._finished:

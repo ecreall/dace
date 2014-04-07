@@ -55,9 +55,10 @@ class StartWorkItem(LockableElement):
         proc = pd()
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
+        proc.defineGraph(pd)
         proc.start()
         self.process = proc
-
+        self.path.transitions = [proc[t.__name__] for t in self.path.transitions]
         start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.first[0]))
         proc[self.path.sources[0].__name__].start(start_transaction)
         replay_transaction = proc.global_transaction.start_subtransaction('Replay')
@@ -93,9 +94,6 @@ class BaseWorkItem(LockableElement, Object):
     properties_def = {'actions': (COMPOSITE_MULTIPLE, None, False)}
     context = None
 
-    @property
-    def actions(self):
-        return self.getproperty('actions')
 
     def __init__(self, node):
         super(BaseWorkItem, self).__init__()
@@ -104,6 +102,11 @@ class BaseWorkItem(LockableElement, Object):
         for a in node.definition.contexts:
             actions.append(a(self))
         self.setproperty('actions', actions)
+
+
+    @property
+    def actions(self):
+        return self.getproperty('actions')
 
     @property
     def process_id(self):
