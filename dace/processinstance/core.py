@@ -1,14 +1,13 @@
-from persistent import Persistent
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
-from zope.interface import implements, Attribute
 from zope.component import createObject
+from zope.interface import implements
 from substanced.event import ObjectAdded
 import thread
 
-from dace.interfaces import IRuntime, IProcessStarted, IProcessFinished
-from .workitem import DecisionWorkItem, StartWorkItem
+from dace.interfaces import IProcessStarted, IProcessFinished
+from .workitem import DecisionWorkItem
 from dace import log
 from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 
@@ -109,7 +108,7 @@ class BehavioralFlowNode(object):
 
     def finish_behavior(self, work_item):
         if work_item is not None:
-	    self.delproperty('workitems', work_item)
+            self.delproperty('workitems', work_item)
             # If work_item._p_oid is not set, it means we created and removed it
             # in the same transaction, so no need to mark the node as changed.
             if work_item._p_oid is None:
