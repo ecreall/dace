@@ -61,7 +61,6 @@ class FlowNode(BPMNElement, Object):
     def definition(self):
         return self.process.definition[self.__name__]
 
-
     def __repr__(self):
         return "%s(%r)" % (
             self.__class__.__name__,
@@ -108,12 +107,6 @@ class BehavioralFlowNode(object):
     def finish_behavior(self, work_item):
         if work_item is not None:
             self.delproperty('workitems', work_item)
-            # If work_item._p_oid is not set, it means we created and removed it
-            # in the same transaction, so no need to mark the node as changed.
-            if work_item._p_oid is None:
-                self._p_changed = False
-            else:
-                self._p_changed = True
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
@@ -131,6 +124,7 @@ class BehavioralFlowNode(object):
 
             if allowed_transitions:
                 self.play(allowed_transitions)
+
 
 class ValidationError(Exception):
     principalmessage = u""
@@ -180,14 +174,11 @@ class Behavior(object):
         pass
 
 
-
-
 class EventHandler(FlowNode):
     def __init__(self, process, definition):
         super(EventHandler, self).__init__(process, definition)
         self.boundaryEvents = [defi.create(process)
                 for defi in definition.boundaryEvents]
-
 
 
 class ProcessStarted:

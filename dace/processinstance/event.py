@@ -148,10 +148,10 @@ class EndEvent(Throwing):
         registry.notify(ProcessFinished(self))
         # ici test pour les sous processus
         if self.process.definition.isSubProcess:
-            self.process.attachedTo.finish_behavior(self.process.attachedTo.wi)
+            self.process.attachedTo.finish_behavior(work_item)
 
         if self.process.definition.isVolatile:
-            self.process.__parent__.remove(self.process.__name__)
+            self.process.__parent__.delproperty('processes', self.process)
 
 
 class EventKind(object):

@@ -91,11 +91,12 @@ class ExclusiveGateway(Gateway):
             if work_item.is_finished:
                 work_item.__parent__.delproperty('workitems', work_item)
 
-        #self._p_changed = True #TODO
         # clear commun work items
         allconcernedkitems = self.get_allconcernedworkitems()
+        all_stoped_wis = []
         for cdecision in allconcernedkitems:
-            if cdecision is not work_item:
+            if not cdecision in all_stoped_wis and cdecision is not work_item:
+               all_stoped_wis.append(cdecision)
                cdecision.validations.append(self.definition)
                cdecision.node.stop()
                if cdecision.is_finished or not cdecision.path.is_segement(work_item.path):
