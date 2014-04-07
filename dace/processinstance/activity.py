@@ -18,9 +18,7 @@ from .core import (
 from .lock import LockableElement
 from dace.util import getBusinessAction
 from dace.interfaces import (
-    IParameterDefinition,
     IProcessDefinition,
-    IApplicationDefinition,
     IActivity,
     IBusinessAction)
 
@@ -96,13 +94,13 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     roles_validation = NotImplemented
     processsecurity_validation = NotImplemented
     state_validation = NotImplemented
-     
+
 
     def __init__(self, workitem):
         super(BusinessAction, self).__init__()
         self.workitem = workitem
         self.isexecuted = False
-        
+
     @staticmethod
     def get_instance(cls, context, request, **kw):
         instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
@@ -137,15 +135,15 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     @property
     def isautomatic(self):
-        if actionType is NotImplemented:
+        if self.actionType is NotImplemented:
             return False
-        elif actionType == ActionType.automatic:
+        elif self.actionType == ActionType.automatic:
             return True
 
         return False
 
     def url(self, obj):
-        actionuid = get_oid(self.workitem) 
+        actionuid = get_oid(self.workitem)
         if self.process is None:
             # TODO url
             return get_current_request().mgmt_path(obj, self.view_name,  query={'action_uid':actionuid})
@@ -335,7 +333,7 @@ class ActionInstance(BusinessAction):
     def __init__(self, item, principalaction, workitem):
         super(ActionInstance, self).__init__(workitem)
         self.principalaction = principalaction
-        self.item = item 
+        self.item = item
         self.actionid = self.actionid+'_'+str(get_oid(item))
 
     def before_execution(self,context, request, **kw):

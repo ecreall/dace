@@ -15,7 +15,7 @@ from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
 from dace.relations import find_relations, connect
 from .transition import Transition
 from dace.util import find_catalog
-from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE
 
 
 class WorkflowData(Persistent):
@@ -78,7 +78,7 @@ class Process(Entity):
         for t in first_transitions:
             next_transitions = next_transitions.union(set(path.next(t)))
 
-        
+
         for nt in next_transitions:
             if nt in executed_transitions:
                 next_transitions.remove(nt)

@@ -1,10 +1,9 @@
 from pyramid.threadlocal import get_current_registry
-from substanced.event import ObjectAdded
 
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event
 from .workitem import DecisionWorkItem, StartWorkItem
-from dace.processdefinition.core import Path, Transaction
+from dace.processdefinition.core import Path
 
 
 class Gateway(FlowNode):
@@ -38,7 +37,6 @@ class ExclusiveGateway(Gateway):
 
     def start(self, transaction):
         global_transaction = transaction.get_global_transaction()
-        definition = self.definition
         registry = get_current_registry()
         notify = registry.notify
         notify(ActivityStarted(self))
@@ -55,12 +53,12 @@ class ExclusiveGateway(Gateway):
                     dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__])
                     if dwi.node.__name__ in workitems:
                         workitems[dwi.node.__name__].merge(dwi)
-                    else:    
+                    else:
                         workitems[dwi.node.__name__] = dwi
 
         if not workitems:
             raise ProcessError("Gateway blocked because there is no workitems")
-        
+
         i = 0
         for workitem in workitems.values():
             i += 1
@@ -120,9 +118,9 @@ class ExclusiveGateway(Gateway):
             if isinstance(wi, DecisionWorkItem) and self.definition in wi.concerned_nodes():
                 result.append(wi)
 
-        return result       
+        return result
 
-        
+
 # parallel sans condition sans default
 class ParallelGateway(Gateway):
 
@@ -139,7 +137,7 @@ class ParallelGateway(Gateway):
             for m in multiple_target:
                 if isinstance(self.process[m.__name__], ExclusiveGateway):
                     return
- 
+
         alllatest_transitions = []
         for p in paths:
             alllatest_transitions.extend(p.latest)

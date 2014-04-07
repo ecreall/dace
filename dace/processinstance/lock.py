@@ -7,6 +7,7 @@ from substanced.locking import(
 
 DEFAUT_DURATION = 3600
 
+
 class LockableElement(object):
 
     def lock(self, request):

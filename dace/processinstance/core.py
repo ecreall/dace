@@ -3,7 +3,6 @@ from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
 from zope.component import createObject
 from zope.interface import implements
-from substanced.event import ObjectAdded
 import thread
 
 from dace.interfaces import IProcessStarted, IProcessFinished
@@ -15,6 +14,7 @@ from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 class BPMNElement(object):
     def __init__(self, definition):
         self.id = definition.id
+
 
 class FlowNode(BPMNElement, Object):
     implements(ILocation)
@@ -70,7 +70,6 @@ class FlowNode(BPMNElement, Object):
             )
 
 class BehavioralFlowNode(object):
-
 
     def _get_workitem(self):
         if self.workitems:

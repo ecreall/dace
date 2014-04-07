@@ -1,11 +1,8 @@
-from persistent import Persistent
-from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from zope.interface import implements, implementedBy
 from zope.component.interfaces import IFactory
 
-from substanced.event import ObjectAdded, ObjectRemoved
 from dace.util import find_service
 
 from dace.interfaces import (
@@ -85,7 +82,7 @@ class StartWorkItem(LockableElement):
 
     def replay_path(self):
         pass
-     
+
     def concerned_nodes(self):
         return self.path.sources
 
@@ -127,7 +124,6 @@ class BaseWorkItem(LockableElement, Object):
         return [self.node]
 
 
-
 class WorkItem(BaseWorkItem):
     """This is subclassed in generated code.
     """
@@ -163,7 +159,7 @@ class DecisionWorkItem(BaseWorkItem):
         super(DecisionWorkItem, self).__init__(node)
 
     def concerned_nodes(self):
-        return [n for n in self.path.sources if not (n in self.validations)] 
+        return [n for n in self.path.sources if not (n in self.validations)]
 
     @property
     def is_finished(self):
