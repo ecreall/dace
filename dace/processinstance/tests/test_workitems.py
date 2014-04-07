@@ -601,8 +601,12 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.d', nodes_workitems)
 
         self.assertEqual(len(all_workitems['sample.d']), 2)#* 2
-        self.assertEqual(len(all_workitems['sample.b']), 1)#* 1 (G0) une seule execution
-        self.assertEqual(len(all_workitems['sample.c']), 1)#* 1 (G0) une seule execution
+        self.assertEqual(len(all_workitems['sample.b']), 1)#* 1 (G0) une seule execution: un seul find transaction (le premier find est consomme par P0)
+        self.assertEqual(len(all_workitems['sample.c']), 1)#* 1 (G0) une seule execution: un seul find transaction (le premier find est consomme par P0)
+
+        workitems['sample.b'].start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
 
     def test_start_complex_MultiDecision_workitem_b(self):
         pd = self._process_start_complex_MultiDecision_process()
@@ -630,6 +634,19 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.ea']), 1)
         self.assertEqual(len(all_workitems['sample.b']), 1)
         self.assertEqual(len(all_workitems['sample.c']), 1)
+
+        workitems['sample.ea'].start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+        workitems['sample.d'].start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
 
 class TestGatewayChain(FunctionalTests):
 
