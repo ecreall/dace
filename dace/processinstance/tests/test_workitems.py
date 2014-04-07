@@ -521,7 +521,7 @@ class TestsWorkItems(FunctionalTests):
         E: end event
         G0, 1, 2(x): XOR Gateway
         P,0(+): Parallel Gateway
-        A, B, C, D: activities
+        A, B, C, D, Ea: activities
                                       -----
                                    -->| A |------------\
                                   /   -----             \
@@ -531,7 +531,7 @@ class TestsWorkItems(FunctionalTests):
                |      \          /--->| P(+) |--->| B |-------/
                |       \        /     --------\   -----      /
             -----   ---------  /               \    -----   / 
-            | E |---| G1(x) |-/                 \-->| C |--/
+            | Ea|---| G1(x) |-/                 \-->| C |--/
             -----   ---------                       ----- /
                          \    -----                      /
                           \-->| D |---------------------/
