@@ -515,6 +515,112 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.c', nodes_workitems)
 
 
+    def  _process_start_complex_MultiDecision_process(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, 2(x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D: activities
+                                      -----
+                                   -->| A |------------\
+                                  /   -----             \
+    -----   ---------  --------- /                       \         ---------   -----
+    | S |-->| P0(+) |-->| G0(x) |                         \------->| G2(+) |-->| E |
+    -----   ---------\ ---------\     --------    -----        /   ---------   -----
+               |      \          /--->| P(+) |--->| B |-------/
+               |       \        /     --------\   -----      /
+            -----   ---------  /               \    -----   / 
+            | E |---| G1(x) |-/                 \-->| C |--/
+            -----   ---------                       ----- /
+                         \    -----                      /
+                          \-->| D |---------------------/
+                              -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                ea = ActivityDefinition(),
+                p0 = ParallelGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'p0'),
+                TransitionDefinition('p0', 'g0'),
+                TransitionDefinition('p0', 'g1'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g1', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g2'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('p0', 'ea'),
+                TransitionDefinition('ea', 'g1'),
+                TransitionDefinition('g2', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+
+    def test_start_complex_MultiDecision_workitem_ea(self):
+        pd = self._process_start_complex_MultiDecision_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 5)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+        self.assertIn('d', start_wis)
+        self.assertIn('ea', start_wis)
+
+        start_ea = start_wis['ea']
+        wi, proc = start_ea.start()
+        self.assertEqual(u'sample.ea', wi.node.id)
+        wi.start()
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.b', nodes_workitems)#* 2
+        self.assertIn(u'sample.c', nodes_workitems)#* 2
+        self.assertIn(u'sample.d', nodes_workitems)#* 2
+
+    def test_start_complex_MultiDecision_workitem_b(self):
+        pd = self._process_start_complex_MultiDecision_process()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 5)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+        self.assertIn('d', start_wis)
+        self.assertIn('ea', start_wis)
+
+        start_b = start_wis['b']
+        wi, proc = start_b.start()
+        self.assertEqual(u'sample.b', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.ea', nodes_workitems)
+
 class TestGatewayChain(FunctionalTests):
 
     def tearDown(self):

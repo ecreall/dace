@@ -58,6 +58,15 @@ class WorkItemC(workitem.WorkItem):
 class WorkItemFactoryC(workitem.WorkItemFactory):
     factory = WorkItemC
 
+class WorkItemEA(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sample.ea')
+class WorkItemFactoryEA(workitem.WorkItemFactory):
+    factory = WorkItemEA
+
 
 class WorkItemE(workitem.WorkItem):
 

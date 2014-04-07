@@ -119,8 +119,9 @@ class Process(Entity):
             if isinstance(wi.node, SubProcess):
                 result.update(wi.node.subProcess.getWorkItems())
             if wi.node.id in result:
-                raise Exception("We have several workitems for %s" % wi.node.id)
-            result[wi.node.id] = wi
+                pass#result[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
+            else:
+                result[wi.node.id] = wi
 
         return result
 
