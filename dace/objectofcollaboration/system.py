@@ -9,6 +9,7 @@ from zope.component import getUtility
 #from zope.catalog.interfaces import ICatalog
 #from zope.component.hooks import getSite
 from zmq.eventloop.ioloop import DelayedCallback
+from substanced.util import find_catalog
 
 from dace.interfaces import IEntity, IBusinessAction
 #TODO: from .z3 import BaseJob, Participation
@@ -38,25 +39,24 @@ def _get_cache_key():
 
 
 def run():
-    catalog = getUtility(ICatalog)
+    # TODO root
+    catalog = find_catalog('dace')
     global last_transaction
     cache_key = _get_cache_key()
     last_transaction = getattr(last_transaction_by_app, cache_key, None)
     last_tid = catalog._p_jar.db().lastTransaction()
     if last_transaction != last_tid:
         setattr(last_transaction_by_app, cache_key, last_tid)
-        intids = getUtility(IIntIds)
         transaction.begin()
     #            query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
     #            results = list(catalog.apply(query))
     #            print "actions to check:", len(results)
     #            continue
-        query = {'object_provides': {'any_of': (IEntity.__identifier__,)}}
-        results = list(catalog.apply(query))
+        query = catalog['object_provides'].any((IEntity.__identifier__,))
+        results = list(query.execute().all())
         log.info("objects to check: %s", len(results))
 
-        for intid in results:
-            content = intids.getObject(intid)
+        for content in results:
             for action in content.actions:
                 # DecisionWorkItem may have been removed
                 # action.action.__parent__ is the workitem
@@ -78,8 +78,6 @@ def run_crawler():
 
 def start_crawler(app, login="system"):
     """Start loop."""
-    # commit to be sure the application exists in the thread
-    transaction.commit()
     # set site and interaction that will be memorized in job
     old_site = getSite()
     endInteraction()

@@ -14,6 +14,7 @@ requires = [
     'substanced',
     'zope.annotation',
     'zope.cachedescriptors',
+    'zope.processlifetime',
     ]
 
 setup(name='dace',

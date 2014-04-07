@@ -3,9 +3,21 @@ import threading
 import zmq.eventloop.ioloop
 
 import transaction
+from pyramid.events import subscriber
+from pyramid.interfaces import IApplicationCreated
+from pyramid.testing import DummyRequest
+from zope.processlifetime import DatabaseOpenedWithRoot
+from zope.processlifetime import IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime
+
+from substanced.event import RootAdded
+from substanced.util import find_service
+
+from .interfaces import IWorkItem
+from .processinstance.event import IntermediateCatchEvent
+from .objectofcollaboration.system import start_crawler
 
 
 class ConsumeTasks(threading.Thread):
@@ -21,7 +33,7 @@ class ConsumeTasks(threading.Thread):
 
 consumetasks = None
 
-
+@subscriber(IDatabaseOpenedWithRoot)
 def start_ioloop(event):
     """Start loop."""
     global consumetasks
@@ -46,66 +58,42 @@ def sigint_handler(*args):
 
 signal.signal(signal.SIGINT, sigint_handler)
 
-from ZODB.broken import Broken
-#from zope.app.appsetup.bootstrap import getInformationFromEvent
-from zope.component import getUtility
-from zope.component.hooks import getSite, setSite
-#from zope.intid.interfaces import IIntIds
-from .interfaces import IWorkItem
-from .processinstance.event import IntermediateCatchEvent
-from .objectofcollaboration.system import start_crawler
 
-
+@subscriber(IDatabaseOpenedWithRoot)
 def start_intermediate_events(event):
-    db, connection, root, root_folder = getInformationFromEvent(event)
-    apps = list(root_folder.values())
-    old_site = getSite()
-    for app in root_folder.values():
-        setSite(app)
-        catalog = getUtility(ICatalog)
-        intids = getUtility(IIntIds)
-        query = {'object_provides': {'any_of': (IWorkItem.__identifier__,)},
-        }
-        results = catalog.apply(query)
-        for w in results:
-            wi = intids.getObject(w)
-            if isinstance(wi, Broken):
-                if app in apps:
-                    apps.remove(app)
-                continue
-            node = wi.node
-            if isinstance(node, IntermediateCatchEvent):
-                node.eventKind.prepare()
-                log.info("Calling %s.eventKind.prepare()", node)
-    setSite(old_site)
+    db = event.database
+    app_root = db.open().root()['app_root']
+    from substanced.util import find_catalog
+    catalog = find_catalog(app_root, 'dace')
+    query = catalog['object_provides'].any((IWorkItem.__identifier__,))
+    results = query.execute().all()
+    for wi in results:
+        node = wi.node
+        if isinstance(node, IntermediateCatchEvent):
+            node.eventKind.prepare()
+            log.info("Calling %s.eventKind.prepare()", node)
     # commit to execute after commit hooks
     transaction.commit()
-
-    for app in apps:
-        start_crawler(app)
-
-
-def start_machine(event):
-    db, connection, root, root_folder = getInformationFromEvent(event)
-    apps = list(root_folder.values())
-    # TODO: get app_id and login parameters from the ini file or command line
-    start_ioloop(event)
-    for app in apps:
-        start_crawler(app, "ben")
-
-
-
-from pyramid.events import subscriber
-
-from substanced.event import RootAdded, ObjectAdded
-from substanced.util import find_service, set_oid , find_objectmap, get_oid
-from dace.util import find_catalog
-from pyramid.threadlocal import get_current_request
+#    start_crawler(app_root)
 
 
 @subscriber(RootAdded)
 def add_catalogs(event):
     root = event.object
     catalogs = find_service(root, 'catalogs')
-    catalog = catalogs.add_catalog('dace')
+    catalogs.add_catalog('dace')
     root['runtime'] = Runtime()
+
+
+@subscriber(IApplicationCreated)
+def application_created(event):
+    """Called after config.make_wsgi_app()
+    """
+    registry = event.app.registry
+    db = registry._zodb_databases['']
+#    app = db.open().root().get('app_root')
+    # Create app_root if it doesn't exist yet.
+    request = DummyRequest()
+    event.app.root_factory(request)
+    # there is a commit done in root_factory if app_root was created
+    registry.notify(DatabaseOpenedWithRoot(db))
