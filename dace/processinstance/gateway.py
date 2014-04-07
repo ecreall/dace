@@ -79,11 +79,11 @@ class ExclusiveGateway(Gateway):
                     break
 
         if decision in allconcernedkitems:
-            self.finich_decisions(decision)
+            self.finish_decisions(decision)
         else:
-            self.finich_decisions(None)
+            self.finish_decisions(None)
 
-    def finich_decisions(self, work_item):
+    def finish_decisions(self, work_item):
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
         if work_item is not None :
@@ -91,7 +91,7 @@ class ExclusiveGateway(Gateway):
             if work_item.is_finished:
                 work_item.__parent__.delproperty('workitems', work_item)
 
-        self._p_changed = True #TODO
+        #self._p_changed = True #TODO
         # clear commun work items
         allconcernedkitems = self.get_allconcernedworkitems()
         for cdecision in allconcernedkitems:
