@@ -16,7 +16,7 @@ from .core import (
         Validator,
         ValidationError)
 from .lock import LockableElement
-from dace.util import getBusinessAction
+from dace.util import getBusinessAction, queryWorkItem
 from dace.interfaces import (
     IProcessDefinition,
     IActivity,
@@ -65,12 +65,32 @@ def getBusinessActionValidator(action_cls):
 
         @classmethod
         def validate(cls, context, request, **kw):
-            instance = action_cls.get_instance(context, request, **kw)
-            if instance is None:
-                e = ValidationError()
+            e = ValidationError()
+            process = None
+            if 'process' in kw:
+                process = kw['process']
+            #import pdb; pdb.set_trace()
+            work_item = queryWorkItem(action_cls.process_id, action_cls.node_id, request, context)
+            if work_item is None:
+                raise e
+
+            if not context.__provides__(action_cls.context):
+                raise e
+
+            if action_cls.relation_validation and not action_cls.relation_validation.im_func(process, context):
+                raise e
+
+            if action_cls.roles_validation and not action_cls.roles_validation.im_func(process, context):
+                raise e
+
+            if action_cls.processsecurity_validation and not action_cls.processsecurity_validation.im_func(process, context):
+                raise e
+
+            if action_cls.state_validation and not action_cls.state_validation.im_func(process, context):
                 raise e
 
             return True
+
 
     return BusinessActionValidator
 
@@ -112,10 +132,6 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     @staticmethod
     def get_validator(cls, **kw):
         return getBusinessActionValidator(cls)
-
-    @property
-    def __name__(self):
-        return self.view_action.__view_name__
 
     @property
     def process(self):
@@ -166,22 +182,11 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return content
 
     def validate(self, context, request, **kw):
-        if self.is_locked(request):
+        if self.is_locked(request) or self.isexecuted:
             return False
 
-        if  self.isexecuted and not context.__provides__(self.context) or not self.workitem.validate():
-            return False
-
-        if self.relation_validation and not self.relation_validation.im_func(self.process, context):
-            return False
-
-        if self.roles_validation and not self.roles_validation.im_func(self.process, context):
-            return False
-
-        if self.processsecurity_validation and not self.processsecurity_validation.im_func(self.process, context):
-            return False
-
-        if self.state_validation and not self.state_validation.im_func(self.process, context):
+        args =  {'process':self.workitem.process}
+        if  not self.__class__.get_validator(self.__class__).validate(context, request,**args):
             return False
 
         return True
@@ -203,7 +208,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     def after_execution(self, context, request, **kw):
         self.unlock(request)
         # TODO self.workitem is a real workitem?
-        self.workitem.node.workItemFinished(self.workitem)
+        self.workitem.node.finish_behavior(self.workitem)
         self.isexecuted = True
 
     def redirect(self, context, request, **kw):
@@ -277,12 +282,20 @@ class LimitedCardinality(MultiInstanceAction):
 
     def __init__(self, workitem):
         super(LimitedCardinality, self).__init__(workitem)
-        self.numberOfInstances = self.loopCardinality.im_func(None, self.process, None)
+        self.numberOfInstances = self.loopCardinality.im_func(self.process, None)
         for instance in range(self.numberOfInstances):
+            #@TODO solution plus simple
+            ActionInstance.process_id = self.process_id
+            ActionInstance.node_id = self.node_id
+            ActionInstance.context = self.context
+            ActionInstance.relation_validation = self.relation_validation
+            ActionInstance.roles_validation =  self.roles_validation
+            ActionInstance.processsecurity_validation = self.processsecurity_validation
+            ActionInstance.state_validation =  self.state_validation
             self.workitem.actions.append(ActionInstance(instance, self, workitem))
 
         if self.numberOfInstances == 0:
-            self.workitem.node.workItemFinished(self.workitem)
+            self.workitem.node.finish_behavior(self.workitem)
 
         self.isexecuted = True
 
@@ -317,11 +330,15 @@ class DataInput(MultiInstanceAction):
         super(DataInput, self).__init__(workitem)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
-        self.instances = self.loopDataInputRef.im_func(None, self.process, None)
+        self.instances = self.loopDataInputRef.im_func(self.process, None)
         for instance in self.instances:
             if self.dataIsPrincipal:
+                ActionInstanceAsPrincipal.process_id = self.process_id
+                ActionInstanceAsPrincipal.node_id = self.node_id
                 self.workitem.actions.append(ActionInstanceAsPrincipal(instance, self, workitem))
             else:
+                ActionInstance.process_id = self.process_id
+                ActionInstance.node_id = self.node_id
                 self.workitem.actions.append(ActionInstance(instance, self, workitem))
 
             self.isexecuted = True
@@ -334,7 +351,11 @@ class ActionInstance(BusinessAction):
         super(ActionInstance, self).__init__(workitem)
         self.principalaction = principalaction
         self.item = item
-        self.actionid = self.actionid+'_'+str(get_oid(item))
+        id = item
+        if not isinstance(item, int):
+            id  = get_oid(item)
+
+        self.actionid = self.principalaction.node_id+'_'+str(id)
 
     def before_execution(self,context, request, **kw):
         self.lock(request)
@@ -346,7 +367,7 @@ class ActionInstance(BusinessAction):
             self.workitem.unlock(request)
 
         if  not self.principalaction.instances:
-            self.workitem.node.workItemFinished(self.workitem)
+            self.workitem.node.finish_behavior(self.workitem)
 
         self.isexecuted = True
 

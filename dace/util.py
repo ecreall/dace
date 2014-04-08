@@ -10,7 +10,8 @@ from .interfaces import (
         IProcessDefinition,
         IDecisionWorkItem,
         IWorkItem,
-        IObject)
+        IObject,
+        IBusinessAction)
 from . import log
 
 
@@ -154,6 +155,7 @@ def get_current_process_uid(request):
 #    set the cookie in the update() of a form only
 
 def getBusinessAction(process_id, activity_id, behavior_id, request, context):
+    global_request = get_current_request() 
     allactions = []
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
@@ -169,18 +171,18 @@ def getBusinessAction(process_id, activity_id, behavior_id, request, context):
     results = query.execute().all()
     if len(results) > 0:
         for action in results:
-            if action.validate(context):
+            if action.validate(context, global_request):
                 allactions.append(action)
 
     registry = get_current_registry()
     pd = registry.getUtility(IProcessDefinition, process_id)
     # Add start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-        wis = pd.createStartWorkItem(None)
+        wis = pd.start_process()
         for key in wis.keys():
             swisactions = wis[key].actions
             for action in swisactions:
-                if action.behavior_id == behavior_id and action.validate(context) :
+                if action.behavior_id == behavior_id and action.validate(context, global_request) :
                     allactions.append(action)
 
     if allactions:
@@ -193,6 +195,7 @@ def queryBusinessAction(process_id, activity_id, behavior_id, request, context):
                  request, context)
 
 def getAllBusinessAction(context):
+    global_request = get_current_request() 
     allactions = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
@@ -200,9 +203,10 @@ def getAllBusinessAction(context):
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(context.__provides__.declared)
     results = query.execute().all()
+    results = [a for a in results]
     if len(results) > 0:
         for action in results:
-            if action.validate(context):
+            if action.validate(context, global_request):
                 allactions.append(action)
 
     registry = get_current_registry()
@@ -210,17 +214,17 @@ def getAllBusinessAction(context):
     # Add start workitem
     for name, pd in allprocess:
         if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-            wis = pd.createStartWorkItem(None)
+            wis = pd.start_process()
             for key in wis.keys():
                 swisactions = wis[key].actions
                 for action in swisactions:
-                    if action.validate(context) :
+                    if action.validate(context, global_request) :
                         allactions.append(action)
 
     return allactions
 
 def getWorkItem(process_id, activity_id, request, context,
-                condition=lambda p, c: True):
+                behavior_validator=lambda p, c: True):
     # If we previous call to getWorkItem was the same request
     # and returned a workitem from a gateway, search first in the
     # same gateway
@@ -250,7 +254,7 @@ def getWorkItem(process_id, activity_id, request, context,
         if IEntity.providedBy(context):
             filter_by_involved = True
             if filter_by_involved:
-                process_ids = tuple(context.getInvolvedProcessIds())
+                pass#process_ids = tuple(context.getInvolvedProcessIds())
 
 
     query =  process_id_index.eq(process_id) & \
@@ -263,7 +267,7 @@ def getWorkItem(process_id, activity_id, request, context,
     if len(results) > 0:
         wi = None
         for wv in results:
-            if wv.validate() and condition(wv.__parent__.__parent__ , context):
+            if wv.validate():
                 wi = wv
                 break
 
@@ -287,26 +291,26 @@ def getWorkItem(process_id, activity_id, request, context,
         if wi is None:
             raise Forbidden
         else:
-            if not condition(None, context):
-                raise Forbidden
+            #if not condition(None, context):
+            #    raise Forbidden
             return wi
 
     raise Forbidden
 
 
-def queryWorkItem(process_id, activity_id, request, context, condition=lambda p, c: True):
+def queryWorkItem(process_id, activity_id, request, context):
     try:
         wi = getWorkItem(process_id, activity_id,
-                     request, context, condition)
+                     request, context)
         return wi
     except Forbidden:
         return None
 
 
-def workItemAvailable(menu_entry, process_id, activity_id, condition=lambda p, c: True):
+def workItemAvailable(menu_entry, process_id, activity_id):
     try:
         wi = queryWorkItem(process_id, activity_id,
-                     menu_entry.request, menu_entry.context, condition)
+                     menu_entry.request, menu_entry.context)
         if wi is None:
             return False
 

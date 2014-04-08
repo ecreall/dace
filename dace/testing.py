@@ -40,6 +40,7 @@ class FunctionalTests(unittest.TestCase):
         self.registry = self.config.registry
         self.app = root_factory(request)
         request.root = self.app
+        request.user = self.app.data['principals'].data['users'].data['admin']
 #        from webtest import TestApp
 #        self.testapp = TestApp(app)
 

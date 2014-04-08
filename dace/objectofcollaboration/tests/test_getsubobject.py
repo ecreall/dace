@@ -7,7 +7,7 @@ from dace.util import (
 from .example.objects import ObjectA, ObjectB, ObjectC, IObjectB, IObjectC
 
 
-class TestProperties(FunctionalTests):
+class TestRequest(FunctionalTests):
 
     def _create_objects(self):
         object1 = ObjectA()

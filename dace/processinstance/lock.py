@@ -10,10 +10,16 @@ DEFAUT_DURATION = 3600
 
 class LockableElement(object):
 
+    def __init__(self):
+        self.dtlock = False
+
     def lock(self, request):
         """Raise AlreadyLocked if the activity was already locked by someone
         else.
         """
+        if self.dtlock:
+            return
+
         try:
             lock_resource(self, request.user, DEFAUT_DURATION)
         except LockError:
@@ -23,6 +29,9 @@ class LockableElement(object):
         """Raise AlreadyLocked if the activity was already locked by someone
         else.
         """
+        if self.dtlock:
+            return
+
         try:
             unlock_resource(self, request.user)
         except UnlockError:
@@ -31,6 +40,9 @@ class LockableElement(object):
     def is_locked(self, request):
         """If the activity was locked by the same user, return False.
         """
+        if self.dtlock:
+            return False
+
         try:
             return not could_lock_resource(self, request.user)
         except LockError:

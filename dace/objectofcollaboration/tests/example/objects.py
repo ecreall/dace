@@ -8,6 +8,8 @@ from dace.objectofcollaboration.object import (
                 SHARED_MULTIPLE,
                 Object)
 
+from dace.objectofcollaboration.entity import Entity
+
 
 class Object1(Object):
     properties_def = {'composition_u':(COMPOSITE_UNIQUE, 'schared2_u', False),
@@ -41,12 +43,12 @@ class IObjectC(IObjectB):
     pass
 
 
-class ObjectA(Object):
+class ObjectA(Entity):
     implements(IObjectA)
     properties_def = {'composition_m':(COMPOSITE_MULTIPLE, None, False)}
 
     def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
+        Entity.__init__(self, **kwargs)
 
 
 class ObjectB(Object):

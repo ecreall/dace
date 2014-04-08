@@ -198,7 +198,7 @@ class ProcessDefinition(Object):
         # une trandsaction pour un evenement (pour l'instant c'est un evenement)
         sub_transaction = self.global_transaction.start_subtransaction(type='Find')
         start_workitems = startevent.start_process(sub_transaction)
-        start_workitems = dict([(wi.node_name, wi) for wi in start_workitems])
+        start_workitems = dict([(wi.node.__name__, wi) for wi in start_workitems])
         if node_name is None:
             return start_workitems
 

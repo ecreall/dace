@@ -150,3 +150,59 @@ class WorkItemD(workitem.WorkItem):
 @utility(name ='sample.d')
 class WorkItemFactoryD(workitem.WorkItemFactory):
     factory = WorkItemD
+
+def relation_validationA(process, context):
+    return True
+
+def roles_validationA(process, context):
+    return True
+
+def processsecurity_validationA(process, context):
+    return True
+
+def state_validationA(process, context):
+    return True
+
+from ...activity import ElementaryAction, LimitedCardinality
+from dace.objectofcollaboration.tests.example.objects import IObjectA
+
+class ActionA(ElementaryAction):
+    #identification et classification
+    groups = ['groupA']
+    process_id = 'sample'
+    node_id = 'a'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+def cardB(process, context):
+    return 3
+
+class ActionB(LimitedCardinality):
+    loopCardinality = cardB
+    isSequential = True
+    #identification et classification
+    groups = ['groupB']
+    process_id = 'sample'
+    node_id = 'b'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+class ActionD(ElementaryAction):
+    #identification et classification
+    groups = ['groupD']
+    process_id = 'sample'
+    node_id = 'd'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA

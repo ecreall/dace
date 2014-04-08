@@ -29,19 +29,32 @@ class StartWorkItem(LockableElement):
 
 
     def __init__(self, startable_path):
+        super(StartWorkItem, self).__init__()
         self.path = startable_path
-        self.process_id = self.path.sources[0].process.id
         self.node = self.path.targets[0]
-        self.node_id = self.node.id
-        self.node_name = self.node.__name__
         self.process = None
-        registry = get_current_registry()
-        pd = registry.getUtility(
-                IProcessDefinition,
-                self.process_id)
         self.actions = []
+        self.dtlock = True
+        actions = []
         for a in self.node.contexts:
-            self.actions.append(a(self))
+            action = a(self)
+            actions.append(action)
+
+        self.actions.extend(actions)
+        for action in self.actions:
+            action.dtlock = True
+
+    def add_action(self, action):
+        action.dtlock = True
+        self.actions.append(action)
+
+    @property
+    def process_id(self):
+        return self.node.process.id
+
+    @property
+    def node_id(self):
+        return self.node.id
 
     def merge(self, decision):
         self.path = self.path.merge(decision.path)
@@ -51,7 +64,6 @@ class StartWorkItem(LockableElement):
         pd = registry.getUtility(
                 IProcessDefinition,
                 self.process_id)
-
         proc = pd()
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
@@ -65,27 +77,22 @@ class StartWorkItem(LockableElement):
         proc.replay_path(self, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
         wi = proc[self.path.targets[0].__name__].workitems[0]
+        for action in self.actions:
+            action.dtlock = False
+
+        wi.setproperty('actions', self.actions)
         #wi.start(*args)
         return wi, proc
-
-    def lock(self, request):
-        pass
-
-    def unlock(self, request):
-        pass
-
-    def is_locked(self, request):
-        return False
 
     def validate(self):
         # incoming transition is already checked
         return True
 
-    def replay_path(self):
-        pass
-
     def concerned_nodes(self):
         return self.path.sources
+
+    def get_actions_validators(self):
+        return [a.__class__.get_validator() for a in self.actions]
 
 
 class BaseWorkItem(LockableElement, Object):
@@ -94,19 +101,20 @@ class BaseWorkItem(LockableElement, Object):
     properties_def = {'actions': (COMPOSITE_MULTIPLE, None, False)}
     context = None
 
-
     def __init__(self, node):
-        super(BaseWorkItem, self).__init__()
+        LockableElement.__init__(self)
+        Object.__init__(self)
         self.node = node
-        actions = []
-        for a in node.definition.contexts:
-            actions.append(a(self))
-        self.setproperty('actions', actions)
 
+    def add_action(self, action):
+        self.addtoproperty('actions', action)
 
     @property
     def actions(self):
         return self.getproperty('actions')
+
+    def get_actions_validators(self):
+        return [a.__class__.get_validator() for a in self.actions]
 
     @property
     def process_id(self):
@@ -132,6 +140,7 @@ class WorkItem(BaseWorkItem):
     """
     implements(IWorkItem)
 
+    context = None
 
     def __init__(self, node):
         super(WorkItem, self).__init__(node)
@@ -157,10 +166,16 @@ class DecisionWorkItem(BaseWorkItem):
 
 
     def __init__(self, path, node):
+        super(DecisionWorkItem, self).__init__(node)
         self.path = path
         self.validations = []
-        super(DecisionWorkItem, self).__init__(node)
+        actions = []
+        for a in node.definition.contexts:
+            action = a(self)
+            actions.append(action)
 
+        self.setproperty('actions', actions)
+        
     def concerned_nodes(self):
         return [n for n in self.path.sources if not (n in self.validations)]
 
@@ -176,6 +191,7 @@ class DecisionWorkItem(BaseWorkItem):
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
         wi = self.process[self.path.targets[0].__name__].workitems[0]
+        wi.setproperty('actions', self.actions)
         return wi
         #results = args
         #self.path.source.workItemFinished(self, *results)
@@ -198,6 +214,3 @@ class DecisionWorkItem(BaseWorkItem):
 
     def __eq__(self, other):
         return self.path.equal(other.path) and self.node is other.node
-
-    def replay_path(self):
-        pass
