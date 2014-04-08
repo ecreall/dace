@@ -26,8 +26,8 @@ class WorkflowData(Persistent):
 class Process(Entity):
     implements(IProcess)
 
-    properties_def = {'nodes': (COMPOSITE_MULTIPLE, None, True),
-                      'transitions': (COMPOSITE_MULTIPLE, None, True),
+    properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
+                      'transitions': (COMPOSITE_MULTIPLE, 'process', True),
                       }
 
     _started = False
@@ -56,15 +56,14 @@ class Process(Entity):
             self.addtoproperty('nodes', node)
 
         for trabsitiondef in definition.transitions:
-            transition = trabsitiondef.creat(self)
-            transition.__name__ = transition.id
+            transition = trabsitiondef.create(self)
+            transition.__name__ = trabsitiondef.__name__
             self.addtoproperty('transitions', transition)
             transition._init_ends(self, trabsitiondef)
 
     @property
     def nodes(self):
         return self.getproperty('nodes')
-
 
     @property
     def transitions(self):
@@ -142,7 +141,6 @@ class Process(Entity):
 
 #        return dict([(w.node.id, w) for w in workitems])
 
-#    def start(self, *arguments):
     def start(self):
         if self._started:
             raise TypeError("Already started")

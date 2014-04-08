@@ -32,6 +32,9 @@ class TransitionDefinition(Object):
             self.setproperty('source', process[self.source_id])
             self.setproperty('target', process[self.target_id])
 
+    def create(self, process):
+        return self.factory(process, self)
+
     @property
     def target(self):
         return self.getproperty('target')
@@ -53,9 +56,6 @@ class TransitionDefinition(Object):
         self.source_id = newsource.__name__
         self.id = '%s-%s' % (self.source_id, self.target_id)
         self.setproperty('source', newsource)
-
-    def creat(self, process):
-        return self.factory(process, self)
 
     def equal(self, other): #deprecated
         return self.source is other.source and self.target is other.target

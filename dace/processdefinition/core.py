@@ -42,7 +42,10 @@ class FlowNodeDefinition(BPMNElementDefinition):
         return self.getproperty('process')
 
     def find_startable_paths(self, source_path, source):
-        yield source_path
+        decision_path = source_path.clone()
+        source_transaction = source_path.transaction.__parent__
+        source_transaction.remove_subtransaction(source_path.transaction)
+        yield decision_path
 
     def __repr__(self):
         return "<%s %r>" % (self.__class__.__name__, self.__name__)
@@ -52,7 +55,7 @@ class Transaction(Persistent):
 
     def __init__(self, path=None ,type='Normal'):
         self.path = path
-        if self.path is not None:
+        if self.path is not None and not (self.path.transaction is self):
             self.path.set_transaction(self)
 
         self.sub_transactions = []
@@ -61,6 +64,8 @@ class Transaction(Persistent):
 
     def set_path(self, path):
         self.path = path
+        if self.path is not None and not (self.path.transaction is self):
+            self.path.set_transaction(self)
 
     def add_subtransactions(self, subtransactions):
         if not isinstance(subtransactions, (list, tuple)):
@@ -116,12 +121,12 @@ class Transaction(Persistent):
             result.append(path)
 
         for subtransaction in self.sub_transactions:
-            result.extend(subtransaction.find_allsubpaths(node, type))
+            result.extend(subtransaction.find_allsubpaths_cross(node, type))
 
         return result
 
     def get_path_cross(self, node, type=None):
-        if self.path is not None and type is None or type == self.type and self.path.contains(node):
+        if self.path is not None and (type is None or type == self.type) and self.path.contains_node(node):
             return self.path
 
         return None
@@ -147,6 +152,9 @@ class Transaction(Persistent):
     def clean(self):
         self.path = None
         self.sub_transactions = []
+
+    def __repr__(self):
+        return 'Transaction('+self.type+'):\n' +'Path:'+repr(self.path)+ '\n Sub_Transactions:[\n'+'\n'.join([repr(t) for t in self.sub_transactions])+']'
 
     #def __eq__(self, other):
     #    return self.path == other.path
@@ -261,7 +269,6 @@ class Path(Persistent):
 
         return result_set
 
-
     def _get_transitions_target(self, node):
         result = [t for t in self.transitions if t.target is node]
         result_set = []
@@ -293,34 +300,6 @@ class Path(Persistent):
         result.extend(xor_result)
         result_path = Path(transitions=result)
         return result_path
-            
-        other_transitions = list(other.transitions)
-        ordered_transitions = []
-        for transition in self.transitions:
-            ordered_transitions.append(transition)
-            for t in other_transitions[:]:
-                if transition == t:
-                    other_transitions.remove(t)
-                elif transition.target is t.target:
-                    other_transitions.remove(t)
-                    ordered_transitions.append(t)
-
-        # include all remaining transitions
-        for t in other_transitions[:]:
-            for idx, transition in enumerate(ordered_transitions):
-                if transition.source is t.target:
-                    other_transitions.remove(t)
-                    ordered_transitions.insert(idx, t)
-                    break
-
-        for t in other_transitions:
-            ordered_transitions.append(t)
-
-        merged_path = Path(ordered_transitions)
-        return merged_path
-
-    def __repr__(self):
-        return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
     def equal(self, other):
         for transition in other.transitions:
@@ -328,6 +307,9 @@ class Path(Persistent):
                 return False
 
         return len(self.transitions) == len(other.transitions)
+
+    def __repr__(self):
+        return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
 
 class EventHandlerDefinition(FlowNodeDefinition):

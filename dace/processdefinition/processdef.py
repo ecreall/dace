@@ -192,11 +192,11 @@ class ProcessDefinition(Object):
 
     def start_process(self, node_name=None):
         #une transaction globale pour chaque demande
-        global_transaction = Transaction()
+        self.global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
         # une trandsaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = global_transaction.start_subtransaction(type='Find')
+        sub_transaction = self.global_transaction.start_subtransaction(type='Find')
         start_workitems = startevent.start_process(sub_transaction)
         start_workitems = dict([(wi.node_name, wi) for wi in start_workitems])
         if node_name is None:

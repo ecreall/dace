@@ -21,15 +21,13 @@ class FlowNode(BPMNElement, Object):
 
     properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
                       'outgoing': (SHARED_MULTIPLE, 'source', False),
-                      'workitems': (COMPOSITE_MULTIPLE, None, False)
+                      'workitems': (COMPOSITE_MULTIPLE, None, False),
+                      'process': (SHARED_UNIQUE, 'nodes', False),
                       }
-
-
 
     def __init__(self, process, definition):
         BPMNElement.__init__(self, definition)
         Object.__init__(self)
-        self.process = process
 
     @property
     def workitems(self):
@@ -42,6 +40,10 @@ class FlowNode(BPMNElement, Object):
     @property
     def outgoing(self):
         return self.getproperty('outgoing')
+
+    @property
+    def process(self):
+        return self.getproperty('process')
 
     def prepare(self):
         registry = get_current_registry()

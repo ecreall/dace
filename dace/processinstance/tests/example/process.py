@@ -51,8 +51,8 @@ class WorkItemFactoryB(workitem.WorkItemFactory):
 
 class WorkItemC(workitem.WorkItem):
 
-    def start(self, layouts):
-        self.node.finish_behavior(self, "c: %s" % layouts[0])
+    def start(self):
+        self.node.finish_behavior(self)
 
 @utility(name ='sample.c')
 class WorkItemFactoryC(workitem.WorkItemFactory):
@@ -66,6 +66,24 @@ class WorkItemEA(workitem.WorkItem):
 @utility(name ='sample.ea')
 class WorkItemFactoryEA(workitem.WorkItemFactory):
     factory = WorkItemEA
+
+class WorkItemF(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sample.f')
+class WorkItemFactoryF(workitem.WorkItemFactory):
+    factory = WorkItemF
+
+class WorkItemAE(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sample.ae')
+class WorkItemFactoryAE(workitem.WorkItemFactory):
+    factory = WorkItemAE
 
 
 class WorkItemE(workitem.WorkItem):

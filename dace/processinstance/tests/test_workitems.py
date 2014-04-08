@@ -846,6 +846,272 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
+    def  _process_start_complex_Parallel_process_decision(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, 2(x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D: activities
+                                          -----
+                                       -->| A |------------\
+                                      /   -----             \
+-----  ------   ---------   -------- /                       \        ---------   ------   -----
+| S |->| F  |-->| P0(+) |-->| G0(x) |                         ------->| G2(+) |-->| Ae |-->| E |
+-----  ------   ---------\  --------\     --------    -----        /  ---------   ------    ----
+                          \         /---->| P(+) |--->| B |-------/
+                           \       /      --------\   -----      /
+                       ---------  /                \    -----   /
+                       | G1(x) |-/                  \-->| C |--/
+                       ---------                        ----- /
+                             \    -----                      /
+                              \-->| D |---------------------/
+                                  -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                f = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                ae = ActivityDefinition(),
+                p0 = ParallelGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'f'),
+                TransitionDefinition('f', 'p0'),
+                TransitionDefinition('p0', 'g0'),
+                TransitionDefinition('p0', 'g1'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g1', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g2'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('g2', 'ae'),
+                TransitionDefinition('ae', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_start_complex_Parallel_workitem_decision(self):
+        pd = self._process_start_complex_Parallel_process_decision()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 1)
+        self.assertIn('f', start_wis)
+
+        start_f = start_wis['f']
+        wi, proc = start_f.start()
+        self.assertEqual(u'sample.f', wi.node.id)
+        wi.start()
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+        decision_b = workitems['sample.b']
+        wi = decision_b.start()
+        self.assertEqual(u'sample.b', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
+        wi.start()
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.ae', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
+        wi = workitems['sample.c']
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 1)
+        self.assertIn(u'sample.ae', nodes_workitems)
+        self.assertEqual(len(all_workitems['sample.ae']), 2)# deux executions pour G2: b-->G2 et c-->G2 ====> deux DecisionWorkItem pour Ae 
+
+        decision_ae = workitems['sample.ae']
+        decision_ae.start().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+
+    def test_Transitions(self):
+        pd = self._process_start_refresh_decision()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 2)
+        self.assertIn('a', start_wis)
+        self.assertIn('ea', start_wis)
+
+        currenttransaction = pd.global_transaction
+        self.assertEqual(len(currenttransaction.sub_transactions), 1)
+        find_transaction = currenttransaction.sub_transactions[0]
+        self.assertEqual(find_transaction.type, 'Find')
+        sources = find_transaction.path.sources
+        targets = find_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.s')
+        self.assertEqual(targets[0].id, 'sample.p')
+
+        start_ea = start_wis['ea']
+        wi, proc = start_ea.start()
+        self.assertEqual(u'sample.ea', wi.node.id)
+        currenttransaction = proc.global_transaction
+        self.assertEqual(len(currenttransaction.sub_transactions), 3)
+        find_paths = currenttransaction.find_allsubpaths_for(proc['p'])
+        self.assertEqual(len(find_paths), 1)
+        find_transaction = find_paths[0].transaction
+        self.assertEqual(find_transaction.type, 'Find')
+        sources = find_transaction.path.sources
+        targets = find_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.g0')
+        self.assertEqual(targets[0].id, 'sample.p')
+        #ea
+        startea_paths = currenttransaction.find_allsubpaths_for(proc['ea'])
+        self.assertEqual(len(startea_paths), 1)
+        startea_transaction = startea_paths[0].transaction
+        self.assertEqual(startea_transaction.type, 'Start')
+        sources = startea_transaction.path.sources
+        targets = startea_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p0')
+        self.assertEqual(targets[0].id, 'sample.ea')
+        #g0
+        startg0_paths = currenttransaction.find_allsubpaths_for(proc['g0'])
+        self.assertEqual(len(startg0_paths), 1)
+        startg0_transaction = startg0_paths[0].transaction
+        self.assertEqual(startg0_transaction.type, 'Start')
+        sources = startg0_transaction.path.sources
+        targets = startg0_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p0')
+        self.assertEqual(targets[0].id, 'sample.g0')
+
+        startp0_paths = currenttransaction.find_allsubpaths_cross(proc['p0'])
+        self.assertEqual(len(startp0_paths), 2)
+        self.assertIn(startg0_paths[0], startp0_paths)
+        self.assertIn(startea_paths[0], startp0_paths)
+
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertEqual(len(all_workitems['sample.a']), 1)
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
+
+        currenttransaction = proc.global_transaction
+        self.assertEqual(len(currenttransaction.sub_transactions), 2)
+        #p
+        startp_paths = currenttransaction.find_allsubpaths_for(proc['p'])
+        self.assertEqual(len(startp_paths), 1)
+        startp_transaction = startp_paths[0].transaction
+        self.assertEqual(startp_transaction.type, 'Start')
+        sources = startp_transaction.path.sources
+        targets = startp_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.ea')
+        self.assertEqual(targets[0].id, 'sample.p')
+        #g0
+        startg0_paths = currenttransaction.find_allsubpaths_for(proc['g0'])
+        self.assertEqual(len(startg0_paths), 1)
+        startg0_transaction = startg0_paths[0].transaction
+        self.assertEqual(startg0_transaction.type, 'Start')
+        sources = startg0_transaction.path.sources
+        targets = startg0_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p0')
+        self.assertEqual(targets[0].id, 'sample.g0')
+
+        workitems['sample.b'].start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
+        self.assertEqual(len(all_workitems['sample.b']), 1)
+        self.assertEqual(len(all_workitems['sample.c']), 1)
+
+        currenttransaction = proc.global_transaction
+        self.assertEqual(len(currenttransaction.sub_transactions), 2)
+        #b
+        startb_paths = currenttransaction.find_allsubpaths_for(proc['b'])
+        self.assertEqual(len(startb_paths), 1)
+        startb_transaction = startb_paths[0].transaction
+        self.assertEqual(startb_transaction.type, 'Start')
+        sources = startb_transaction.path.sources
+        targets = startb_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p')
+        self.assertEqual(targets[0].id, 'sample.b')
+        #c
+        startc_paths = currenttransaction.find_allsubpaths_for(proc['c'])
+        self.assertEqual(len(startc_paths), 1)
+        startc_transaction = startc_paths[0].transaction
+        self.assertEqual(startc_transaction.type, 'Start')
+        sources = startc_transaction.path.sources
+        targets = startc_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p')
+        self.assertEqual(targets[0].id, 'sample.c')
+
+        workitems['sample.b'].start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+        currenttransaction = proc.global_transaction
+        self.assertEqual(len(currenttransaction.sub_transactions), 2)
+        #c
+        startc_paths = currenttransaction.find_allsubpaths_for(proc['c'])
+        self.assertEqual(len(startc_paths), 1)
+        startc_transaction = startc_paths[0].transaction
+        self.assertEqual(startc_transaction.type, 'Start')
+        sources = startc_transaction.path.sources
+        targets = startc_transaction.path.targets
+        self.assertEqual(len(sources), 1)
+        self.assertEqual(len(targets), 1)
+        self.assertEqual(sources[0].id, 'sample.p')
+        self.assertEqual(targets[0].id, 'sample.c')
+        #end = None: pas de transitions outgoing
+        currenttransaction.sub_transactions.remove(startc_transaction)
+        self.assertIs(currenttransaction.sub_transactions[0].path, None)
+
 
 class TestGatewayChain(FunctionalTests):
 
