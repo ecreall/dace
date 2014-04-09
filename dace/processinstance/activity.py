@@ -65,31 +65,10 @@ def getBusinessActionValidator(action_cls):
 
         @classmethod
         def validate(cls, context, request, **kw):
-            e = ValidationError()
-            process = None
-            if 'process' in kw:
-                process = kw['process']
-            #import pdb; pdb.set_trace()
-            work_item = queryWorkItem(action_cls.process_id, action_cls.node_id, request, context)
-            if work_item is None:
+            instance = action_cls.get_instance(action_cls, context, request, **kw)
+            if instance is None:
+                e = ValidationError()
                 raise e
-
-            if not context.__provides__(action_cls.context):
-                raise e
-
-            if action_cls.relation_validation and not action_cls.relation_validation.im_func(process, context):
-                raise e
-
-            if action_cls.roles_validation and not action_cls.roles_validation.im_func(process, context):
-                raise e
-
-            if action_cls.processsecurity_validation and not action_cls.processsecurity_validation.im_func(process, context):
-                raise e
-
-            if action_cls.state_validation and not action_cls.state_validation.im_func(process, context):
-                raise e
-
-            return True
 
     return BusinessActionValidator
 
@@ -182,15 +161,29 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return content
 
     def validate(self, context, request, **kw):
-        if self.is_locked(request) or self.isexecuted:
+        if self.is_locked(request) or self.workitem.is_locked(request) or self.isexecuted:
             return False
 
-        args =  {'process':self.workitem.process}
-        try:
-            self.__class__.get_validator(self.__class__).validate(context, request,**args)
-            return True
-        except ValidationError:
+        process = self.process
+        if 'process' in kw:
+            process = kw['process']
+
+        if not context.__provides__(self.context):
             return False
+
+        if self.relation_validation and not self.relation_validation.im_func(process, context):
+            return False
+
+        if self.roles_validation and not self.roles_validation.im_func(process, context):
+            return False
+
+        if self.processsecurity_validation and not self.processsecurity_validation.im_func(process, context):
+            return False
+
+        if self.state_validation and not self.state_validation.im_func(process, context):
+            return False
+
+        return True
 
     def before_execution(self, context, request, **kw):
         self.lock(request)
