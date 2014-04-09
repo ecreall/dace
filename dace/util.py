@@ -154,21 +154,21 @@ def get_current_process_uid(request):
 #    request.response.expireCookie('p_uid')
 #    set the cookie in the update() of a form only
 
-def getBusinessAction(process_id, activity_id, behavior_id, request, context):
+def getBusinessAction(process_id, node_id, behavior_id, request, context):
     global_request = get_current_request() 
     allactions = []
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
-    activity_id_index = dace_catalog['node_id']
-    behavior_id_index = dace_catalog['behavior_id']
+    node_id_index = dace_catalog['node_id']
+    #behavior_id_index = dace_catalog['behavior_id']
     context_id_index = dace_catalog['context_id']
     object_provides_index = dace_catalog['object_provides']
     query = process_id_index.eq(process_id) & \
-            activity_id_index.eq(activity_id) & \
-            behavior_id_index.eq(behavior_id) & \
+            node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(context.__provides__.declared)
-    results = query.execute().all()
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.declared]))
+
+    results = [w for w in query.execute().all()]
     if len(results) > 0:
         for action in results:
             if action.validate(context, global_request):
@@ -178,20 +178,18 @@ def getBusinessAction(process_id, activity_id, behavior_id, request, context):
     pd = registry.getUtility(IProcessDefinition, process_id)
     # Add start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-        wis = pd.start_process()
-        for key in wis.keys():
-            swisactions = wis[key].actions
-            for action in swisactions:
-                if action.behavior_id == behavior_id and action.validate(context, global_request) :
-                    allactions.append(action)
+        wis = pd.start_process(node_id)
+        for action in wis.actions:
+            if action.validate(context, global_request) :
+                allactions.append(action)
 
     if allactions:
         return allactions
     else:
         return None
 
-def queryBusinessAction(process_id, activity_id, behavior_id, request, context):
-    return getBusinessAction(process_id, activity_id, behavior_id,
+def queryBusinessAction(process_id, node_id, behavior_id, request, context):
+    return getBusinessAction(process_id, node_id, behavior_id,
                  request, context)
 
 def getAllBusinessAction(context):
@@ -201,9 +199,9 @@ def getAllBusinessAction(context):
     context_id_index = dace_catalog['context_id']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(context.__provides__.declared)
-    results = query.execute().all()
-    results = [a for a in results]
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.declared]))
+
+    results = [a for a in query.execute().all()]
     if len(results) > 0:
         for action in results:
             if action.validate(context, global_request):
@@ -223,7 +221,7 @@ def getAllBusinessAction(context):
 
     return allactions
 
-def getWorkItem(process_id, activity_id, request, context,
+def getWorkItem(process_id, node_id, request, context,
                 behavior_validator=lambda p, c: True):
     # If we previous call to getWorkItem was the same request
     # and returned a workitem from a gateway, search first in the
@@ -232,14 +230,14 @@ def getWorkItem(process_id, activity_id, request, context,
     #annotations = IAnnotations(request)
     #workitems = annotations.get('workitems', None)
     #if workitems is not None:
-    #    wi = workitems.get('%s.%s' % (process_id, activity_id), None)
+    #    wi = workitems.get('%s.%s' % (process_id, node_id), None)
     #    if wi is not None and condition(wi.__parent__.__parent__, context):
     #        return wi
 
     # Not found in gateway, we search in catalog
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
-    activity_id_index = dace_catalog['node_id']
+    node_id_index = dace_catalog['node_id']
     process_inst_uid_index = dace_catalog['process_inst_uid']
     object_provides_index = dace_catalog['object_provides']
 
@@ -258,7 +256,7 @@ def getWorkItem(process_id, activity_id, request, context,
 
 
     query =  process_id_index.eq(process_id) & \
-            activity_id_index.eq(process_id+'.'+activity_id) & \
+            node_id_index.eq(process_id+'.'+node_id) & \
             object_provides_index.any((IWorkItem.__identifier__,))
     if process_ids: 
         query = query & process_inst_uid_index.any(process_ids)
@@ -287,7 +285,7 @@ def getWorkItem(process_id, activity_id, request, context,
 
     # Not found in catalog, we return a start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-        wi = pd.start_process(activity_id)
+        wi = pd.start_process(node_id)
         if wi is None:
             raise Forbidden
         else:
@@ -298,18 +296,18 @@ def getWorkItem(process_id, activity_id, request, context,
     raise Forbidden
 
 
-def queryWorkItem(process_id, activity_id, request, context):
+def queryWorkItem(process_id, node_id, request, context):
     try:
-        wi = getWorkItem(process_id, activity_id,
+        wi = getWorkItem(process_id, node_id,
                      request, context)
         return wi
     except Forbidden:
         return None
 
 
-def workItemAvailable(menu_entry, process_id, activity_id):
+def workItemAvailable(menu_entry, process_id, node_id):
     try:
-        wi = queryWorkItem(process_id, activity_id,
+        wi = queryWorkItem(process_id, node_id,
                      menu_entry.request, menu_entry.context)
         if wi is None:
             return False

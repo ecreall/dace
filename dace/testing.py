@@ -5,7 +5,7 @@ from pyramid import testing
 
 
 from substanced.db import root_factory
-
+from substanced.principal import User
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -40,7 +40,12 @@ class FunctionalTests(unittest.TestCase):
         self.registry = self.config.registry
         self.app = root_factory(request)
         request.root = self.app
-        request.user = self.app.data['principals'].data['users'].data['admin']
+        self.users = {}
+        self.users['admin'] =  self.app.data['principals'].data['users'].data['admin']
+        alice = User( password='alice', email='alice@test.test')
+        self.app.data['principals'].data['users']['alice'] = alice
+        self.users['alice'] = alice
+        request.user = self.users['admin']
 #        from webtest import TestApp
 #        self.testapp = TestApp(app)
 

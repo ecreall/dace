@@ -91,7 +91,6 @@ def getBusinessActionValidator(action_cls):
 
             return True
 
-
     return BusinessActionValidator
 
 
@@ -120,6 +119,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         super(BusinessAction, self).__init__()
         self.workitem = workitem
         self.isexecuted = False
+        self.behavior_id = self.node_id
 
     @staticmethod
     def get_instance(cls, context, request, **kw):
@@ -186,10 +186,11 @@ class BusinessAction(LockableElement, Behavior,Persistent):
             return False
 
         args =  {'process':self.workitem.process}
-        if  not self.__class__.get_validator(self.__class__).validate(context, request,**args):
+        try:
+            self.__class__.get_validator(self.__class__).validate(context, request,**args)
+            return True
+        except ValidationError:
             return False
-
-        return True
 
     def before_execution(self, context, request, **kw):
         self.lock(request)
@@ -209,7 +210,6 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         self.unlock(request)
         # TODO self.workitem is a real workitem?
         self.workitem.node.finish_behavior(self.workitem)
-        self.isexecuted = True
 
     def redirect(self, context, request, **kw):
         pass
@@ -220,7 +220,8 @@ class ElementaryAction(BusinessAction):
     def execute(self, context, request, appstruct, **kw):
         isFinished = self.start(context, request, appstruct, **kw)
         if isFinished:
-            self.afterexecution(context, request, **kw)
+            self.isexecuted = True
+            self.after_execution(context, request, **kw)
             self.redirect(context, request, **kw)
 
 
@@ -233,7 +234,7 @@ class LoopActionCardinality(BusinessAction):
 
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
-        while self.loopCondition.im_func(context, self.process, appstruct) and nbloop < self.loopMaximum:
+        while self.loopCondition.im_func(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
 
@@ -242,15 +243,16 @@ class LoopActionCardinality(BusinessAction):
         while nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
-            if self.loopCondition.im_func(context, self.process, appstruct):
+            if not self.loopCondition.im_func(context, request, self.process, appstruct):
                 break
 
     def execute(self, context, request, appstruct, **kw):
         if self.testBefore:
-            self._executBefore(context, request, appstruct, **kw)
+            self._executeBefore(context, request, appstruct, **kw)
         else:
-            self._executAfter(context, request, appstruct, **kw)
+            self._executeAfter(context, request, appstruct, **kw)
 
+        self.isexecuted = True
         self.after_execution(context, request, **kw)
         self.redirect(context, request, **kw)
 
@@ -260,7 +262,7 @@ class LoopActionDataInput(BusinessAction):
     loopDataInputRef = None
 
     def execute(self, context, request, appstruct, **kw):
-        instances = self.loopDataInputRef.im_func(context, self.process, appstruct)
+        instances = self.loopDataInputRef.im_func(context, request, self.process, appstruct)
         for item in instances:
             if kw is not None:
                 kw['item'] = item
@@ -268,8 +270,9 @@ class LoopActionDataInput(BusinessAction):
                 kw = {'item': item}
             self.start(context, request, appstruct, **kw)
 
+        self.isexecuted = True
         self.after_execution(context, request)
-        self.redirect(context, request, appstruct)
+        self.redirect(context, request, **kw)
 
 
 class MultiInstanceAction(BusinessAction):
@@ -282,20 +285,14 @@ class LimitedCardinality(MultiInstanceAction):
 
     def __init__(self, workitem):
         super(LimitedCardinality, self).__init__(workitem)
+        self.instances = PersistentList()
         self.numberOfInstances = self.loopCardinality.im_func(self.process, None)
-        for instance in range(self.numberOfInstances):
+        for instance_num in range(self.numberOfInstances):
             #@TODO solution plus simple
-            ActionInstance.process_id = self.process_id
-            ActionInstance.node_id = self.node_id
-            ActionInstance.context = self.context
-            ActionInstance.relation_validation = self.relation_validation
-            ActionInstance.roles_validation =  self.roles_validation
-            ActionInstance.processsecurity_validation = self.processsecurity_validation
-            ActionInstance.state_validation =  self.state_validation
-            self.workitem.actions.append(ActionInstance(instance, self, workitem))
-
-        if self.numberOfInstances == 0:
-            self.workitem.node.finish_behavior(self.workitem)
+            ActionInstance._init_attributes_(ActionInstance, self)
+            instance = ActionInstance(instance_num, self, workitem)
+            self.workitem.add_action(instance)
+            self.instances.append(instance_num)
 
         self.isexecuted = True
 
@@ -333,12 +330,10 @@ class DataInput(MultiInstanceAction):
         self.instances = self.loopDataInputRef.im_func(self.process, None)
         for instance in self.instances:
             if self.dataIsPrincipal:
-                ActionInstanceAsPrincipal.process_id = self.process_id
-                ActionInstanceAsPrincipal.node_id = self.node_id
+                ActionInstanceAsPrincipal._init_attributes_(ActionInstanceAsPrincipal, self)
                 self.workitem.actions.append(ActionInstanceAsPrincipal(instance, self, workitem))
             else:
-                ActionInstance.process_id = self.process_id
-                ActionInstance.node_id = self.node_id
+                ActionInstance._init_attributes_(ActionInstance, self)
                 self.workitem.actions.append(ActionInstance(instance, self, workitem))
 
             self.isexecuted = True
@@ -355,7 +350,21 @@ class ActionInstance(BusinessAction):
         if not isinstance(item, int):
             id  = get_oid(item)
 
-        self.actionid = self.principalaction.node_id+'_'+str(id)
+        self.behavior_id = self.principalaction.node_id+'_'+str(id)
+
+    @staticmethod
+    def _init_attributes_(cls, principalaction):
+        cls.process_id = principalaction.process_id
+        cls.node_id = principalaction.node_id
+        cls.context = principalaction.context
+        cls.view_action =  principalaction.view_action
+        cls.report =  principalaction.report
+        cls.study =  principalaction.study
+        cls.actionType = principalaction.actionType
+        cls.relation_validation = principalaction.relation_validation
+        cls.roles_validation =  principalaction.roles_validation
+        cls.processsecurity_validation = principalaction.processsecurity_validation
+        cls.state_validation =  principalaction.state_validation
 
     def before_execution(self,context, request, **kw):
         self.lock(request)
@@ -363,13 +372,12 @@ class ActionInstance(BusinessAction):
             self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
+        self.unlock(request)
         if self.principalaction.isSequential:
             self.workitem.unlock(request)
 
         if  not self.principalaction.instances:
             self.workitem.node.finish_behavior(self.workitem)
-
-        self.isexecuted = True
 
     def start(self, context, request, appstruct, **kw):
         if kw is not None:
@@ -388,7 +396,8 @@ class ActionInstance(BusinessAction):
     def execute(self, context, request, appstruct, **kw):
         isFinished = self.start(context, request, appstruct, **kw)
         if isFinished :
-            self.principalaction.instances.pop(self.item)
+            self.isexecuted = True
+            self.principalaction.instances.remove(self.item)
             self.after_execution(context, request, **kw)
             self.redirect(context, request, **kw)
 

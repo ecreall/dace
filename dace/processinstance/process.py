@@ -174,7 +174,7 @@ class Process(Entity):
 
             for transition in transitions:
                 next = transition.target
-                starttransaction = self.global_transaction.start_subtransaction('Start', transitions=(transition,))
+                starttransaction = self.global_transaction.start_subtransaction('Start', transitions=(transition,), initiator=transition.source)
                 next(starttransaction)
                 if self._finished:
                     break

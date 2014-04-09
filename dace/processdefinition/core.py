@@ -53,11 +53,12 @@ class FlowNodeDefinition(BPMNElementDefinition):
 
 class Transaction(Persistent):
 
-    def __init__(self, path=None ,type='Normal'):
+    def __init__(self, path=None ,type='Normal', initiator=None):
         self.path = path
         if self.path is not None and not (self.path.transaction is self):
             self.path.set_transaction(self)
 
+        self.initiator = initiator
         self.sub_transactions = []
         self.__parent__ = None
         self.type = type
@@ -137,8 +138,8 @@ class Transaction(Persistent):
 
         return self.__parent__.get_global_transaction()
 
-    def start_subtransaction(self, type='Normal', transitions=None, path=None):
-        transaction = Transaction(path=path, type=type)
+    def start_subtransaction(self, type='Normal', transitions=None, path=None, initiator=None):
+        transaction = Transaction(path=path, type=type, initiator=initiator)
         if path is None:
             if transitions is not None:
                 if not isinstance(transitions, (tuple, list)):

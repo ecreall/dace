@@ -72,7 +72,7 @@ class Throwing(Event):
             if self.validate():
                 wi = self._get_workitem()
                 if wi is not None:
-                    starttransaction = self.process.global_transaction.start_subtransaction('Start')
+                    starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
                     self.start(starttransaction)
                     self.finish_behavior(wi)
                 else:
@@ -102,7 +102,7 @@ class Catching(Event):
                 if self.validate():
                     wi = self._get_workitem()
                     if wi is not None:
-                        starttransaction = self.process.global_transaction.start_subtransaction('Start')
+                        starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
                         self.start(starttransaction)
                         self.finish_behavior(wi)
                     else:

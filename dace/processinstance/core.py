@@ -107,10 +107,20 @@ class BehavioralFlowNode(object):
         self.finish_behavior(workitem)
 
     def prepare(self):
+        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Replay')
+        user_decision = None
+        if paths:
+            user_decision = paths[0].transaction.initiator
+
         registry = get_current_registry()
         registry.notify(ActivityPrepared(self))
         factoryname = self.definition.id
         workitem = createObject(factoryname, self)
+        if user_decision is not None:
+            workitem.set_actions(user_decision.actions)
+        else:
+            workitem._init_actions()
+
         workitem.id = 1
         workitem.__name__ = str(1)
         self.addtoproperty('workitems', workitem)
@@ -158,7 +168,7 @@ class Validator(object):
 
 class Behavior(object):
 
-    behaviorid = NotImplemented
+    behavior_id = NotImplemented
     title = NotImplemented
     description = NotImplemented
 

@@ -40,7 +40,7 @@ class ExclusiveGateway(Gateway):
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
                 source_transaction.remove_subtransaction(source_path.transaction)
-                source_transaction.start_subtransaction(type='Find', path=initial_path)
+                source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                 initial_path.add_transition(transition)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
@@ -53,7 +53,7 @@ class ExclusiveGateway(Gateway):
             if transition.sync or transition.condition(self.process):
                 node = transition.target
                 initial_path = Path([transition])
-                subtransaction = global_transaction.start_subtransaction(type='Find', path=initial_path)
+                subtransaction = global_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
                     dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__])
@@ -177,7 +177,7 @@ class ParallelGateway(Gateway):
                         initial_path = p.clone()
                         source_transaction = p.transaction.__parent__
                         source_transaction.remove_subtransaction(p.transaction)
-                        source_transaction.start_subtransaction(type='Find', path=initial_path)
+                        source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                         initial_path.add_transition(transition)
                         executable_paths = node.find_executable_paths(initial_path, self)
                         for executable_path in executable_paths:

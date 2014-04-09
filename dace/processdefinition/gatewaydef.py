@@ -16,7 +16,7 @@ class ExclusiveGatewayDefinition(GatewayDefinition):
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
                 source_transaction.remove_subtransaction(source_path.transaction)
-                source_transaction.start_subtransaction(type='Find', path=initial_path)
+                source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                 initial_path.add_transition(transition)
                 startable_paths = nodedef.find_startable_paths(initial_path, self)
                 for startable_path in startable_paths:
@@ -59,7 +59,7 @@ class ParallelGatewayDefinition(GatewayDefinition):
                         initial_path = p.clone()
                         source_transaction = p.transaction.__parent__
                         source_transaction.remove_subtransaction(p.transaction)
-                        source_transaction.start_subtransaction(type='Find', path=initial_path)
+                        source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                         initial_path.add_transition(transition)
                         startable_paths = nodedef.find_startable_paths(initial_path, self)
                         for startable_path in startable_paths:

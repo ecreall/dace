@@ -1,4 +1,4 @@
-from pyramid.threadlocal import get_current_registry
+from pyramid.threadlocal import get_current_registry, get_current_request
 
 from dace.util import utility
 from dace.processinstance import workitem
@@ -8,6 +8,32 @@ from dace.processdefinition.gatewaydef import GatewayDefinition
 from dace.processdefinition.transitiondef import TransitionDefinition
 from dace.interfaces import IProcessDefinition
 
+
+class WorkItemX(workitem.WorkItem):
+    def start(self):
+        pass
+
+@utility(name='sample.x')
+class WorkItemFactoryX(workitem.WorkItemFactory):
+    factory = WorkItemX
+
+class WorkItemY(workitem.WorkItem):
+    def start(self):
+        pass
+
+@utility(name='sample.y')
+class WorkItemFactoryY(workitem.WorkItemFactory):
+    factory = WorkItemY
+
+class WorkItemZ(workitem.WorkItem):
+    def start(self):
+        pass
+
+@utility(name='sample.z')
+class WorkItemFactoryZ(workitem.WorkItemFactory):
+    factory = WorkItemZ
+
+####################################################
 
 class WorkItemS(workitem.WorkItem):
     def start(self):
@@ -163,14 +189,14 @@ def processsecurity_validationA(process, context):
 def state_validationA(process, context):
     return True
 
-from ...activity import ElementaryAction, LimitedCardinality
+from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput
 from dace.objectofcollaboration.tests.example.objects import IObjectA
 
-class ActionA(ElementaryAction):
+class ActionX(ElementaryAction):
     #identification et classification
-    groups = ['groupA']
+    groups = ['groupX']
     process_id = 'sample'
-    node_id = 'a'
+    node_id = 'x'
     context = IObjectA
     #validation
     relation_validation = relation_validationA
@@ -181,13 +207,13 @@ class ActionA(ElementaryAction):
 def cardB(process, context):
     return 3
 
-class ActionB(LimitedCardinality):
+class ActionY(LimitedCardinality):
     loopCardinality = cardB
     isSequential = True
     #identification et classification
-    groups = ['groupB']
+    groups = ['groupY']
     process_id = 'sample'
-    node_id = 'b'
+    node_id = 'y'
     context = IObjectA
     #validation
     relation_validation = relation_validationA
@@ -195,11 +221,142 @@ class ActionB(LimitedCardinality):
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
 
-class ActionD(ElementaryAction):
+class ActionYP(LimitedCardinality):
+    loopCardinality = cardB
+    isSequential = False
     #identification et classification
-    groups = ['groupD']
+    groups = ['groupY']
     process_id = 'sample'
-    node_id = 'd'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+class ActionYPI(InfiniteCardinality):
+    isSequential = False
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+class ActionYI(InfiniteCardinality):
+    isSequential = True
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+
+def dataInputRef(process, context):
+    request = get_current_request()
+    return request.objects
+
+class ActionYD(DataInput):
+    loopDataInputRef = dataInputRef
+    dataIsPrincipal = False
+    isSequential = True
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        item  = kw['item']
+        item.is_executed = True  
+        return True
+
+
+class ActionYDp(DataInput):
+    loopDataInputRef = dataInputRef
+    dataIsPrincipal = True
+    isSequential = True
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        item  = kw['item']
+        item.is_executed = True  
+        return True
+
+def loppdata(context, request, process, appstruct):
+    return request.objects
+
+
+class ActionYLD(LoopActionDataInput):
+    loopDataInputRef = loppdata
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        item  = kw['item']
+        item.is_executed = True  
+        return True
+
+def loppcondition(context, request, process, appstruct):
+    return request.bool
+
+class ActionYLC(LoopActionCardinality):
+
+    loopMaximum = 10
+    loopCondition = loppcondition
+    testBefore = False
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        request.ylc = request.ylc+1  
+        return True
+
+class ActionZ(ElementaryAction):
+    #identification et classification
+    groups = ['groupZ']
+    process_id = 'sample'
+    node_id = 'z'
     context = IObjectA
     #validation
     relation_validation = relation_validationA

@@ -275,7 +275,7 @@ class BusinessActionSearch(Adapter):
         return [i.__identifier__ for i in Declaration(self.context.context).flattened()]
 
     def context_id(self):
-        return [self.context.context.__provides__.declared[0].__identifier__]
+        return [self.context.context.__identifier__]
 
     def isautomatic(self):
         return self.context.isautomatic

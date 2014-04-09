@@ -196,7 +196,7 @@ class ProcessDefinition(Object):
         start_transition = self._startTransition
         startevent = start_transition.source
         # une trandsaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = self.global_transaction.start_subtransaction(type='Find')
+        sub_transaction = self.global_transaction.start_subtransaction(type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         start_workitems = dict([(wi.node.__name__, wi) for wi in start_workitems])
         if node_name is None:

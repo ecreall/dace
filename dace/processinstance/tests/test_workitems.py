@@ -1111,6 +1111,7 @@ class TestsWorkItems(FunctionalTests):
         #end = None: pas de transitions outgoing
         currenttransaction.sub_transactions.remove(startc_transaction)
         self.assertIs(currenttransaction.sub_transactions[0].path, None)
+        self.assertEqual(currenttransaction.sub_transactions[0].type, 'End')
 
 
 class TestGatewayChain(FunctionalTests):
