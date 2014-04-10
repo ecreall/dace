@@ -34,24 +34,31 @@ class SubProcess(Activity):
 
     def __init__(self, process, definition):
         super(SubProcess, self).__init__(process, definition)
-        self.wi = None
-        self.subProcess = None
+        self.sub_process = None
 
-    def start_subprocess(self):
+    def _start_subprocess(self):
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
-                self.definition.processDefinition)
+                self.definition.sub_process_definition.id)
+
         proc = pd()
         runtime = find_service('runtime')
-        proc.__name__ = self.definition.processDefinition
         runtime.addtoproperty('processes', proc)
+        proc.defineGraph(pd)
         proc.attachedTo = self
-        proc.start()
-        self.subProcess = proc
-
+        proc.execute()
+        self.sub_process = proc
         # unindex wi, but dont delete it
-        self.wi.remove()
+        #self.wi.remove()
+
+    def start(self, transaction):
+        super(SubProcess, self).start(transaction)
+        self._start_subprocess()
+
+    def finish_behavior(self, work_item):
+        if self.sub_process._finished:
+            super(SubProcess, self).finish_behavior(work_item)
 
 
 class ActionType:
@@ -70,6 +77,8 @@ def getBusinessActionValidator(action_cls):
                 e = ValidationError()
                 raise e
 
+            return True
+
     return BusinessActionValidator
 
 
@@ -86,7 +95,6 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     report =  NotImplemented
     study =  NotImplemented
     actionType = NotImplemented #!!
-    steps = {}
     #validation
     relation_validation = NotImplemented
     roles_validation = NotImplemented
@@ -107,6 +115,14 @@ class BusinessAction(LockableElement, Behavior,Persistent):
             return None
 
         return instance[0]
+
+    @staticmethod
+    def get_allinstances(cls, context, request, **kw):
+        instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
+        if instance is None:
+            return None
+
+        return instance
 
     @staticmethod
     def get_validator(cls, **kw):
@@ -161,7 +177,10 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return content
 
     def validate(self, context, request, **kw):
-        if self.is_locked(request) or self.workitem.is_locked(request) or self.isexecuted:
+        if self.isexecuted:
+            return False
+
+        if self.is_locked(request) or not self.workitem.validate():
             return False
 
         process = self.process
@@ -191,8 +210,9 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     def start(self, context, request, appstruct, **kw):
         # il y a probablement un moyen plus simple en cherchant la methode par son nom dans self par exemple..
-        if appstruct is not None and ACTIONSTEPID in appstruct:
-            return self.steps[appstruct[ACTIONSTEPID]].im_func(self, context, request, appstruct)
+        if kw is not None and ACTIONSTEPID in kw and hasattr(self, kw[ACTIONSTEPID]):
+            step = getattr(self, kw[ACTIONSTEPID])
+            return step(context, request, appstruct, **kw)
         else:
             return True
 

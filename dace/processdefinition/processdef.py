@@ -179,7 +179,7 @@ class ProcessDefinition(Object):
         return result    
 
     def _startTransition(self):
-        start_events = self. _get_start_events()
+        start_events = self._get_start_events()
         if len(start_events) != 1:
             raise InvalidProcessDefinition(
                     "Multiple start events",

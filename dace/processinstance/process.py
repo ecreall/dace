@@ -118,10 +118,8 @@ class Process(Entity):
 
     def getWorkItems(self):
         dace_catalog = find_catalog('dace')
-
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
-
         p_uid = get_oid(self, None)
         query = object_provides_index.any((IWorkItem.__identifier__,)) & \
                 process_inst_uid_index.any((int(p_uid),))
@@ -129,8 +127,8 @@ class Process(Entity):
         result = {}
         self.result_multiple = {} # for tests
         for wi in workitems:
-            if isinstance(wi.node, SubProcess):
-                result.update(wi.node.subProcess.getWorkItems())
+            if isinstance(wi.node, SubProcess) and wi.node.sub_process is not None and wi.node.sub_process._started:
+                result.update(wi.node.sub_process.getWorkItems())
             if wi.node.id in result:
                 self.result_multiple[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
             else:
@@ -160,6 +158,14 @@ class Process(Entity):
         registry = get_current_registry()
         registry.notify(ProcessStarted(self))
         #self.transition(None, (self.startTransition, ))
+
+    def execute(self):
+        start_events = [self[s.__name__] for s in self.definition._get_start_events()]
+        for s in start_events:
+            s.prepare()
+            s.prepare_for_execution()
+            if self._started:
+                break
 
     def play_transitions(self, node, transitions):
         registry = get_current_registry()

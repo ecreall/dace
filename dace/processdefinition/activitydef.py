@@ -19,4 +19,4 @@ class SubProcessDefinition(ActivityDefinition):
 
     def __init__(self, contexts=(), pd=None):
         super(SubProcessDefinition, self).__init__(contexts)
-        self.processDefinition = pd
+        self.sub_process_definition = pd

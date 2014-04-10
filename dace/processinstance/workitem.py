@@ -28,6 +28,7 @@ class WorkItemFactory(object):
 class UserDecision(LockableElement):
 
     def __init__(self, decision_path):
+        super(UserDecision, self).__init__()
         self.path = decision_path
 
     def merge(self, decision):
@@ -116,11 +117,9 @@ class BaseWorkItem(LockableElement, Object):
         self.node = node
 
     def _init_actions(self):
-        actions = []
         for a in self.node.definition.contexts:
             action = a(self)
             action.__name__ = action.behavior_id
-            actions.append(action)
             self.addtoproperty('actions', action)
 
     @property
@@ -140,7 +139,7 @@ class BaseWorkItem(LockableElement, Object):
         return self.node.process
 
     def start(self):
-        pass
+        pass# pragma: no cover
 
     def add_action(self, action):
         action.__name__ = action.behavior_id
@@ -150,14 +149,16 @@ class BaseWorkItem(LockableElement, Object):
     def set_actions(self, actions):
         self.setproperty('actions', [])
         for action in actions:
-            action.dtlock = False
             self.add_action(action)
+            if action.dtlock:
+                action.dtlock = False
+                action.call(action)
 
     def get_actions_validators(self):
         return [a.__class__.get_validator() for a in self.actions]
 
     def validate(self):
-        raise NotImplementedError
+        raise NotImplementedError# pragma: no cover
 
     def concerned_nodes(self):
         return [self.node]
@@ -173,7 +174,7 @@ class WorkItem(BaseWorkItem):
         super(WorkItem, self).__init__(node)
 
     def start(self, *args):
-        raise NotImplementedError
+        raise NotImplementedError# pragma: no cover
 
     def validate(self):
         activity_id = self.node.definition.id

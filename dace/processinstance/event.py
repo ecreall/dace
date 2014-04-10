@@ -43,19 +43,24 @@ class Event(BehavioralFlowNode, FlowNode):
             eventKind.event = self
 
     def __call__(self, transition):
-        pass
+        pass# pragma: no cover
 
     def prepare_for_execution(self):
         self.execution_prepared = True
 
     def start(self, transaction):
-        super(Event, self).start(transaction)
+        wi = self._get_workitem()
+        if wi is not None:
+            super(Event, self).start(transaction)
+            self.finish_behavior(wi)
+        else:
+            self.stop()
 
     def validate(self):
-        pass
+        pass# pragma: no cover
 
     def execute(self):
-        pass
+        pass# pragma: no cover
 
     def stop(self):
         self.setproperty('workitems', [])
@@ -70,13 +75,9 @@ class Throwing(Event):
         if not self.execution_prepared:
             super(Throwing, self).prepare_for_execution()
             if self.validate():
-                wi = self._get_workitem()
-                if wi is not None:
-                    starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
-                    self.start(starttransaction)
-                    self.finish_behavior(wi)
-                else:
-                    self.stop()
+                self.start(None)
+            else:
+                self.stop()
 
     # l' operation est sans parametres (les parametres sont sur la definition est sont calculable)
     def execute(self):
@@ -100,13 +101,9 @@ class Catching(Event):
             super(Catching, self).prepare_for_execution()
             if self.eventKind is None:
                 if self.validate():
-                    wi = self._get_workitem()
-                    if wi is not None:
-                        starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
-                        self.start(starttransaction)
-                        self.finish_behavior(wi)
-                    else:
-                        self.stop()
+                    self.start(None)
+                else:
+                    self.stop()
             else:
                 self.eventKind.prepare_for_execution()
 
@@ -117,18 +114,41 @@ class Catching(Event):
 
 
 class StartEvent(Catching):
-    pass
+
+    def start(self, transaction):
+        if not self.process._started:
+            wi = self._get_workitem()
+            if wi is not None:
+                super(StartEvent, self).start(transaction)
+                self.process.start()
+                self.finish_behavior(wi)
+            else:
+                self.stop()
+        else:
+            self.stop()
 
 
 class IntermediateThrowEvent(Throwing):
-    pass
+    pass# pragma: no cover
 
 
 class IntermediateCatchEvent(Catching):
-    pass
+    pass# pragma: no cover
 
 
 class EndEvent(Throwing):
+
+    def prepare_for_execution(self):
+        if not self.execution_prepared:
+            super(Throwing, self).prepare_for_execution()
+            if self.validate():
+                wi = self._get_workitem()
+                if wi is not None:
+                    starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
+                    self.start(starttransaction)
+                    self.finish_behavior(wi)
+                else:
+                    self.stop()
 
 
     def finish_behavior(self, work_item):
@@ -160,14 +180,14 @@ class EventKind(object):
         return True
 
     def prepare_for_execution(self):
-        pass
+        pass# pragma: no cover
 
     # cette operation est appelee par les evenements "Throwing"
     def execute(self):
-        pass
+        pass# pragma: no cover
 
     def stop(self):
-        pass
+        pass# pragma: no cover
 
     @property
     def definition(self):

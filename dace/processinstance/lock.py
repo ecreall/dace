@@ -8,16 +8,38 @@ from substanced.locking import(
 DEFAUT_DURATION = 3600
 
 
+def get_lock_operation(request):
+
+    def _lock(obj):
+        obj.lock(request)
+
+    return _lock
+
+def get_unlock_operation(request):
+
+    def _unlock(obj):
+        obj.unlock(request)
+
+    return _unlock
+
 class LockableElement(object):
 
     def __init__(self):
         self.dtlock = False
+        self.tocall = []
+
+    def call(self, obj):
+        for c in self.tocall:
+            c(obj)
+
+        self.tocall = ()
 
     def lock(self, request):
         """Raise AlreadyLocked if the activity was already locked by someone
         else.
         """
         if self.dtlock:
+            self.tocall.append(get_lock_operation(request))
             return
 
         try:
@@ -30,6 +52,7 @@ class LockableElement(object):
         else.
         """
         if self.dtlock:
+            self.tocall.append(get_unlock_operation(request))
             return
 
         try:

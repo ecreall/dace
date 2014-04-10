@@ -7,7 +7,7 @@ from dace.catalog.interfaces import ISearchableObject
 from dace.util import  getWorkItem, queryWorkItem, getBusinessAction, getAllBusinessAction
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
-from dace.processdefinition.activitydef import ActivityDefinition
+from dace.processdefinition.activitydef import ActivityDefinition, SubProcessDefinition
 from dace.processdefinition.gatewaydef import (
     ExclusiveGatewayDefinition, ParallelGatewayDefinition)
 from dace.processdefinition.transitiondef import TransitionDefinition
@@ -18,8 +18,21 @@ from dace.processdefinition.eventdef import (
     ConditionalEventDefinition,
     TimerEventDefinition)
 
-from dace.processinstance.tests.example.process import ActionX, ActionY, ActionZ, ActionYP, ActionYPI, ActionYI, ActionYD, ActionYDp, ActionYLC, ActionYLD
+from dace.processinstance.tests.example.process import (
+    ActionX, 
+    ActionY, 
+    ActionZ, 
+    ActionYP, 
+    ActionYPI, 
+    ActionYI, 
+    ActionYD, 
+    ActionYDp, 
+    ActionYLC, 
+    ActionYLD, 
+    ActionYSteps,
+    ActionSP)
 from dace.processinstance.workitem import StartWorkItem
+from ..activity import ACTIONSTEPID
 from dace.objectofcollaboration.tests.example.objects import ObjectA
 from dace.testing import FunctionalTests
 
@@ -444,7 +457,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn(u'sample.x', nodes_workitems)
         self.assertEqual(self.request.ylc, 10)
 
-    def test_actions_YLC(self):
+    def test_actions_YLC_TestAfter(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYLC]
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
@@ -502,3 +515,203 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn(u'sample.x', nodes_workitems)
         self.assertEqual(objecta.is_executed, True)
         self.assertEqual(objectb.is_executed, True)
+
+    def test_actions_steps(self):
+        y, pd = self._process_valid_actions()
+        y.contexts = [ActionYSteps]
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('x')
+        actions_x = start_wi.actions
+        self.assertEqual(len(actions_x), 1)
+        action_x = actions_x[0]
+        self.assertIs(action_x.workitem, start_wi)
+        self.assertEqual(action_x.node_id, 'x')
+        self.assertEqual(isinstance(action_x, ActionX), True)
+
+        objecta= ObjectA()
+        self.app['objecta'] = objecta
+        call_actions = objecta.actions
+        self.assertEqual(len(call_actions), 3)
+        actions_id = [a.action.node_id for a in call_actions]
+        self.assertIn('x', actions_id)
+        self.assertIn('y', actions_id)
+        self.assertIn('z', actions_id)
+        actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
+        self.assertEqual(len(actions_y), 1)
+
+        self.request.steps = []
+        action_y = actions_y[0]
+        action_y.before_execution(objecta, self.request)
+        wi, proc = action_y.workitem.start()
+        wi.start()
+        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step1'}) #execute step1
+        self.assertIs(action_y.workitem, wi)
+        actions_y_executed =  [a for a in actions_y if a.isexecuted]
+        self.assertEqual(len(actions_y_executed), 0)
+        self.assertIn('step1',self.request.steps)
+
+        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_admin), 1)
+        self.request.user = self.users['alice']# user == 'alice'
+        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_alice), 0)
+        
+        self.request.user = self.users['admin']
+        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step2'}) #execute step2
+        self.assertIs(action_y.workitem, wi)
+        actions_y_executed =  [a for a in actions_y if a.isexecuted]
+        self.assertEqual(len(actions_y_executed), 0)
+        self.assertIn('step2',self.request.steps)
+
+        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_admin), 1)
+        self.request.user = self.users['alice']# user == 'alice'
+        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_alice), 0)
+
+        self.request.user = self.users['admin']
+        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step3'}) #execute step2
+        self.assertIs(action_y.workitem, wi)
+        actions_y_executed =  [a for a in actions_y if a.isexecuted]
+        self.assertEqual(len(actions_y_executed), 1)
+        self.assertIn('step3',self.request.steps)
+
+        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_admin), 0)
+        self.request.user = self.users['alice']# user == 'alice'
+        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_alice), 0)
+
+
+    def test_actions_validator(self):
+        y, pd = self._process_valid_actions()
+        y.contexts = [ActionY]
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('x')
+
+        objecta= ObjectA()
+        self.app['objecta'] = objecta
+        call_actions = objecta.actions
+        actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
+        action_y = actions_y[0]
+        action_y.before_execution(objecta, self.request)
+        wi, proc = action_y.workitem.start()
+        wi.start()
+        action_y.execute(objecta, self.request, None, **{})
+        validator_y = ActionY.get_validator(ActionY)
+        self.assertEqual(validator_y.validate(objecta, self.request), True)
+        all_y = ActionY.get_allinstances(ActionY, objecta, self.request)
+        actions_all_y = [a for a in actions_y if a in all_y]
+        self.assertEqual((action_y in all_y), False)
+        self.assertEqual(len(actions_all_y), len(actions_y)-1) # -1 for action_y
+         
+
+
+class TestsSubProcess(FunctionalTests):
+
+    def tearDown(self):
+        registry = get_current_registry()
+        registry.unregisterUtility(provided=IProcessDefinition)
+        super(TestsSubProcess, self).tearDown()
+
+    def _process_valid_subprocess(self):
+        """
+        S: start event
+        E: end event
+        G1,3(x): XOR Gateway
+        P2,4(+): Parallel Gateway
+        Y, Z: activities
+        SP: sub-process                -----
+                                    -->| SP|------------\
+                                   /   -----             \
+    -----   ---------   --------- /                       \   ---------   -----
+    | S |-->| G1(x) |-->| P2(+) |-                         -->| P4(+) |-->| E |
+    -----   --------- \ --------- \    ---------   -----   /  ---------   -----
+                       \           \-->| G3(x) |-->| Y |--/
+                        \              /--------   -----
+                         \    -----   /
+                          \-->| Z |--/
+                              -----
+        SS: start event
+        SE: end event
+        G(X): XOR Gateway
+        SA, SB, SC: activities
+                                     -----   -----
+                                  -->| SB|-->| SE|
+        -----   -----   -------- /   -----   -/---
+  SP:   | SS|-->| SA|-->| G(X) |-    -----   /
+        -----   -----   -------- \-->| SC|--/
+                                     -----
+        """
+        sp = ProcessDefinition(u'sub_process')
+        sp.isSubProcess = True
+        self.app['sp'] = sp
+        sp.defineNodes(
+                ss = StartEventDefinition(),
+                sa = ActivityDefinition(),
+                sg = ExclusiveGatewayDefinition(),
+                sb = ActivityDefinition(),
+                sc = ActivityDefinition(),
+                se = EndEventDefinition(),
+        )
+        sp.defineTransitions(
+                TransitionDefinition('ss', 'sa'),
+                TransitionDefinition('sa', 'sg'),
+                TransitionDefinition('sg', 'sb'),
+                TransitionDefinition('sg', 'sc'),
+                TransitionDefinition('sb', 'se'),
+                TransitionDefinition('sc', 'se'),
+        )
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                sp = SubProcessDefinition(contexts=[ActionSP], pd=sp),
+                y = ActivityDefinition(),
+                z = ActivityDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                g2 = ParallelGatewayDefinition(),
+                g3 = ExclusiveGatewayDefinition(),
+                g4 = ParallelGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'g1'),
+                TransitionDefinition('g1', 'g2'),
+                TransitionDefinition('g1', 'z'),
+                TransitionDefinition('g2', 'sp'),
+                TransitionDefinition('g2', 'g3'),
+                TransitionDefinition('z', 'g3'),
+                TransitionDefinition('g3', 'y'),
+                TransitionDefinition('y', 'g4'),
+                TransitionDefinition('sp', 'g4'),
+                TransitionDefinition('g4', 'e'),
+        )
+
+        self.config.scan(example)
+        return sp, pd
+
+
+    def _test_subprocess(self):
+        sp, pd = self._process_valid_subprocess()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
+        start_wi = pd.start_process('sp')
+        actions_sp = start_wi.actions
+        self.assertEqual(len(actions_sp), 1)
+        action_sp = actions_sp[0]
+        self.assertIs(action_sp.workitem, start_wi)
+        self.assertEqual(action_sp.node_id, 'sp')
+        self.assertEqual(isinstance(action_sp, ActionSP), True)
+
+        objecta= ObjectA()
+        self.app['objecta'] = objecta
+        action_sp.before_execution(objecta, self.request)
+        wi, proc = action_sp.workitem.start()
+        wi.start()
+        action_sp.execute(objecta, self.request, None, **{})
+        wi_sa = getWorkItem('sub_process', 'sa', self.request, objecta)
+        import pdb; pdb.set_trace()
+
+
+

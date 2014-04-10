@@ -33,6 +33,61 @@ class WorkItemZ(workitem.WorkItem):
 class WorkItemFactoryZ(workitem.WorkItemFactory):
     factory = WorkItemZ
 
+class WorkItemSP(workitem.WorkItem):
+    def start(self):
+        pass
+
+@utility(name='sample.sp')
+class WorkItemFactorySP(workitem.WorkItemFactory):
+    factory = WorkItemSP
+
+class WorkItemSS(workitem.WorkItem):
+    def start(self):
+        self.node.execute()
+        self.node.finish_behavior(self)
+
+@utility(name='sub_process.ss')
+class WorkItemFactorySS(workitem.WorkItemFactory):
+    factory = WorkItemSS
+
+
+class WorkItemSA(workitem.WorkItem):
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name='sub_process.sa')
+class WorkItemFactorySA(workitem.WorkItemFactory):
+    factory = WorkItemSA
+
+
+class WorkItemSB(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sub_process.sb')
+class WorkItemFactorySB(workitem.WorkItemFactory):
+    factory = WorkItemSB
+
+
+class WorkItemSC(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sub_process.sc')
+class WorkItemFactorySC(workitem.WorkItemFactory):
+    factory = WorkItemSC
+
+class WorkItemSE(workitem.WorkItem):
+
+    def start(self):
+        self.node.finish_behavior(self)
+
+@utility(name ='sub_process.se')
+class WorkItemFactorySE(workitem.WorkItemFactory):
+    factory = WorkItemSE
+
 ####################################################
 
 class WorkItemS(workitem.WorkItem):
@@ -355,12 +410,47 @@ class ActionYLC(LoopActionCardinality):
         request.ylc = request.ylc+1  
         return True
 
-
 class ActionZ(ElementaryAction):
     #identification et classification
     groups = ['groupZ']
     process_id = 'sample'
     node_id = 'z'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+class ActionYSteps(ElementaryAction):
+    #identification et classification
+    groups = ['groupY']
+    process_id = 'sample'
+    node_id = 'y'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def step1(self, context, request, appstruct, **kw):
+        request.steps.append('step1')  
+        return False
+
+    def step2(self, context, request, appstruct, **kw):
+        request.steps.append('step2') 
+        return False
+
+    def step3(self, context, request, appstruct, **kw):
+        request.steps.append('step3')  
+        return True
+
+class ActionSP(ElementaryAction):
+    #identification et classification
+    groups = ['groupSP']
+    process_id = 'sample'
+    node_id = 'sp'
     context = IObjectA
     #validation
     relation_validation = relation_validationA

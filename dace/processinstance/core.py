@@ -116,14 +116,16 @@ class BehavioralFlowNode(object):
         registry.notify(ActivityPrepared(self))
         factoryname = self.definition.id
         workitem = createObject(factoryname, self)
-        if user_decision is not None:
-            workitem.set_actions(user_decision.actions)
-        else:
-            workitem._init_actions()
-
         workitem.id = 1
         workitem.__name__ = str(1)
         self.addtoproperty('workitems', workitem)
+        if user_decision is not None:
+            actions = user_decision.actions
+            workitem.set_actions(actions)
+            if user_decision.dtlock:
+                user_decision.call(workitem)
+        else:
+            workitem._init_actions()
 
     def start(self, transaction):
         registry = get_current_registry()
