@@ -204,7 +204,7 @@ class ActionX(ElementaryAction):
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
 
-def cardB(process, context):
+def cardB(process):
     return 3
 
 class ActionY(LimitedCardinality):
@@ -262,7 +262,7 @@ class ActionYI(InfiniteCardinality):
     state_validation = state_validationA
 
 
-def dataInputRef(process, context):
+def dataInputRef(process):
     request = get_current_request()
     return request.objects
 
@@ -332,9 +332,12 @@ class ActionYLD(LoopActionDataInput):
 def loppcondition(context, request, process, appstruct):
     return request.bool
 
+def loopmaximumc(process):
+    return 10
+
 class ActionYLC(LoopActionCardinality):
 
-    loopMaximum = 10
+    loopMaximum = loopmaximumc
     loopCondition = loppcondition
     testBefore = False
     #identification et classification
@@ -351,6 +354,7 @@ class ActionYLC(LoopActionCardinality):
     def start(self, context, request, appstruct, **kw):
         request.ylc = request.ylc+1  
         return True
+
 
 class ActionZ(ElementaryAction):
     #identification et classification

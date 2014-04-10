@@ -225,6 +225,10 @@ class LoopActionCardinality(BusinessAction):
     loopCondition = None
     testBefore = False
 
+    def __init__(self, workitem):
+        super(LoopActionCardinality, self).__init__(workitem)
+        self.loopMaximum = self.loopMaximum.im_func(self.process)
+
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
         while self.loopCondition.im_func(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
@@ -279,7 +283,7 @@ class LimitedCardinality(MultiInstanceAction):
     def __init__(self, workitem):
         super(LimitedCardinality, self).__init__(workitem)
         self.instances = PersistentList()
-        self.numberOfInstances = self.loopCardinality.im_func(self.process, None)
+        self.numberOfInstances = self.loopCardinality.im_func(self.process)
         for instance_num in range(self.numberOfInstances):
             #@TODO solution plus simple
             ActionInstance._init_attributes_(ActionInstance, self)
@@ -320,7 +324,7 @@ class DataInput(MultiInstanceAction):
         super(DataInput, self).__init__(workitem)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
-        self.instances = self.loopDataInputRef.im_func(self.process, None)
+        self.instances = self.loopDataInputRef.im_func(self.process)
         for instance in self.instances:
             if self.dataIsPrincipal:
                 ActionInstanceAsPrincipal._init_attributes_(ActionInstanceAsPrincipal, self)

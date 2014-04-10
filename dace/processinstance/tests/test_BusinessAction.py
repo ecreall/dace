@@ -409,10 +409,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb 
 
-    def test_actions_YLC(self):
-        y, pd = self._process_valid_actions()
-        y.contexts = [ActionYLC]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+    def _test_actions_YLC(self, pd, y):
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -447,6 +444,19 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn(u'sample.x', nodes_workitems)
         self.assertEqual(self.request.ylc, 10)
 
+    def test_actions_YLC(self):
+        y, pd = self._process_valid_actions()
+        y.contexts = [ActionYLC]
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self._test_actions_YLC(pd, y)
+
+    def test_actions_YLC_TestBefore(self):
+        y, pd = self._process_valid_actions()
+        ActionYLC.testBefore = True
+        y.contexts = [ActionYLC]
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self._test_actions_YLC(pd, y)
+     
     def test_actions_YLD(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYLD]
