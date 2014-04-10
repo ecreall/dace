@@ -81,14 +81,20 @@ class Transaction(Persistent):
         if self.sub_transactions and transaction in self.sub_transactions:
            self.sub_transactions.remove(transaction)
 
-    def find_allsubpaths_for(self, node, type=None):
+    def find_allsubpaths_for(self, node, type=None, unique=True):
         path = self.get_path_for(node, type)
         result = []
         if path is not None:
             result.append(path)
 
+        sub_paths = []
         for subtransaction in self.sub_transactions:
-            result.extend(subtransaction.find_allsubpaths_for(node, type))
+            sub_paths.extend(subtransaction.find_allsubpaths_for(node, type))
+ 
+        if unique:
+            sub_paths = [p for p in sub_paths if not p.equal(path)]
+
+        result.extend(sub_paths)
 
         return result
 
@@ -98,15 +104,20 @@ class Transaction(Persistent):
 
         return None
 
-    def find_allsubpaths_by_source(self, node, type=None):
+    def find_allsubpaths_by_source(self, node, type=None, unique=True):
         path = self.get_path_by_source(node, type)
         result = []
         if path is not None:
             result.append(path)
 
+        sub_paths = []
         for subtransaction in self.sub_transactions:
-            result.extend(subtransaction.find_allsubpaths_by_source(node, type))
+            sub_paths.extend(subtransaction.find_allsubpaths_by_source(node, type))
 
+        if unique:
+            sub_paths = [p for p in sub_paths if not p.equal(path)]
+
+        result.extend(sub_paths)
         return result
 
     def get_path_by_source(self, node, type=None):
@@ -115,15 +126,20 @@ class Transaction(Persistent):
 
         return None
 
-    def find_allsubpaths_cross(self, node, type=None):
+    def find_allsubpaths_cross(self, node, type=None, unique=True):
         path = self.get_path_cross(node, type)
         result = []
         if path is not None:
             result.append(path)
 
+        sub_paths = []
         for subtransaction in self.sub_transactions:
-            result.extend(subtransaction.find_allsubpaths_cross(node, type))
+            sub_paths.extend(subtransaction.find_allsubpaths_cross(node, type))
 
+        if unique:
+            sub_paths = [p for p in sub_paths if not p.equal(path)]
+
+        result.extend(sub_paths)
         return result
 
     def get_path_cross(self, node, type=None):
@@ -303,6 +319,9 @@ class Path(Persistent):
         return result_path
 
     def equal(self, other):
+        if other is None:
+            return False
+
         for transition in other.transitions:
             if not (transition in self.transitions):
                 return False

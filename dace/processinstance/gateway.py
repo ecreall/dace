@@ -3,7 +3,7 @@ from pyramid.threadlocal import get_current_registry
 from .core import ActivityFinished, ActivityStarted, ProcessError, FlowNode
 from .event import Event
 from .workitem import DecisionWorkItem, StartWorkItem
-from dace.processdefinition.core import Path
+from dace.processdefinition.core import Path, Transaction
 
 
 class Gateway(FlowNode):
@@ -210,9 +210,13 @@ class ParallelGateway(Gateway):
             source_nodes = set(p.sources)
             find_nodes = find_nodes.union(source_nodes)
 
+        re_transaction = Transaction(type='Refresh', initiator=self)
+        re_transaction.sub_transactions.extend(list([global_transaction]))
         for fn in find_nodes:
             if isinstance(fn, ExclusiveGateway):
-                fn.refresh_decisions(global_transaction)
+                fn.refresh_decisions(re_transaction)
+
+        
         
     
 
