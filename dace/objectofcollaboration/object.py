@@ -1,6 +1,5 @@
 from zope.interface import implements
 import colander
-from persistent.list import PersistentList
 
 from substanced.folder import Folder
 from substanced.util import get_oid
@@ -15,7 +14,7 @@ COMPOSITE_UNIQUE = 'cu'
 def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     key = propertyref+'_valuekey'
-    
+
     def _get(self,):
         myproperty = self.__class__.properties[propertyref]
         if not hasattr(self, key):
@@ -46,13 +45,13 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
         if value is None:
             setattr(self, key, None)
-            return            
+            return
 
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
         elif hasattr(value,'__parent__') and value.__parent__ is not None :
             value.__parent__.remove(value.__name__)
- 
+
         self.add(value.__name__, value)
         value.__property__ = propertyref
         setattr(self, key, value.__name__)
@@ -130,7 +129,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             value.__class__.properties[opposite]['add'](value, self, False)
 
     def _set(self, value, initiator=True):
-        
+
         myproperty = self.__class__.properties[propertyref]
         if not isinstance(value, (list, tuple)):
             value = [value]
@@ -140,7 +139,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
         toadd = []
         if value is None:
             toremove = oldvalues
-        else:  
+        else:
             toremove = [v for v in oldvalues if not (v in value)]
             toadd = [v for v in value if not (v in oldvalues)]
 
@@ -202,7 +201,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _set(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self) 
+        currentvalue = myproperty['get'](self)
         if currentvalue == value:
             return
 
@@ -218,7 +217,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _del(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self) 
+        currentvalue = myproperty['get'](self)
         if currentvalue is not None and currentvalue == value:
             if initiator and opposite is not None:
                 value.__class__.properties[opposite]['del'](value, self, False)
@@ -261,7 +260,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
             return
 
         myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self) 
+        currentvalue = myproperty['get'](self)
         if isunique and value in currentvalue:
             return
 
@@ -269,7 +268,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
             value.__class__.properties[opposite]['add'](value, self, False)
 
         kw = {}
-        kw['relation_id'] = propertyref           
+        kw['relation_id'] = propertyref
         connect(self, value, **kw)
 
     def _set(self, value, initiator=True):
@@ -282,7 +281,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         toadd = []
         if value is None:
             toremove = oldvalues
-        else:  
+        else:
             toremove = [v for v in oldvalues if not (v in value)]
             toadd = [v for v in value if not (v in oldvalues)]
 
@@ -292,7 +291,6 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
                 myproperty['add'](self, v)
 
     def _del(self, value, initiator=True):
-        myproperty = self.__class__.properties[propertyref]
         if not isinstance(value, (list, tuple)):
             value = [value]
 
@@ -428,7 +426,7 @@ class Object(Folder):
         for _property in self.properties_def.keys():
             if kwargs.has_key(_property):
                 self.setproperty(_property, kwargs[_property])
-        
+
     def __init_proprties__(self):
         for p in self.properties_def.keys():
             op = __properties__[self.properties_def[p][0]]
@@ -451,7 +449,7 @@ class Object(Folder):
             self.setproperty(name, value)
         else:
             super(Folder, self).__setattr__(name, value)
-                
+
 
     def getproperty(self, name):
         return self.__class__.properties[name]['get'](self)
