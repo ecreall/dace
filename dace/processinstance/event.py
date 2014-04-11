@@ -84,6 +84,7 @@ class Event(BehavioralFlowNode, FlowNode):
         wi = self._get_workitem()
         if wi is not None:
             super(Event, self).start(transaction)
+            self.execute()
             self.finish_behavior(wi)
         else:
             self.stop()
