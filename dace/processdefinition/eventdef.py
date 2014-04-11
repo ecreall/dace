@@ -73,13 +73,10 @@ class TerminateEventDefinition(EventKindDefinition):
 
 class ConditionalEventDefinition(EventKindDefinition):
     factory = ConditionalEvent
-    # la condition doit avoir le processus comme parametre
-    def __init__(self, condition=None):
+    # the condition is a function with the process as parameter
+    def __init__(self, condition):
         super(ConditionalEventDefinition, self).__init__()
-        if condition is None:
-            self.condition = lambda self: True
-        else:
-            self.condition = condition
+        self.condition = condition
         self.initialize()
 
     def initialize(self):
