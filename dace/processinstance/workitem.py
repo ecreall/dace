@@ -140,7 +140,7 @@ class BaseWorkItem(LockableElement, Object):
         return self.node.process
 
     def start(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     def add_action(self, action):
         action.__name__ = action.behavior_id
@@ -159,7 +159,7 @@ class BaseWorkItem(LockableElement, Object):
         return [a.__class__.get_validator() for a in self.actions]
 
     def validate(self):
-        raise NotImplementedError# pragma: no cover
+        raise NotImplementedError # pragma: no cover
 
     def concerned_nodes(self):
         return [self.node]
@@ -175,7 +175,7 @@ class WorkItem(BaseWorkItem):
         super(WorkItem, self).__init__(node)
 
     def start(self, *args):
-        raise NotImplementedError# pragma: no cover
+        raise NotImplementedError # pragma: no cover
 
     def validate(self):
         activity_id = self.node.definition.id

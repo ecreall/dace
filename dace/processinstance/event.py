@@ -43,7 +43,7 @@ class Event(BehavioralFlowNode, FlowNode):
             eventKind.event = self
 
     def __call__(self, transition):
-        pass# pragma: no cover
+        pass
 
     def prepare_for_execution(self):
         self.execution_prepared = True
@@ -57,10 +57,10 @@ class Event(BehavioralFlowNode, FlowNode):
             self.stop()
 
     def validate(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     def execute(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     def stop(self):
         self.setproperty('workitems', [])
@@ -129,11 +129,11 @@ class StartEvent(Catching):
 
 
 class IntermediateThrowEvent(Throwing):
-    pass# pragma: no cover
+    pass # pragma: no cover
 
 
 class IntermediateCatchEvent(Catching):
-    pass# pragma: no cover
+    pass # pragma: no cover
 
 
 class EndEvent(Throwing):
@@ -180,14 +180,14 @@ class EventKind(object):
         return True
 
     def prepare_for_execution(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     # cette operation est appelee par les evenements "Throwing"
     def execute(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     def stop(self):
-        pass# pragma: no cover
+        pass # pragma: no cover
 
     @property
     def definition(self):

@@ -4,5 +4,5 @@ from pyramid.i18n import TranslationStringFactory
 log = logging.getLogger('dace')
 _ =  TranslationStringFactory('dace')
 
-def includeme(config): # pragma: no cover
+def includeme(config):
     config.scan()
