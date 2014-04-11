@@ -1,7 +1,6 @@
 from persistent import Persistent
 from zope.interface import Attribute
 
-from dace.processinstance.core import EventHandler
 from dace.objectofcollaboration.object import Object, SHARED_MULTIPLE, SHARED_UNIQUE
 
 
@@ -24,7 +23,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
     performer = ''
 
     def create(self, process):
-        return self.factory(process, self)
+        return self.factory(self)
 
     def __init__(self):
         super(FlowNodeDefinition, self).__init__()
@@ -330,14 +329,6 @@ class Path(Persistent):
 
     def __repr__(self):
         return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
-
-
-class EventHandlerDefinition(FlowNodeDefinition):
-    factory = EventHandler
-    boundaryEvents = ()
-
-    def __init__(self):
-        super(FlowNodeDefinition, self).__init__()
 
 
 class InvalidProcessDefinition(Exception):

@@ -687,6 +687,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_waiting_workitem_b_to_finish(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
+        #import pdb; pdb.set_trace()
         b_wi.start().start()
         #self.assertEqual(proc.workflowRelevantData.choice, "b")
         self.assertEqual(len(proc.getWorkItems()), 0)
@@ -748,7 +749,7 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
         b_wi = workitems['sample.b']
-        b_wi.start()
+        b_wi.start().start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
 
@@ -1032,18 +1033,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
         currenttransaction = proc.global_transaction
-        self.assertEqual(len(currenttransaction.sub_transactions), 2)
-        #p
-        startp_paths = currenttransaction.find_allsubpaths_for(proc['p'])
-        self.assertEqual(len(startp_paths), 1)
-        startp_transaction = startp_paths[0].transaction
-        self.assertEqual(startp_transaction.type, 'Start')
-        sources = startp_transaction.path.sources
-        targets = startp_transaction.path.targets
-        self.assertEqual(len(sources), 1)
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(sources[0].id, 'sample.ea')
-        self.assertEqual(targets[0].id, 'sample.p')
+        self.assertEqual(len(currenttransaction.sub_transactions), 1)
         #g0
         startg0_paths = currenttransaction.find_allsubpaths_for(proc['g0'])
         self.assertEqual(len(startg0_paths), 1)
@@ -1066,7 +1056,6 @@ class TestsWorkItems(FunctionalTests):
 
         self.assertEqual(len(all_workitems['sample.b']), 1)
         self.assertEqual(len(all_workitems['sample.c']), 1)
-
         currenttransaction = proc.global_transaction
         self.assertEqual(len(currenttransaction.sub_transactions), 2)
         #b
@@ -1096,7 +1085,7 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
         currenttransaction = proc.global_transaction
-        self.assertEqual(len(currenttransaction.sub_transactions), 2)
+        self.assertEqual(len(currenttransaction.sub_transactions), 1)
         #c
         startc_paths = currenttransaction.find_allsubpaths_for(proc['c'])
         self.assertEqual(len(startc_paths), 1)
@@ -1108,10 +1097,6 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(targets), 1)
         self.assertEqual(sources[0].id, 'sample.p')
         self.assertEqual(targets[0].id, 'sample.c')
-        #end = None: pas de transitions outgoing
-        currenttransaction.sub_transactions.remove(startc_transaction)
-        self.assertIs(currenttransaction.sub_transactions[0].path, None)
-        self.assertEqual(currenttransaction.sub_transactions[0].type, 'End')
 
 
 class TestGatewayChain(FunctionalTests):

@@ -2,7 +2,7 @@ from zope.interface import implements
 
 from dace.interfaces import IActivityDefinition
 from dace.processinstance.activity import Activity, SubProcess
-from .core import EventHandlerDefinition
+from .eventdef import EventHandlerDefinition
 
 
 class ActivityDefinition(EventHandlerDefinition):

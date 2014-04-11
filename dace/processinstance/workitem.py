@@ -38,7 +38,7 @@ class UserDecision(LockableElement):
         return self.path.sources
 
     def __eq__(self, other):
-        return self.path.equal(other.path)
+        return isinstance(other, UserDecision) and self.path.equal(other.path)
 
 
 class StartWorkItem(UserDecision):
@@ -99,8 +99,20 @@ class StartWorkItem(UserDecision):
         return [a.__class__.get_validator() for a in self.actions]
 
     def validate(self):
-        # incoming transition is already checked
-        return True
+        """If all transitions (including incoming TODO) are async, return True
+        Else if a one transition in the chain is sync,
+        verify all transitions condition.
+        """
+        global_request = get_current_request() 
+        transitions = self.path.transitions
+        if not [t for t in transitions if t.sync]:
+            return True
+        else:
+            for transition in transitions:
+                if transition.sync and not transition.condition(self.process):
+                    return False
+
+        return True 
 
     def __eq__(self, other):
         return UserDecision.__eq__(self, other) and self.node is other.node
@@ -116,6 +128,7 @@ class BaseWorkItem(LockableElement, Object):
         LockableElement.__init__(self)
         Object.__init__(self)
         self.node = node
+        self.is_valide = True
 
     def _init_actions(self):
         for a in self.node.definition.contexts:
@@ -140,7 +153,11 @@ class BaseWorkItem(LockableElement, Object):
         return self.node.process
 
     def start(self):
+<<<<<<< HEAD
         pass # pragma: no cover
+=======
+        pass
+>>>>>>> add MakerFlowNode
 
     def add_action(self, action):
         action.__name__ = action.behavior_id
@@ -178,17 +195,15 @@ class WorkItem(BaseWorkItem):
         raise NotImplementedError # pragma: no cover
 
     def validate(self):
-        activity_id = self.node.definition.id
-        node_def = self.node.definition
-        if node_def.process.isControlled:
-            return True
+        """If all transitions (including incoming TODO) are async, return True
+        Else if a one transition in the chain is sync,
+        verify all transitions condition.
+        """
+        global_request = get_current_request() 
+        return True and not self.is_locked(global_request)
 
-        # we don't have incoming transition it's a subprocess
-        transition = [t for t in node_def.incoming
-                if activity_id == t.target.id][0]
-        proc = self.process
-        global_request = get_current_request()
-        return (not transition.sync or transition.condition(proc)) and not self.is_locked(global_request)
+    def __eq__(self, other):
+        return isinstance(other, WorkItem) and self.node is other.node
 
 
 class DecisionWorkItem(BaseWorkItem, UserDecision):
@@ -224,7 +239,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
             return True and not self.is_locked(global_request)
         else:
             for transition in transitions:
-                if not transition.condition(self.process):
+                if transition.sync and not transition.condition(self.process):
                     return False
 
         return True and not self.is_locked(global_request)
@@ -233,4 +248,4 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return [n for n in self.path.sources if not (n in self.validations)]
 
     def __eq__(self, other):
-        return UserDecision.__eq__(self, other) and self.node is other.node
+        return   UserDecision.__eq__(self, other) and self.node is other.node

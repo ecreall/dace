@@ -90,7 +90,6 @@ class Process(Entity):
         for t in first_transitions:
             next_transitions = next_transitions.union(set(path.next(t)))
 
-
         for nt in next_transitions:
             if nt in executed_transitions:
                 next_transitions.remove(nt)
@@ -134,6 +133,24 @@ class Process(Entity):
             else:
                 result[wi.node.id] = wi
                 self.result_multiple[wi.node.id] = [wi]
+
+        return result
+
+    def getAllWorkItems(self):
+        dace_catalog = find_catalog('dace')
+        process_inst_uid_index = dace_catalog['process_inst_uid']
+        object_provides_index = dace_catalog['object_provides']
+        p_uid = get_oid(self, None)
+        query = object_provides_index.any((IWorkItem.__identifier__,)) & \
+                process_inst_uid_index.any((int(p_uid),))
+        workitems = query.execute().all()
+        result = []
+        for wi in workitems:
+            if isinstance(wi.node, SubProcess) and wi.node.sub_process is not None and wi.node.sub_process._started:
+                result.extend(wi.node.sub_process.getAllWorkItems())
+
+            if not (wi in result):
+                result.append(wi)
 
         return result
 

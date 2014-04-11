@@ -3,7 +3,14 @@ from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
     TimerEvent, SignalEvent, IntermediateCatchEvent, IntermediateThrowEvent, ConditionalEvent)
 from dace.processinstance.workitem import StartWorkItem
 
+from dace.processinstance.core import EventHandler
 
+class EventHandlerDefinition(FlowNodeDefinition):
+    factory = EventHandler
+    boundaryEvents = ()
+
+    def __init__(self):
+        super(FlowNodeDefinition, self).__init__()
 
 class EventDefinition(FlowNodeDefinition):
 
@@ -14,7 +21,7 @@ class EventDefinition(FlowNodeDefinition):
 
     def create(self, process):
         eventKind = self.eventKind and self.eventKind.create() or None
-        return self.factory(process, self, eventKind)
+        return self.factory(self, eventKind)
 
 
 class StartEventDefinition(EventDefinition):

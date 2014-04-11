@@ -67,10 +67,11 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
 
 
 class Event(BehavioralFlowNode, FlowNode):
-    def __init__(self, process, definition, eventKind):
-        super(Event, self).__init__(process, definition)
+    def __init__(self, definition, eventKind):
+        super(Event, self).__init__(definition)
         self.eventKind = eventKind
         self.execution_prepared = False
+        self.execution_finished = False
         if eventKind:
             eventKind.event = self
 
@@ -79,6 +80,7 @@ class Event(BehavioralFlowNode, FlowNode):
 
     def prepare_for_execution(self):
         self.execution_prepared = True
+        self.execution_finished = False
 
     def start(self, transaction):
         wi = self._get_workitem()
@@ -86,8 +88,15 @@ class Event(BehavioralFlowNode, FlowNode):
             super(Event, self).start(transaction)
             self.execute()
             self.finish_behavior(wi)
+            self.execution_finished = True
         else:
             self.stop()
+
+    def replay_path(self, decision, transaction):
+        if not self.execution_finished:
+            self.finish_behavior(decision)
+
+        super(Event, self).replay_path(decision, transaction)
 
     def validate(self):
         pass # pragma: no cover
@@ -155,6 +164,7 @@ class StartEvent(Catching):
                 super(StartEvent, self).start(transaction)
                 self.process.start()
                 self.finish_behavior(wi)
+                self.execution_finished = True
             else:
                 self.stop()
         else:
@@ -170,18 +180,6 @@ class IntermediateCatchEvent(Catching):
 
 
 class EndEvent(Throwing):
-
-    def prepare_for_execution(self):
-        if not self.execution_prepared:
-            super(Throwing, self).prepare_for_execution()
-            if self.validate():
-                wi = self._get_workitem()
-                if wi is not None:
-                    starttransaction = self.process.global_transaction.start_subtransaction('End', initiator=self)
-                    self.start(starttransaction)
-                    self.finish_behavior(wi)
-                else:
-                    self.stop()
 
 
     def finish_behavior(self, work_item):
