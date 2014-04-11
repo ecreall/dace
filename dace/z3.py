@@ -3,49 +3,31 @@ import time
 import rwproperty
 
 import transaction
-#from zope.authentication.interfaces import IAuthentication
-#from zope.component import getUtility
-#from zope.component.hooks import getSite, setSite
-from zope.interface import implements
-#from zope.security.interfaces import IParticipation
-#from zope.security.management import (
-#    endInteraction, newInteraction, queryInteraction)
-import ZODB.interfaces
 from ZODB.POSException import ConflictError
 
-
-class Participation(object):
-#    implements(IParticipation)
-    interaction = principal = None
-
-    def __init__(self, principal):
-        self.principal = principal
+from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid import testing
+from pyramid.testing import DummyRequest
+from substanced.util import get_oid
+from substanced.interfaces import IUserLocator
+from substanced.principal import DefaultUserLocator
 
 
 class BaseJob(object):
     # a job that examines the site and interaction participants when it is
     # created, and reestablishes them when run, tearing down as necessary.
 
-    site_id = None
-    participants = ()
     args = ()
     def __init__(self):
-#    def __init__(self, *args, **kwargs):
-#        self.callable = args[0]
-#        self.args = args[1:]
-#        self.kwargs = kwargs
-        site = getSite()
-        self.site_id = site.__name__
-        self.database_name = site._p_jar.db().database_name
-        interaction = queryInteraction()
-        if interaction is not None:
-            self.participants = tuple(
-                participation.principal.id for participation in
-                interaction.participations)
+        request = get_current_request()
+        self.site_id = 'app_root'
+        self.database_name = request.root._p_jar.db().database_name
+        self.userid = get_oid(request.user)
+        self.registry = get_current_registry()
+        # Job can't be persisted with this self.registry
 
     def retry(self):
         transaction.begin()
-#       self.callable(*self.args, **self.kwargs)
         self.callable(*self.args)
         transaction.commit()
 
@@ -69,20 +51,22 @@ class BaseJob(object):
             self.tearDown(app)
 
     def setUp(self):
-        db = getUtility(ZODB.interfaces.IDatabase, name=self.database_name)
-        app = db.open().root()['Application']
-        site = app[self.site_id]
-        setSite(site)
-        if self.participants:
-            auth = getUtility(IAuthentication)
-            newInteraction(
-                *(Participation(auth.getPrincipal(principal_id)) for
-                  principal_id in self.participants))
+        db = self.registry._zodb_databases[self.database_name]
+        app = db.open().root()[self.site_id]
+        request = DummyRequest()
+        testing.setUp(registry=self.registry, request=request)
+        request.root = app
+        locator = self.registry.queryMultiAdapter((app, request),
+                                                  IUserLocator)
+        if locator is None:
+            locator = DefaultUserLocator(app, request)
+
+        user = locator.get_user_by_userid(self.userid)
+        request.user = user
         return app
 
     def tearDown(self, app):
-        setSite(None)
-        endInteraction()
+        testing.tearDown()
         app._p_jar.close()
 
 
@@ -91,7 +75,8 @@ class Job(BaseJob):
 
     @property
     def callable(self):
-        site = getSite()
+        request = get_current_request()
+        site = request.root
         callable_root = site._p_jar.get(self._callable_oid).eventKind
         call = getattr(callable_root, self._callable_name)
         return call

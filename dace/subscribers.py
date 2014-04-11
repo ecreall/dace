@@ -25,6 +25,7 @@ class ConsumeTasks(threading.Thread):
     def run(self):
         # TODO: configure logging
         loop = zmq.eventloop.ioloop.IOLoop.instance()
+        # we need to write a pdb here to activate a pdb in a Job...
         loop.start()
 
     def stop(self):
@@ -70,8 +71,8 @@ def start_intermediate_events(event):
     for wi in results:
         node = wi.node
         if isinstance(node, IntermediateCatchEvent):
-            node.eventKind.prepare()
-            log.info("Calling %s.eventKind.prepare()", node)
+            node.eventKind.prepare_for_execution()
+            log.info("Calling %s.eventKind.prepare_for_execution()", node)
     # commit to execute after commit hooks
     transaction.commit()
 #    start_crawler(app_root)

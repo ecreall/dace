@@ -76,7 +76,7 @@ class TestsSignal(FunctionalTests):
         sc_wi, proc = start_wi.start()
         sc_wi.start()
         self.assertEqual(len(proc.getWorkItems()), 2)
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['a', 'sc'])
+        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
 
     def test_signal_event(self):
         pd = self._process_definition()
@@ -91,9 +91,9 @@ class TestsSignal(FunctionalTests):
         import time
         time.sleep(6)
         transaction.begin()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['d'])
+        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
 
-        d_wi = proc.getWorkItems()['d']
+        d_wi = proc.getWorkItems()['sample.d']
         d_wi.start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
@@ -154,7 +154,7 @@ class TestsSignal(FunctionalTests):
         b_wi, proc = start_wi.start()
         b_wi.start()
         transaction.commit()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['a', 'sc'])
+        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
 
         # simulate application shutdown
         proc.getWorkItems()['sc'].node.eventKind.stop()
@@ -170,11 +170,11 @@ class TestsSignal(FunctionalTests):
         start_ioloop(event)
         start_intermediate_events(event)
 
-        a_wi = proc.getWorkItems()['a']
+        a_wi = proc.getWorkItems()['sample.a']
         a_wi.start()
         transaction.commit()
 
         import time
         time.sleep(6)
         transaction.begin()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['d'])
+        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])

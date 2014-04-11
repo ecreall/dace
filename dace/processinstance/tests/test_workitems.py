@@ -1365,8 +1365,8 @@ class EventsTests(FunctionalTests):
         self.assertEqual(len(event.callbacks), 1)
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 1)
-        self.assertEqual(sorted(workitems.keys()), ['cie'])
-        workitems['cie'].node.eventKind.definition.condition = return_true
+        self.assertEqual(sorted(workitems.keys()), ['sample.cie'])
+        workitems['sample.cie'].node.eventKind.definition.condition = return_true
         import time
         time.sleep(6)
         transaction.begin()
@@ -1422,12 +1422,12 @@ class EventsTests(FunctionalTests):
         a_wi.start()
         transaction.commit()
         workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['tie'])
+        self.assertEqual(sorted(workitems.keys()), ['sample.tie'])
         import time
         time.sleep(6)
         transaction.begin()
         workitems = proc.getWorkItems()
-        self.assertEqual(sorted(workitems.keys()), ['b'])
+        self.assertEqual(sorted(workitems.keys()), ['sample.b'])
 
 
 # TODO: test event behind a xor gateway

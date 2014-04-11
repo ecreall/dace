@@ -5,7 +5,7 @@ import datetime
 from pyramid.threadlocal import get_current_registry
 
 import zmq
-from zmq.eventloop.ioloop import DelayedCallback
+from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
@@ -14,6 +14,38 @@ from dace import log
 
 # shared between threads
 callbacks = {}
+
+class DelayedCallback(object):
+    """Schedule the given callback to be called once.
+
+    The callback is called once, after callback_time milliseconds.
+
+    `start` must be called after the DelayedCallback is created.
+
+    The timeout is calculated from when `start` is called.
+    """
+    def __init__(self, callback, callback_time, io_loop=None):
+        self.callback = callback
+        self.callback_time = callback_time
+        self.io_loop = io_loop or IOLoop.instance()
+        self._timeout = None
+
+    def start(self):
+        """Start the timer."""
+        def start_delayed_callback(dc):
+            ioloop = IOLoop.current()
+            dc._timeout = ioloop.add_timeout(
+                ioloop.time() + self.callback_time / 1000.0, self.callback)
+        self.io_loop.add_callback(start_delayed_callback, self)
+
+    def stop(self):
+        """Stop the timer."""
+        if self._timeout is not None:
+            def stop_delayed_callback(dc):
+                ioloop = IOLoop.current()
+                ioloop.remove_timeout(dc._timeout)
+                dc._timeout = None
+            self.io_loop.add_callback(stop_delayed_callback, self)
 
 
 def push_callback_after_commit(event, callback, callback_params, deadline):
@@ -209,7 +241,7 @@ class ConditionalEvent(EventKind):
 
         if self.validate():
             log.info('%s %s', self.event, "validate ok")
-            wi = self._get_workitem()
+            wi = self.event._get_workitem()
             if wi is not None:
                 self.event.start(None)
             else:
@@ -245,7 +277,7 @@ def get_zmq_context():
 
 
 def get_socket_url():
-    return 'tcp://*:12345'
+    return 'tcp://127.0.0.1:12345'
 
 
 class SignalEvent(EventKind):
