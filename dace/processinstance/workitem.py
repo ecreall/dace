@@ -153,11 +153,7 @@ class BaseWorkItem(LockableElement, Object):
         return self.node.process
 
     def start(self):
-<<<<<<< HEAD
         pass # pragma: no cover
-=======
-        pass
->>>>>>> add MakerFlowNode
 
     def add_action(self, action):
         action.__name__ = action.behavior_id
