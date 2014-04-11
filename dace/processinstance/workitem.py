@@ -54,6 +54,7 @@ class StartWorkItem(UserDecision):
         actions = []
         for a in self.node.contexts:
             action = a(self)
+            # The creation of the action can modify self.actions
             actions.append(action)
 
         self.actions.extend(actions)
