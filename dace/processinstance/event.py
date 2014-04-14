@@ -89,7 +89,6 @@ class Event(BehavioralFlowNode, FlowNode):
         wi = self._get_workitem()
         if wi is not None:
             super(Event, self).start(transaction)
-            self.execute()
             self.finish_behavior(wi)
             self.execution_finished = True
         else:
@@ -100,6 +99,10 @@ class Event(BehavioralFlowNode, FlowNode):
             self.finish_behavior(decision)
 
         super(Event, self).replay_path(decision, transaction)
+
+    def finish_behavior(self, wi):
+        self.execute()
+        super(Event, self).finish_behavior(wi)
 
     def validate(self):
         pass # pragma: no cover
@@ -344,7 +347,7 @@ class SignalEvent(EventKind):
         s = ctx.socket(zmq.PUB)
         s.bind(get_socket_url())
         # Sleep to allow sockets to connect.
-        time.sleep(1.0)
+        time.sleep(0.2)
         s.send(ref)
         s.close()
 

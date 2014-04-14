@@ -145,6 +145,7 @@ class TestsSignal(FunctionalTests):
 
     def test_start_intermediate_events_on_startup(self):
         from zope.processlifetime import DatabaseOpenedWithRoot
+        from dace.processinstance.event import callbacks as event_callbacks
         pd = self._process_definition_with_activity_after_start_event()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('b')
@@ -155,26 +156,29 @@ class TestsSignal(FunctionalTests):
         b_wi.start()
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
-
         # simulate application shutdown
-        proc.getWorkItems()['sc'].node.eventKind.stop()
-        from ..subscribers import stop_ioloop
-        from ..subscribers import start_ioloop
+        self.assertEqual(len(event_callbacks), 1)
+        proc.getWorkItems()['sample.sc'].node.eventKind.stop()
+        self.assertEqual(len(event_callbacks), 0)
+        from dace.subscribers import stop_ioloop
         stop_ioloop()
 
         # simulate application startup
         event = DatabaseOpenedWithRoot(self.app._p_jar.db())
-#        from zope.event import notify
-#        notify(event)
-        from ..subscribers import start_intermediate_events
-        start_ioloop(event)
-        start_intermediate_events(event)
+        self.registry.notify(event)
+        self.assertEqual(len(event_callbacks), 1)
+#        from dace.subscribers import start_intermediate_events
+#        start_ioloop(event)
+#        start_intermediate_events(event)
 
         a_wi = proc.getWorkItems()['sample.a']
-        a_wi.start()
+        a_wi.start().start()
+        # we need to commit so the catching event Job 
+        # see the modified process.
         transaction.commit()
+        # The job wait 2 sec before executing
 
         import time
-        time.sleep(6)
+        time.sleep(3)
         transaction.begin()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
