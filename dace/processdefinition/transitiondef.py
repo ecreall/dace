@@ -3,6 +3,7 @@ from zope.interface import implements
 from dace.interfaces import ITransitionDefinition
 from dace.objectofcollaboration.object import Object, SHARED_UNIQUE
 from dace.processinstance.transition import Transition
+
 def always_true(data):
     return True
 

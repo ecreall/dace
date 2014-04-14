@@ -240,6 +240,13 @@ def processsecurity_validationA(process, context):
 def state_validationA(process, context):
     return True
 
+
+def condition(obj):
+    if not hasattr(obj, 'bool'):
+        return True
+
+    return obj.bool
+
 from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput
 from dace.objectofcollaboration.tests.example.objects import IObjectA
 
@@ -453,3 +460,23 @@ class ActionSP(ElementaryAction):
     roles_validation = roles_validationA
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
+
+class ActionSPMI(DataInput):
+    loopDataInputRef = dataInputRef
+    dataIsPrincipal = True
+    isSequential = True
+    #identification et classification
+    groups = ['groupSP']
+    process_id = 'sample'
+    node_id = 'sp'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        item  = kw['item']
+        item.is_executed = True  
+        return True

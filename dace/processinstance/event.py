@@ -204,7 +204,7 @@ class EndEvent(Throwing):
         # ici test pour les sous processus
         if self.process.definition.isSubProcess:
             request = get_current_request()
-            self.process.attachedTo.finish_execution(None, request, None)
+            self.process.attachedTo.finish_execution(None, request)
 
         if self.process.definition.isVolatile:
             self.process.__parent__.delproperty('processes', self.process)

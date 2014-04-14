@@ -54,10 +54,6 @@ class SubProcess(Activity):
         #self.wi.remove()
         return proc
 
-    def start(self, transaction):
-        super(SubProcess, self).start(transaction)
-        self._start_subprocess()
-
 
 class ActionType:
     automatic = 1

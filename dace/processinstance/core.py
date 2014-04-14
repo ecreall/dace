@@ -185,7 +185,7 @@ class BehavioralFlowNode(MakerFlowNode):
         workitems = self.process.getWorkItems()
         if self.id in workitems.keys():
             wi = workitems[self.id]
-            if isinstance(wi, DecisionWorkItem):
+            if isinstance(wi, DecisionWorkItem) and wi.validate():
                 wi = wi.consume()
                 if wi is not None:
                     self.addtoproperty('workitems', wi)

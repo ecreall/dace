@@ -908,6 +908,46 @@ class TestsWorkItems(FunctionalTests):
         self.config.scan(example)
         return pd
 
+
+
+    def test_start_complex_Parallel_workitem_aSync(self):
+        pd = self._process_start_complex_Parallel_process_decision()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        transition = pd['p0-g0']
+        transition.sync = True
+        pd.bool = True
+        transition.condition = example.condition
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 1)
+        self.assertIn('f', start_wis)
+
+        start_f = start_wis['f']
+        wi, proc = start_f.consume()
+        self.assertEqual(u'sample.f', wi.node.id)
+        wi.start()
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+        proc.bool = False
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 1)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+        proc.bool = True
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+        
+
     def test_start_complex_Parallel_workitem_decision(self):
         pd = self._process_start_complex_Parallel_process_decision()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
@@ -1097,6 +1137,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(targets), 1)
         self.assertEqual(sources[0].id, 'sample.p')
         self.assertEqual(targets[0].id, 'sample.c')
+
 
 
 class TestGatewayChain(FunctionalTests):

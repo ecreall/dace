@@ -30,7 +30,8 @@ from dace.processinstance.tests.example.process import (
     ActionYLC, 
     ActionYLD, 
     ActionYSteps,
-    ActionSP)
+    ActionSP,
+    ActionSPMI)
 from dace.processinstance.workitem import StartWorkItem
 from ..activity import ACTIONSTEPID
 from dace.objectofcollaboration.tests.example.objects import ObjectA
@@ -412,7 +413,8 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb 
-
+        action_a = actions_y[0]
+ 
         call_actions = objectb.actions
         self.assertEqual(len(call_actions), 3)
         actions_id = [a.action.node_id for a in call_actions]
@@ -421,6 +423,20 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb 
+
+        action_a.before_execution(objecta, self.request)
+        action_a.execute(objecta, self.request, None, **{})
+        proc = action_a.node.process
+        actions_b = [a for a in action_a.workitem.actions if hasattr(a, 'item') and a.item is objectb]
+        self.assertEqual(len(actions_b), 1)
+        action_b = actions_b[0]
+        action_b.before_execution(objectb, self.request)
+        action_b.execute(objectb, self.request, None, **{})
+
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 1)
+        self.assertIn('sample.x', nodes_workitems)
 
     def _test_actions_YLC(self, pd, y):
         start_wi = pd.start_process('x')
@@ -664,9 +680,10 @@ class TestsSubProcess(FunctionalTests):
         )
         pd = ProcessDefinition(u'sample')
         self.app['pd'] = pd
+        spaction = SubProcessDefinition(pd=sp)
         pd.defineNodes(
                 s = StartEventDefinition(),
-                sp = SubProcessDefinition(contexts=[ActionSP], pd=sp),
+                sp = spaction,
                 y = ActivityDefinition(),
                 z = ActivityDefinition(),
                 g1 = ExclusiveGatewayDefinition(),
@@ -689,11 +706,12 @@ class TestsSubProcess(FunctionalTests):
         )
 
         self.config.scan(example)
-        return sp, pd
+        return spaction, sp, pd
 
 
-    def test_subprocess(self):
-        sp, pd = self._process_valid_subprocess()
+    def test_subprocess_elementary(self):
+        spaction, sp, pd = self._process_valid_subprocess()
+        spaction.contexts=[ActionSP]
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
         start_wi = pd.start_process('sp')
@@ -707,11 +725,135 @@ class TestsSubProcess(FunctionalTests):
         objecta= ObjectA()
         self.app['objecta'] = objecta
         action_sp.before_execution(objecta, self.request)
-        wi, proc = action_sp.workitem.consume()
-        wi.start()
         action_sp.execute(objecta, self.request, None, **{})
         wi_sa = getWorkItem('sub_process', 'sa', self.request, objecta)
-        import pdb; pdb.set_trace()
+        proc =  action_sp.process
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(wi_sa, workitems.values())
+        workitems_keys = workitems.keys()
+        wi_sp = workitems['sample.sp']
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objecta, self.request), False)
+        self.assertIn('sample.y', workitems_keys)
+        self.assertIn('sub_process.sa', workitems_keys)
+
+        wi_sa.consume().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 4)
+        workitems_keys = workitems.keys()
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objecta, self.request), False)
+        self.assertIn('sample.y', workitems_keys)
+        self.assertIn('sub_process.sb', workitems_keys)
+        self.assertIn('sub_process.sc', workitems_keys)
+
+        wi_sb = workitems['sub_process.sb'].consume()
+        wi_sb.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 1)
+        workitems_keys = workitems.keys()
+        self.assertIn('sample.y', workitems_keys)
+
+        wi_y = workitems['sample.y'].consume()
+        wi_y.start()
+        wi_y.node.finish_behavior(wi_y)
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 0)
+
+    def test_subprocess_multiinstance(self):
+        spaction, sp, pd = self._process_valid_subprocess()
+        spaction.contexts=[ActionSPMI]
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
+        objecta= ObjectA()
+        objecta.is_executed = False
+        objectb= ObjectA()
+        objectb.is_executed = False
+        objectc= ObjectA()
+        self.app['objecta'] = objecta
+        self.app['objectb'] = objectb
+        self.app['objectc'] = objectc
+
+        self.request.objects = [objecta, objectb]
+
+        start_wi = pd.start_process('sp')
+        actions_sp = start_wi.actions
+        self.assertEqual(len(actions_sp), 3)# multi instance action and 2 actioninstance (objecta, objectb)
+        actions = dict([(a.item.__name__, a) for a in actions_sp if hasattr(a, 'item') and a.item in self.request.objects])
+        self.assertEqual(len(actions), 2)
+        action_sp = actions['objecta']
+        action_sp2 = actions['objectb']
+
+        #sub_process 1 ('objecta')
+        action_sp.before_execution(objectc, self.request)
+        action_sp.execute(objectc, self.request, None, **{})
+        wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
+        proc =  action_sp.process
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(wi_sa, workitems.values())
+        workitems_keys = workitems.keys()
+        wi_sp = workitems['sample.sp']
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        self.assertIn('sample.y', workitems_keys)
+        self.assertIn('sub_process.sa', workitems_keys)
+
+        wi_sa.consume().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 4)
+        workitems_keys = workitems.keys()
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        self.assertIn('sample.y', workitems_keys)
+        self.assertIn('sub_process.sb', workitems_keys)
+        self.assertIn('sub_process.sc', workitems_keys)
+
+        wi_sb = workitems['sub_process.sb'].consume()
+        wi_sb.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 2)
+        workitems_keys = workitems.keys()
+        self.assertIn('sample.y', workitems_keys)
+        self.assertIn('sample.sp', workitems_keys)
+
+        wi_y = workitems['sample.y'].consume()
+        wi_y.start()
+        wi_y.node.finish_behavior(wi_y)
+        workitems = proc.getWorkItems()
+        workitems_keys = workitems.keys()
+        self.assertEqual(len(workitems), 1)
+        self.assertIn('sample.sp', workitems_keys)
+
+        #sub_process 2 ('objectb')
+        action_sp2.before_execution(objectc, self.request)
+        action_sp2.execute(objectc, self.request, None, **{})
+        wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
+        proc =  action_sp2.process
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(wi_sa, workitems.values())
+        workitems_keys = workitems.keys()
+        wi_sp = workitems['sample.sp']
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        self.assertIn('sub_process.sa', workitems_keys)
+
+        wi_sa.consume().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 3)
+        workitems_keys = workitems.keys()
+        self.assertIn('sample.sp', workitems_keys)# action is not valide
+        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        self.assertIn('sub_process.sb', workitems_keys)
+        self.assertIn('sub_process.sc', workitems_keys)
+
+        wi_sb = workitems['sub_process.sb'].consume()
+        wi_sb.start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 0)
+
 
 
 

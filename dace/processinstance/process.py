@@ -131,7 +131,7 @@ class Process(Entity):
         for wi in workitems:
             if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
                 for sp in wi.node.sub_processes:
-                    result.extend(sp.getWorkItems())
+                    result.update(sp.getWorkItems())
 
             if wi.node.id in result:
                 self.result_multiple[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)

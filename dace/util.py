@@ -254,7 +254,6 @@ def getWorkItem(process_id, node_id, request, context,
             if filter_by_involved:
                 pass#process_ids = tuple(context.getInvolvedProcessIds())
 
-
     query =  process_id_index.eq(process_id) & \
             node_id_index.eq(process_id+'.'+node_id) & \
             object_provides_index.any((IWorkItem.__identifier__,))
