@@ -1,10 +1,11 @@
 import unittest
+
 from pyramid.config import Configurator
 from pyramid.testing import DummyRequest
 from pyramid import testing
 
-
 from substanced.db import root_factory
+
 
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application.
@@ -42,10 +43,18 @@ class FunctionalTests(unittest.TestCase):
         self.users = self.app['principals']['users']
         self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
         request.user = self.users['admin']
-        from dace.processinstance import event
-        event.callbacks = {}
 
     def tearDown(self):
+        from dace.processinstance import event
+        for dc_or_stream in event.callbacks.values():
+            if hasattr(dc_or_stream, 'close'):
+                dc_or_stream.close()
+            else:
+                dc_or_stream.stop()
+
+        with event.callbacks_lock:
+            event.callbacks = {}
+
         import shutil
         testing.tearDown()
         self.db.close()

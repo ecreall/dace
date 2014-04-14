@@ -162,16 +162,11 @@ class TestsSignal(FunctionalTests):
         self.assertEqual(len(event_callbacks), 1)
         proc.getWorkItems()['sample.sc'].node.eventKind.stop()
         self.assertEqual(len(event_callbacks), 0)
-        from dace.subscribers import stop_ioloop
-        stop_ioloop()
 
         # simulate application startup
         event = DatabaseOpenedWithRoot(self.app._p_jar.db())
         self.registry.notify(event)
         self.assertEqual(len(event_callbacks), 1)
-#        from dace.subscribers import start_intermediate_events
-#        start_ioloop(event)
-#        start_intermediate_events(event)
 
         a_wi = proc.getWorkItems()['sample.a']
         a_wi.consume().start()
