@@ -170,8 +170,7 @@ class WorkItemFactoryAE(workitem.WorkItemFactory):
 class WorkItemE(workitem.WorkItem):
 
     def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
+        pass
 
 @utility(name ='sample.e')
 class WorkItemFactoryE(workitem.WorkItemFactory):
@@ -192,8 +191,7 @@ class WorkItemFactorySc(workitem.WorkItemFactory):
 class WorkItemSt(workitem.WorkItem):
 
     def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
+        pass
 
 @utility(name ='sample.st')
 class WorkItemFactorySt(workitem.WorkItemFactory):
@@ -203,8 +201,7 @@ class WorkItemFactorySt(workitem.WorkItemFactory):
 class WorkItemCIE(workitem.WorkItem):
 
     def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
+        pass
 
 @utility(name ='sample.cie')
 class WorkItemFactoryCIE(workitem.WorkItemFactory):
@@ -214,8 +211,7 @@ class WorkItemFactoryCIE(workitem.WorkItemFactory):
 class WorkItemTIE(workitem.WorkItem):
 
     def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
+        pass
 
 @utility(name ='sample.tie')
 class WorkItemFactoryTIE(workitem.WorkItemFactory):
