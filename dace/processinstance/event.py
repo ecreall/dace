@@ -89,6 +89,7 @@ class Event(BehavioralFlowNode, FlowNode):
         wi = self._get_workitem()
         if wi is not None:
             super(Event, self).start(transaction)
+            self.execute()
             self.finish_behavior(wi)
             self.execution_finished = True
         else:
@@ -96,13 +97,11 @@ class Event(BehavioralFlowNode, FlowNode):
 
     def replay_path(self, decision, transaction):
         if not self.execution_finished:
+            self.execute()
             self.finish_behavior(decision)
+            self.execution_finished = True
 
         super(Event, self).replay_path(decision, transaction)
-
-    def finish_behavior(self, wi):
-        self.execute()
-        super(Event, self).finish_behavior(wi)
 
     def validate(self):
         pass # pragma: no cover
@@ -111,7 +110,7 @@ class Event(BehavioralFlowNode, FlowNode):
         pass # pragma: no cover
 
     def stop(self):
-        self.setproperty('workitems', [])
+        pass # pragma: no cover
 
 
 class Throwing(Event):
