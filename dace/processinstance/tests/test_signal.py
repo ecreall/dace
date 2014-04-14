@@ -84,19 +84,19 @@ class TestsSignal(FunctionalTests):
         start_wi = pd.start_process('a')
         # commit the application
         transaction.commit()
-        a_wi, proc = start_wi.start()
+        a_wi, proc = start_wi.consume()
         a_wi.start()
         transaction.commit()
 
         import time
-        time.sleep(3)
+        time.sleep(5)
         transaction.begin()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
 
         d_wi = proc.getWorkItems()['sample.d']
         self.assertEqual(len(proc.getWorkItems()), 1)
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
-        d_wi.start().start()
+        d_wi.consume().start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
     def _process_definition_with_activity_after_start_event(self):
@@ -154,7 +154,7 @@ class TestsSignal(FunctionalTests):
 
         # commit the application
         transaction.commit()
-        b_wi, proc = start_wi.start()
+        b_wi, proc = start_wi.consume()
         b_wi.start()
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
@@ -174,13 +174,13 @@ class TestsSignal(FunctionalTests):
 #        start_intermediate_events(event)
 
         a_wi = proc.getWorkItems()['sample.a']
-        a_wi.start().start()
+        a_wi.consume().start()
         # we need to commit so the catching event Job 
         # see the modified process.
         transaction.commit()
         # The job wait 2 sec before executing
 
         import time
-        time.sleep(3)
+        time.sleep(5)
         transaction.begin()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
