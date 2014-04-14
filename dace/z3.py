@@ -5,7 +5,8 @@ import rwproperty
 import transaction
 from ZODB.POSException import ConflictError
 
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import (
+        get_current_registry, get_current_request, manager)
 from pyramid import testing
 from pyramid.testing import DummyRequest
 from substanced.util import get_oid
@@ -24,7 +25,6 @@ class BaseJob(object):
         self.database_name = request.root._p_jar.db().database_name
         self.userid = get_oid(request.user)
         self.registry = get_current_registry()
-        # Job can't be persisted with this self.registry
 
     def retry(self):
         transaction.begin()
@@ -54,8 +54,8 @@ class BaseJob(object):
         db = self.registry._zodb_databases[self.database_name]
         app = db.open().root()[self.site_id]
         request = DummyRequest()
-        testing.setUp(registry=self.registry, request=request)
         request.root = app
+        manager.push({'registry':self.registry, 'request':request})
         locator = self.registry.queryMultiAdapter((app, request),
                                                   IUserLocator)
         if locator is None:
@@ -66,7 +66,7 @@ class BaseJob(object):
         return app
 
     def tearDown(self, app):
-        testing.tearDown()
+        manager.pop()
         app._p_jar.close()
 
 

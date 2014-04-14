@@ -89,12 +89,14 @@ class TestsSignal(FunctionalTests):
         transaction.commit()
 
         import time
-        time.sleep(6)
+        time.sleep(3)
         transaction.begin()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
 
         d_wi = proc.getWorkItems()['sample.d']
-        d_wi.start()
+        self.assertEqual(len(proc.getWorkItems()), 1)
+        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
+        d_wi.start().start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
     def _process_definition_with_activity_after_start_event(self):
