@@ -42,8 +42,8 @@ class FunctionalTests(unittest.TestCase):
         self.users = self.app['principals']['users']
         self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
         request.user = self.users['admin']
-#        from webtest import TestApp
-#        self.testapp = TestApp(app)
+        from dace.processinstance import event
+        event.callbacks = {}
 
     def tearDown(self):
         import shutil
