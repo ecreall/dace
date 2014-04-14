@@ -1,4 +1,5 @@
 import time
+import threading
 import transaction
 import datetime
 
@@ -14,6 +15,7 @@ from dace import log
 
 # shared between threads
 callbacks = {}
+callbacks_lock = threading.Lock()
 
 class DelayedCallback(object):
     """Schedule the given callback to be called once.
@@ -60,7 +62,8 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
             job.callable = callback
             job.args = callback_params
             dc = DelayedCallback(job, deadline)
-            callbacks[event._p_oid] = dc
+            with callbacks_lock:
+                callbacks[event._p_oid] = dc
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook, args=(event, callback, callback_params, deadline, job))
@@ -236,7 +239,8 @@ class ConditionalEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            del callbacks[self.event._p_oid]
+            with callbacks_lock:
+                del callbacks[self.event._p_oid]
 
         if self.validate():
             log.info('%s %s', self.event, "validate ok")
@@ -255,7 +259,8 @@ class ConditionalEvent(EventKind):
     def stop(self):
         if self.event._p_oid in callbacks:
             callbacks[self.event._p_oid].stop()
-            del callbacks[self.event._p_oid]
+            with callbacks_lock:
+                del callbacks[self.event._p_oid]
 
 
 # C'est OK pour cette class rien a executer et rien a valider
@@ -305,21 +310,24 @@ class SignalEvent(EventKind):
             # it will never commit in this thread (eventloop)
             if event_oid in callbacks:
                 callbacks[event_oid].close()
-                del callbacks[event_oid]
+                with callbacks_lock:
+                    del callbacks[event_oid]
 
             job.args = (msg, )
             # wait 2s that the throw event transaction has committed
             dc = DelayedCallback(job, 2000)
             dc.start()
 
-        callbacks[event_oid] = stream
+        with callbacks_lock:
+            callbacks[event_oid] = stream
         stream.on_recv(execute_next)
 
     def stop(self):
         if self.event._p_oid in callbacks:
             # Stop ZMQStream
             callbacks[self.event._p_oid].close()
-            del callbacks[self.event._p_oid]
+            with callbacks_lock:
+                del callbacks[self.event._p_oid]
 
     def _callback(self, msg):
         self._msg = msg[0]
@@ -369,7 +377,8 @@ class TimerEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            del callbacks[self.event._p_oid]
+            with callbacks_lock:
+                del callbacks[self.event._p_oid]
 
         if self.validate():
             wi = self.event._get_workitem()
@@ -388,4 +397,5 @@ class TimerEvent(EventKind):
         if self.event._p_oid in callbacks:
             # stop DelayedCallback
             callbacks[self.event._p_oid].stop()
-            del callbacks[self.event._p_oid]
+            with callbacks_lock:
+                del callbacks[self.event._p_oid]
