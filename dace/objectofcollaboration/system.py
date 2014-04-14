@@ -1,13 +1,6 @@
 import threading
 import transaction
-#from zope.authentication.interfaces import IAuthentication
 from zope.component import getUtility
-#from zope.component.hooks import setSite
-#from zope.security.management import (
-#    endInteraction, newInteraction, restoreInteraction, queryInteraction)
-#from zope.intid.interfaces import IIntIds
-#from zope.catalog.interfaces import ICatalog
-#from zope.component.hooks import getSite
 from zmq.eventloop.ioloop import DelayedCallback
 from substanced.util import find_catalog
 
