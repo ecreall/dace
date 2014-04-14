@@ -53,10 +53,10 @@ class FlowNode(BPMNElement, Object):
         self.start(transaction)
 
     def find_executable_paths(self, source_path, source):
-        pass
+        pass# pragma: no cover
 
     def start(self, transaction):
-        raise NotImplementedError
+        raise NotImplementedError# pragma: no cover
 
     def play(self, transitions):
         registry = get_current_registry()
@@ -64,16 +64,16 @@ class FlowNode(BPMNElement, Object):
         self.process.play_transitions(self, transitions)
 
     def replay_path(self, decision, transaction):
-        pass
+        pass# pragma: no cover
 
     def stop(self):
-        pass
+        pass# pragma: no cover
 
     @property
     def definition(self):
         return self.process.definition[self.__name__]
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "%s(%r)" % (
             self.__class__.__name__,
             self.id
@@ -186,7 +186,7 @@ class BehavioralFlowNode(MakerFlowNode):
         if self.id in workitems.keys():
             wi = workitems[self.id]
             if isinstance(wi, DecisionWorkItem):
-                wi = wi.start()
+                wi = wi.consume()
                 if wi is not None:
                     self.addtoproperty('workitems', wi)
 
@@ -300,26 +300,34 @@ class Behavior(object):
         return True #action instance validation
 
     def before_execution(self, context, request, **kw):
-        pass
+        pass# pragma: no cover
 
     def start(self, context, request, appstruct, **kw):
-        pass
+        pass# pragma: no cover
 
     def execute(self, context, request, appstruct, **kw):
-        pass
+        pass# pragma: no cover
 
     def after_execution(self, context, request, **kw):
-        pass
+        pass# pragma: no cover
 
     def redirect(self, context, request, **kw):
-        pass
+        pass# pragma: no cover
 
 
 class EventHandler(FlowNode):
     def __init__(self, definition):
         super(EventHandler, self).__init__( definition)
-        self.boundaryEvents = [defi.create(process)
+        self.boundaryEvents = []#PercistentList()
+
+    def _init_boundaryEvents(self, definition):
+        self.boundaryEvents = [defi.create()
                 for defi in definition.boundaryEvents]
+        for bedef in definition.boundaryEvents:
+            be = bedef.create()
+            be.id = bedef.id
+            be.__name__ = bedef.__name__
+            self.process.addtoproperty('nodes', node)
 
 
 class ProcessStarted:
@@ -328,7 +336,7 @@ class ProcessStarted:
     def __init__(self, process):
         self.process = process
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ProcessStarted(%r)" % self.process
 
 
@@ -338,7 +346,7 @@ class ProcessFinished:
     def __init__(self, process):
         self.process = process
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ProcessFinished(%r)" % self.process
 
 
@@ -347,7 +355,7 @@ class WorkItemFinished:
     def __init__(self, workitem):
         self.workitem =  workitem
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "WorkItemFinished(%r)" % self.node_id
 
 
@@ -356,7 +364,7 @@ class ActivityPrepared:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ActivityPrepared(%r)" % self.activity
 
 
@@ -365,7 +373,7 @@ class ActivityFinished:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ActivityFinished(%r)" % self.activity
 
 
@@ -374,7 +382,7 @@ class ActivityStarted:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ActivityStarted(%r)" % self.activity
 
 
@@ -386,5 +394,5 @@ class ProcessError(Exception):
 @subscriber(ActivityPrepared)
 @subscriber(ActivityStarted)
 @subscriber(ActivityFinished)
-def activity_handler(event):
+def activity_handler(event):# pragma: no cover
     log.info('%s %s', thread.get_ident(), event)

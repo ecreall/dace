@@ -56,7 +56,7 @@ class ProcessDefinition(Object):
     def transitions(self):
         return self.getproperty('transitions')
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "ProcessDefinition(%r)" % self.id
 
     def defineNodes(self, **nodes):
@@ -203,9 +203,6 @@ class ProcessDefinition(Object):
             return start_workitems
 
         return start_workitems.get(node_name, None)
-
-    def __repr__(self):
-        return ''.join([t.__repr__() for t in self.transitions])
 
     @property
     def isInstantiated(self):

@@ -19,7 +19,7 @@ class EventDefinition(FlowNodeDefinition):
         self.eventKind = eventKind
         self.contexts = ()
 
-    def create(self, process):
+    def create(self):
         eventKind = self.eventKind and self.eventKind.create() or None
         return self.factory(self, eventKind)
 

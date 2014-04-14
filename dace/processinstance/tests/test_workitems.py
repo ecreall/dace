@@ -284,7 +284,7 @@ class TestsWorkItems(FunctionalTests):
         start_swi = ISearchableObject(start_wi)
         self.assertEqual(start_swi.process_id(), 'sample')
         self.assertEqual(start_swi.node_id(), 'sample.a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         self.assertIs(wi.node, proc['a'])
 
         wi.node.finish_behavior(wi)
@@ -295,7 +295,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.c', nodes_workitems)
 
         dwi_b = workitems['sample.b']
-        wi_b = dwi_b.start()
+        wi_b = dwi_b.consume()
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
@@ -367,7 +367,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('a', start_wis)
         self.assertIn('d', start_wis)
         start_a = start_wis['a']
-        wi, proc = start_a.start()
+        wi, proc = start_a.consume()
         self.assertEqual(u'sample.a', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -384,7 +384,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('a', start_wis)
         self.assertIn('d', start_wis)
         start_d = start_wis['d']
-        wi, proc = start_d.start()
+        wi, proc = start_d.consume()
         self.assertEqual(u'sample.d', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -462,7 +462,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('d', start_wis)
 
         start_a = start_wis['a']
-        wi, proc = start_a.start()
+        wi, proc = start_a.consume()
         self.assertEqual(u'sample.a', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -483,7 +483,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('d', start_wis)
 
         start_d = start_wis['d']
-        wi, proc = start_d.start()
+        wi, proc = start_d.consume()
         self.assertEqual(u'sample.d', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -503,7 +503,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('d', start_wis)
 
         start_b = start_wis['b']
-        wi, proc = start_b.start()
+        wi, proc = start_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -586,7 +586,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('ea', start_wis)
 
         start_ea = start_wis['ea']
-        wi, proc = start_ea.start()
+        wi, proc = start_ea.consume()
         self.assertEqual(u'sample.ea', wi.node.id)
         wi.start()
         workitems = proc.getWorkItems()
@@ -602,7 +602,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.b']), 1)#* 1 (G0) une seule execution: un seul find transaction (le premier find est consomme par P0)
         self.assertEqual(len(all_workitems['sample.c']), 1)#* 1 (G0) une seule execution: un seul find transaction (le premier find est consomme par P0)
 
-        workitems['sample.b'].start().start()
+        workitems['sample.b'].consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
@@ -618,7 +618,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('ea', start_wis)
 
         start_b = start_wis['b']
-        wi, proc = start_b.start()
+        wi, proc = start_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -646,7 +646,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.b']), 1)
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
-        workitems['sample.d'].start().start()
+        workitems['sample.d'].consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
@@ -662,7 +662,7 @@ class TestsWorkItems(FunctionalTests):
         pd = self._process_a_g_bc()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
@@ -688,7 +688,7 @@ class TestsWorkItems(FunctionalTests):
     def test_waiting_workitem_b_to_finish(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
         #import pdb; pdb.set_trace()
-        b_wi.start().start()
+        b_wi.consume().start()
         #self.assertEqual(proc.workflowRelevantData.choice, "b")
         self.assertEqual(len(proc.getWorkItems()), 0)
 
@@ -744,12 +744,12 @@ class TestsWorkItems(FunctionalTests):
         self.app['proc'] = proc
         self.assertEqual(len(proc.getWorkItems()), 0)
         start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
         b_wi = workitems['sample.b']
-        b_wi.start().start()
+        b_wi.consume().start()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
 
@@ -817,7 +817,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('ea', start_wis)
 
         start_ea = start_wis['ea']
-        wi, proc = start_ea.start()
+        wi, proc = start_ea.consume()
         self.assertEqual(u'sample.ea', wi.node.id)
         wi.start()
         workitems = proc.getWorkItems()
@@ -832,7 +832,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.b']), 1)
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
-        workitems['sample.b'].start()
+        workitems['sample.b'].consume()
         workitems = proc.getWorkItems()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
@@ -916,7 +916,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('f', start_wis)
 
         start_f = start_wis['f']
-        wi, proc = start_f.start()
+        wi, proc = start_f.consume()
         self.assertEqual(u'sample.f', wi.node.id)
         wi.start()
         workitems = proc.getWorkItems()
@@ -928,7 +928,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.d', nodes_workitems)
 
         decision_b = workitems['sample.b']
-        wi = decision_b.start()
+        wi = decision_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
         workitems = proc.getWorkItems()
@@ -954,7 +954,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.ae']), 2)# deux executions pour G2: b-->G2 et c-->G2 ====> deux DecisionWorkItem pour Ae 
 
         decision_ae = workitems['sample.ae']
-        decision_ae.start().start()
+        decision_ae.consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
@@ -978,7 +978,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(targets[0].id, 'sample.p')
 
         start_ea = start_wis['ea']
-        wi, proc = start_ea.start()
+        wi, proc = start_ea.consume()
         self.assertEqual(u'sample.ea', wi.node.id)
         currenttransaction = proc.global_transaction
         self.assertEqual(len(currenttransaction.sub_transactions), 3)
@@ -1046,7 +1046,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(sources[0].id, 'sample.p0')
         self.assertEqual(targets[0].id, 'sample.g0')
 
-        workitems['sample.b'].start()
+        workitems['sample.b'].consume()
         workitems = proc.getWorkItems()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
@@ -1158,7 +1158,7 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
@@ -1167,11 +1167,11 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('d')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
-        workitems['sample.b'].start().start()
+        workitems['sample.b'].consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
@@ -1179,7 +1179,7 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('b')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
@@ -1236,12 +1236,12 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process_parallel_join()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('d')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
 
-        workitems['sample.b'].start().start()
+        workitems['sample.b'].consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
         self.assertFalse(proc._finished)
@@ -1250,11 +1250,11 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process_parallel_join()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
-        workitems['sample.b'].start().start()
+        workitems['sample.b'].consume().start()
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
         self.assertTrue(proc._finished)
@@ -1263,7 +1263,7 @@ class TestGatewayChain(FunctionalTests):
         pd = self._process_parallel_join()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         start_wi = pd.start_process('b')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         workitems = proc.getWorkItems()
         self.assertEqual(sorted(workitems.keys()), ['sample.a'])
@@ -1344,7 +1344,7 @@ class EventsTests(FunctionalTests):
         # commit the application
         transaction.commit()
         start_wi = pd.start_process('a')
-        wi, proc = start_wi.start()
+        wi, proc = start_wi.consume()
         wi.start()
         transaction.commit()
         self.assertEqual(len(event.callbacks), 1)
@@ -1403,7 +1403,7 @@ class EventsTests(FunctionalTests):
         # commit the application
         transaction.commit()
         start_wi = pd.start_process('a')
-        a_wi, proc = start_wi.start()
+        a_wi, proc = start_wi.consume()
         a_wi.start()
         transaction.commit()
         workitems = proc.getWorkItems()

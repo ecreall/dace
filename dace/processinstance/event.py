@@ -3,7 +3,7 @@ import threading
 import transaction
 import datetime
 
-from pyramid.threadlocal import get_current_registry
+from pyramid.threadlocal import get_current_registry, get_current_request
 
 import zmq
 from zmq.eventloop.ioloop import IOLoop
@@ -203,7 +203,8 @@ class EndEvent(Throwing):
         registry.notify(ProcessFinished(self))
         # ici test pour les sous processus
         if self.process.definition.isSubProcess:
-            self.process.attachedTo.finish_behavior(work_item)
+            request = get_current_request()
+            self.process.attachedTo.finish_execution(None, request, None)
 
         if self.process.definition.isVolatile:
             self.process.__parent__.delproperty('processes', self.process)

@@ -7,7 +7,7 @@ class Transition(Object):
                       'process': (SHARED_UNIQUE, 'transitions', False)
                       }
 
-    def __init__(self, process, definition):
+    def __init__(self, definition):
         super(Transition, self).__init__()
         self.id = definition.id
 
@@ -44,5 +44,5 @@ class Transition(Object):
         return self.source is transition.source and self.target is transition.target
 
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "Transition(%r, %r)" % (self.source, self.target)

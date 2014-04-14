@@ -118,7 +118,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
@@ -204,7 +204,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
@@ -253,7 +253,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
@@ -299,7 +299,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
@@ -362,7 +362,7 @@ class TestsBusinessAction(FunctionalTests):
         action_a.before_execution(objectc, self.request)
         self.assertIs(action_a.workitem, action_b.workitem)
 
-        wi, proc = action_a.workitem.start()
+        wi, proc = action_a.workitem.consume()
         wi.start()
         action_a.execute(objectc, self.request, None, **{})
         self.assertEqual(objecta.is_executed, True)
@@ -444,7 +444,7 @@ class TestsBusinessAction(FunctionalTests):
        
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         self.request.bool = True
         self.request.ylc = 0
@@ -503,7 +503,7 @@ class TestsBusinessAction(FunctionalTests):
        
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         self.request.bool = True
         action_y.execute(objectc, self.request, None, **{})
@@ -542,7 +542,7 @@ class TestsBusinessAction(FunctionalTests):
         self.request.steps = []
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step1'}) #execute step1
         self.assertIs(action_y.workitem, wi)
@@ -595,7 +595,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
-        wi, proc = action_y.workitem.start()
+        wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
         validator_y = ActionY.get_validator(ActionY)
@@ -692,7 +692,7 @@ class TestsSubProcess(FunctionalTests):
         return sp, pd
 
 
-    def _test_subprocess(self):
+    def test_subprocess(self):
         sp, pd = self._process_valid_subprocess()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
         self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
@@ -707,7 +707,7 @@ class TestsSubProcess(FunctionalTests):
         objecta= ObjectA()
         self.app['objecta'] = objecta
         action_sp.before_execution(objecta, self.request)
-        wi, proc = action_sp.workitem.start()
+        wi, proc = action_sp.workitem.consume()
         wi.start()
         action_sp.execute(objecta, self.request, None, **{})
         wi_sa = getWorkItem('sub_process', 'sa', self.request, objecta)

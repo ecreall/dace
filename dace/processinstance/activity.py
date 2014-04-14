@@ -22,6 +22,8 @@ from dace.interfaces import (
     IActivity,
     IBusinessAction)
 
+from .workitem import UserDecision
+
 
 ACTIONSTEPID = '__actionstepid__'
 
@@ -32,9 +34,9 @@ class Activity(BehavioralFlowNode, EventHandler):
 
 class SubProcess(Activity):
 
-    def __init__(self, process, definition):
-        super(SubProcess, self).__init__(process, definition)
-        self.sub_process = None
+    def __init__(self, definition):
+        super(SubProcess, self).__init__(definition)
+        self.sub_processes = []
 
     def _start_subprocess(self):
         registry = get_current_registry()
@@ -46,19 +48,15 @@ class SubProcess(Activity):
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
         proc.defineGraph(pd)
-        proc.attachedTo = self
         proc.execute()
-        self.sub_process = proc
+        self.sub_processes.append(proc)
         # unindex wi, but dont delete it
         #self.wi.remove()
+        return proc
 
     def start(self, transaction):
         super(SubProcess, self).start(transaction)
         self._start_subprocess()
-
-    def finish_behavior(self, work_item):
-        if self.sub_process._finished:
-            super(SubProcess, self).finish_behavior(work_item)
 
 
 class ActionType:
@@ -107,6 +105,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         self.workitem = workitem
         self.isexecuted = False
         self.behavior_id = self.node_id
+        self.sub_process = None
 
     @staticmethod
     def get_instance(cls, context, request, **kw):
@@ -131,6 +130,10 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     @property
     def process(self):
         return self.workitem.process
+
+    @property
+    def node(self):
+        return self.workitem.node
 
     @property
     def view_name(self):
@@ -216,26 +219,36 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         else:
             return True
 
+    def _consume_decision(self):
+        if isinstance(self.workitem, UserDecision):
+            self.workitem.consume()    
+
     def execute(self, context, request, appstruct, **kw):
-        pass
+        self._consume_decision()
+        if isinstance(self.node, SubProcess):
+            self.sub_process = self.node._start_subprocess()
+            self.sub_process.attachedTo = self
+
+    def finish_execution(self, context, request, **kw):
+        self.after_execution(context, request, **kw)
+        
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)
         # TODO self.workitem is a real workitem?
         self.workitem.node.finish_behavior(self.workitem)
 
-    def redirect(self, context, request, **kw):
-        pass
 
 
 class ElementaryAction(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
+        super(ElementaryAction, self).execute(context, request, appstruct, **kw)
         isFinished = self.start(context, request, appstruct, **kw)
         if isFinished:
             self.isexecuted = True
-            self.after_execution(context, request, **kw)
-            self.redirect(context, request, **kw)
+            if self.sub_process is None:
+                self.finish_execution(context, request, **kw)
 
 
 # Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
@@ -264,14 +277,15 @@ class LoopActionCardinality(BusinessAction):
                 break
 
     def execute(self, context, request, appstruct, **kw):
+        super(LoopActionCardinality, self).execute(context, request, appstruct, **kw)
         if self.testBefore:
             self._executeBefore(context, request, appstruct, **kw)
         else:
             self._executeAfter(context, request, appstruct, **kw)
 
         self.isexecuted = True
-        self.after_execution(context, request, **kw)
-        self.redirect(context, request, **kw)
+        if self.sub_process is None:
+            self.finish_execution(context, request, **kw)
 
 
 class LoopActionDataInput(BusinessAction):
@@ -279,6 +293,7 @@ class LoopActionDataInput(BusinessAction):
     loopDataInputRef = None
 
     def execute(self, context, request, appstruct, **kw):
+        super(LoopActionDataInput, self).execute(context, request, appstruct, **kw)
         instances = self.loopDataInputRef.im_func(context, request, self.process, appstruct)
         for item in instances:
             if kw is not None:
@@ -288,8 +303,8 @@ class LoopActionDataInput(BusinessAction):
             self.start(context, request, appstruct, **kw)
 
         self.isexecuted = True
-        self.after_execution(context, request)
-        self.redirect(context, request, **kw)
+        if self.sub_process is None:
+            self.finish_execution(context, request, **kw)
 
 
 class MultiInstanceAction(BusinessAction):
@@ -329,10 +344,10 @@ class InfiniteCardinality(BusinessAction):
             self.workitem.unlock(request)
 
     def execute(self, context, request, appstruct, **kw):
-        isFinished = self.start(context, request, appstruct, **kw)
-        if isFinished:
-            self.after_execution(context, request, **kw)
-            self.redirect(context, request, **kw)
+        super(InfiniteCardinality, self).execute(context, request, appstruct, **kw)
+        self.start(context, request, appstruct, **kw)
+        if self.sub_process is None:
+            self.finish_execution(context, request, **kw)
 
 
 class DataInput(MultiInstanceAction):
@@ -403,26 +418,35 @@ class ActionInstance(BusinessAction):
             kw = {'item': self.item}
         return self.principalaction.start(context, request, appstruct, **kw)
 
-    def redirect(self, context, request, **kw):
-        if kw is not None:
-            kw['item'] = self.item
-        else:
-            kw = {'item': self.item}
-        self.principalaction.redirect(context, request, **kw)
 
     def execute(self, context, request, appstruct, **kw):
+        super(ActionInstance, self).execute(context, request, appstruct, **kw)
         isFinished = self.start(context, request, appstruct, **kw)
-        if isFinished :
+        if isFinished:
             self.isexecuted = True
-            self.principalaction.instances.remove(self.item)
-            self.after_execution(context, request, **kw)
-            self.redirect(context, request, **kw)
+            if self.sub_process is None:
+                self.finish_execution(context, request, **kw)
+
+    def finish_execution(self, context, request, **kw):
+        self.principalaction.instances.remove(self.item)
+        self.after_execution(context, request, **kw)
 
 
 class ActionInstanceAsPrincipal(ActionInstance):
 
     def validate(self, context, request, **kw):
         return (context is self.item) and super(ActionInstanceAsPrincipal, self).validate(context, request, **kw)
+
+    def execute(self, context, request, appstruct, **kw):
+        super(ActionInstance, self).execute(context, request, appstruct, **kw)
+        if self.sub_process is not None:
+            pass #TODO: self.sub_process.add_relation('item', self.item)
+
+        isFinished = self.start(context, request, appstruct, **kw)
+        if isFinished:
+            self.isexecuted = True
+            if self.sub_process is None:
+                self.finish_execution(context, request, **kw)
 
 # il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
 

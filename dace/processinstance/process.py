@@ -9,6 +9,7 @@ from .activity import SubProcess
 from .event import Event
 from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
+from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
 from .gateway import ExclusiveGateway
 from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
@@ -50,16 +51,18 @@ class Process(Entity):
 
     def defineGraph(self, definition):
         for nodedef in definition.nodes:
-            node = nodedef.create(self)
+            node = nodedef.create()
             node.id = nodedef.id
             node.__name__ = nodedef.__name__
             self.addtoproperty('nodes', node)
+            if isinstance(nodedef, EventHandlerDefinition):
+                node._init_boundaryEvents(nodedef)
 
-        for trabsitiondef in definition.transitions:
-            transition = trabsitiondef.create(self)
-            transition.__name__ = trabsitiondef.__name__
+        for transitiondef in definition.transitions:
+            transition = transitiondef.create()
+            transition.__name__ = transitiondef.__name__
             self.addtoproperty('transitions', transition)
-            transition._init_ends(self, trabsitiondef)
+            transition._init_ends(self, transitiondef)
 
     @property
     def nodes(self):
@@ -126,8 +129,10 @@ class Process(Entity):
         result = {}
         self.result_multiple = {} # for tests
         for wi in workitems:
-            if isinstance(wi.node, SubProcess) and wi.node.sub_process is not None and wi.node.sub_process._started:
-                result.update(wi.node.sub_process.getWorkItems())
+            if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
+                for sp in wi.node.sub_processes:
+                    result.extend(sp.getWorkItems())
+
             if wi.node.id in result:
                 self.result_multiple[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
             else:
@@ -146,8 +151,9 @@ class Process(Entity):
         workitems = query.execute().all()
         result = []
         for wi in workitems:
-            if isinstance(wi.node, SubProcess) and wi.node.sub_process is not None and wi.node.sub_process._started:
-                result.extend(wi.node.sub_process.getAllWorkItems())
+            if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
+                for sp in wi.node.sub_processes:
+                    result.extend(sp.getAllWorkItems())
 
             if not (wi in result):
                 result.append(wi)
@@ -207,19 +213,19 @@ class Process(Entity):
 
 
 ############################################################################# gestion des relation
-    def getLastIndex(self, tag):
+    def getLastIndex(self, tag):# pragma: no cover
         if not hasattr(self.workflowRelevantData, tag + u"_index"):
             setattr(self.workflowRelevantData, tag + u"_index", 0)
 
         return self.getData(tag+u"_index")
 
-    def nextIndex(self, tag):
+    def nextIndex(self, tag):# pragma: no cover
         index = self.getLastIndex(tag)
         index = index + 1
         self.addData(tag + u"_index", index)
         return index
 
-    def addData(self, key, data, loop=False):
+    def addData(self, key, data, loop=False):# pragma: no cover
         if self.isSubProcess:
             self.attachedTo.process.addData(key, data, loop)
         else:
@@ -230,7 +236,7 @@ class Process(Entity):
                     setattr(self.workflowRelevantData, key, PersistentList())
                 getattr(self.workflowRelevantData, key).append(data)
 
-    def getData(self, key, loop=False, index=-1):
+    def getData(self, key, loop=False, index=-1):# pragma: no cover
         if self.isSubProcess:
             return self.attachedTo.process.getData(key, loop, index)
         else:
@@ -239,7 +245,7 @@ class Process(Entity):
             else:
                 return getattr(self.workflowRelevantData, key)[index]
 
-    def _addRelation(self, entities, tags):
+    def _addRelation(self, entities, tags):# pragma: no cover
         if not isinstance(entities, (list, tuple)):
             entities = [entities]
 
@@ -248,7 +254,7 @@ class Process(Entity):
             target = entity
             connect(source, target, tags=tags)
 
-    def addCreatedEntities(self, entities, tag, index=-1):
+    def addCreatedEntities(self, entities, tag, index=-1):# pragma: no cover
         if self.isSubProcess:
             self.attachedTo.process.addCreatedEntities(entities, tag, index)
         else:
@@ -260,7 +266,7 @@ class Process(Entity):
             allTags.extend([t + unicode(i) for t in allTags])
             self._addRelation(entities, tags=allTags)
 
-    def addInvolvedEntities(self, entities, tag, index=-1):
+    def addInvolvedEntities(self, entities, tag, index=-1):# pragma: no cover
         if self.isSubProcess:
             self.attachedTo.process.addInvolvedEntities(entities, tag)
         else:
@@ -272,7 +278,7 @@ class Process(Entity):
             allTags.extend([t + unicode(i) for t in allTags])
             self._addRelation(entities, tags=allTags)
 
-    def _getEntityRelations(self, tags):
+    def _getEntityRelations(self, tags):# pragma: no cover
         if self.isSubProcess:
             yield self.attachedTo.process._getEntityRelations(tags)
         else:
@@ -295,13 +301,13 @@ class Process(Entity):
 
         return tuple(self._getEntityRelations(allTags))[0]
 
-    def getInvolvedEntities(self, tag=None):
+    def getInvolvedEntities(self, tag=None):# pragma: no cover
         if tag is not None:
             return self._getEntityRelations([u"involved" + tag])
 
         return self._getEntityRelations([u"involved"])
 
-    def getInvolvedEntity(self, tag, index=-1):
+    def getInvolvedEntity(self, tag, index=-1):# pragma: no cover
         allTags = [u"involved" + tag]
         if index < 0:
             i = self.getLastIndex(tag)
@@ -313,13 +319,13 @@ class Process(Entity):
 
         return tuple(self._getEntityRelations(allTags))[0]
 
-    def getAllCreatedEntities(self, tag=None):
+    def getAllCreatedEntities(self, tag=None):# pragma: no cover
         if tag is not None:
             return self._getEntityRelations([u"created"+tag])
 
         return self._getEntityRelations([u"created"])
 
-    def hasRelationWith(self, entity, tag=None):
+    def hasRelationWith(self, entity, tag=None):# pragma: no cover
         tags = [u"involved"]
         if  tag is not None:
             tags = [t + tag for t in tags]
@@ -328,7 +334,7 @@ class Process(Entity):
                 return True
         return False
 
-    def hasCreatedEntity(self, entity, tag=None):
+    def hasCreatedEntity(self, entity, tag=None):# pragma: no cover
         tags = [u"created"]
         if  tag is not None:
             tags = [t + tag for t in tags]

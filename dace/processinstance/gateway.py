@@ -5,7 +5,7 @@ from dace.processdefinition.core import Path, Transaction
 
 
 class Gateway(FlowNode):
-    pass
+    pass# pragma: no cover
 
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway, MakerFlowNode):
@@ -151,4 +151,4 @@ class ParallelGateway(Gateway):
 
 # parallel avec condition avec default
 class InclusiveGateway(Gateway):
-    pass
+    pass# pragma: no cover

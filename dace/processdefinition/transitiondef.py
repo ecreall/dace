@@ -32,8 +32,8 @@ class TransitionDefinition(Object):
             self.setproperty('source', process[self.source_id])
             self.setproperty('target', process[self.target_id])
 
-    def create(self, process):
-        return self.factory(process, self)
+    def create(self):
+        return self.factory(self)
 
     @property
     def target(self):

@@ -40,6 +40,8 @@ class UserDecision(LockableElement):
     def __eq__(self, other):
         return isinstance(other, UserDecision) and self.path.equal(other.path)
 
+    def consume(self):
+        pass
 
 class StartWorkItem(UserDecision):
     implements(IStartWorkItem)
@@ -69,7 +71,7 @@ class StartWorkItem(UserDecision):
     def node_id(self):
         return self.node.id
 
-    def start(self, *args):
+    def consume(self):
         registry = get_current_registry()
         pd = registry.getUtility(
                 IProcessDefinition,
@@ -187,7 +189,7 @@ class WorkItem(BaseWorkItem):
     def __init__(self, node):
         super(WorkItem, self).__init__(node)
 
-    def start(self, *args):
+    def start(self):
         raise NotImplementedError # pragma: no cover
 
     def validate(self):
@@ -216,7 +218,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
     def is_finished(self):
         return not self.concerned_nodes()
 
-    def start(self, *args):
+    def consume(self):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay', initiator=self)
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)

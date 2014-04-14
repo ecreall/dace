@@ -22,7 +22,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
     outgoing = ()
     performer = ''
 
-    def create(self, process):
+    def create(self):
         return self.factory(self)
 
     def __init__(self):
@@ -169,7 +169,7 @@ class Transaction(Persistent):
         self.path = None
         self.sub_transactions = []
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return 'Transaction('+self.type+'):\n' +'Path:'+repr(self.path)+ '\n Sub_Transactions:[\n'+'\n'.join([repr(t) for t in self.sub_transactions])+']'
 
     #def __eq__(self, other):
@@ -327,7 +327,7 @@ class Path(Persistent):
 
         return len(self.transitions) == len(other.transitions)
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
 
