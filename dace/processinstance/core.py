@@ -76,7 +76,6 @@ class FlowNode(BPMNElement, Object):
     def __repr__(self):
         return "%s(%r)" % (
             self.__class__.__name__,
-            self.process.id + '.' +
             self.id
             )
 
