@@ -249,7 +249,7 @@ class BehavioralFlowNode(MakerFlowNode):
                        all_stoped_wis.append(cdecision)
                        cdecision.validations.append(self)
                        if cdecision.is_finished or not cdecision.path.is_segement(work_item.path):
-                           cdecision.node.stop()
+                           # don't cdecision.node.stop()
                            cdecision.__parent__.delproperty('workitems', cdecision)
 
                     break 
