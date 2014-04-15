@@ -998,6 +998,172 @@ class TestsWorkItems(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(workitems.keys(), [])
 
+    def  _process_start_complex_Parallel_process_decision_cycle(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, 2(x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D: activities   |----------------------------------------| 
+                                 |        -----                           |
+                                 |     -->| A |------------\              |
+                                 |    /   -----             \             |
+-----  ------   ---------   -----v-- /                       \        ---------   ------   -----
+| S |->| F  |-->| P0(+) |-->| G0(x) |                         ------->| G2(x) |-->| Ae |-->| E |
+-----  ------   ---------\  --------\     --------    -----         / ---------   ------    ----
+                          \         /---->| P(+) |--->| B |--------/
+                           \       /      --------\   -----       /
+                       ---------  /                \    -----    /
+                       | G1(x) |-/                  \-->| C |   /
+                       ---------<----------------------------- /
+                             \    -----                       /
+                              \-->| D |----------------------/
+                                  -----
+        """
+        pd = ProcessDefinition(u'sample')
+        self.app['pd'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                f = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                d = ActivityDefinition(),
+                ae = ActivityDefinition(),
+                p0 = ParallelGatewayDefinition(),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                p = ParallelGatewayDefinition(),
+                g2 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'f'),
+                TransitionDefinition('f', 'p0'),
+                TransitionDefinition('p0', 'g0'),
+                TransitionDefinition('p0', 'g1'),
+                TransitionDefinition('g0', 'p'),
+                TransitionDefinition('g1', 'p'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'g2'),
+                TransitionDefinition('g1', 'd'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g1'),
+                TransitionDefinition('b', 'g2'),
+                TransitionDefinition('d', 'g2'),
+                TransitionDefinition('g2', 'ae'),
+                TransitionDefinition('g2', 'g0'),
+                TransitionDefinition('ae', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_start_complex_Parallel_workitem_decision_cycle(self):
+        pd = self._process_start_complex_Parallel_process_decision_cycle()
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 1)
+        self.assertIn('f', start_wis)
+
+        start_f = start_wis['f']
+        wi, proc = start_f.consume()
+        self.assertEqual(u'sample.f', wi.node.id)
+        wi.start()
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 4)
+        self.assertIn(u'sample.a', nodes_workitems)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+        self.assertIn(u'sample.d', nodes_workitems)
+
+        decision_b = workitems['sample.b']
+        wi = decision_b.consume()
+        self.assertEqual(u'sample.b', wi.node.id)
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems)
+        self.assertIn(u'sample.c', nodes_workitems)
+
+        wi.start()
+        workitems = proc.getWorkItems()
+        nodes_workitems = [w for w in workitems.keys()]
+        all_workitems = proc.result_multiple
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.ae', nodes_workitems) #b DW
+        self.assertIn(u'sample.c', nodes_workitems) # P->C W
+        self.assertIn(u'sample.a', nodes_workitems) #b DW
+        self.assertEqual(workitems['sample.ae'].__parent__.__name__, 'b')
+        self.assertEqual(workitems['sample.c'].__parent__.__name__, 'c')
+        self.assertEqual(workitems['sample.a'].__parent__.__name__, 'b')
+        self.assertEqual(len(all_workitems['sample.ae']), 1)
+
+        wi = workitems['sample.a'].consume()
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.ae', nodes_workitems) #A DW
+        self.assertIn(u'sample.c', nodes_workitems) # P->C W
+        self.assertIn(u'sample.a', nodes_workitems) # A DW
+        self.assertEqual(workitems['sample.ae'].__parent__.__name__, 'a')
+        self.assertEqual(workitems['sample.c'].__parent__.__name__, 'c')
+        self.assertEqual(workitems['sample.a'].__parent__.__name__, 'a')
+        self.assertEqual(len(all_workitems['sample.ae']), 1)
+
+        wi = workitems['sample.c']
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 5)
+        self.assertIn(u'sample.ae', nodes_workitems)#A DW
+        self.assertIn(u'sample.a', nodes_workitems) #A DW
+        self.assertEqual(workitems['sample.a'].__parent__.__name__, 'a')
+        self.assertEqual(workitems['sample.ae'].__parent__.__name__, 'a')
+        self.assertIn(u'sample.b', nodes_workitems) #C DW
+        self.assertIn(u'sample.c', nodes_workitems) #C DW
+        self.assertIn(u'sample.d', nodes_workitems) #C DW
+        self.assertEqual(workitems['sample.b'].__parent__.__name__, 'c')
+        self.assertEqual(workitems['sample.c'].__parent__.__name__, 'c')
+        self.assertEqual(workitems['sample.d'].__parent__.__name__, 'c')
+        self.assertEqual(len(all_workitems['sample.ae']), 1)
+
+        wi = workitems['sample.c'].consume()
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 2)
+        self.assertIn(u'sample.b', nodes_workitems) #P->B W (execution precedente)
+        self.assertIn(u'sample.d', nodes_workitems) #C DW: Pas B (encore) et C. Les transactions find sur P ne sonst pas terminees.
+                                                    #      C'est le resultat du find sur C 
+        self.assertEqual(workitems['sample.b'].__parent__.__name__, 'b')
+        self.assertEqual(workitems['sample.d'].__parent__.__name__, 'c')
+
+        wi = workitems['sample.d'].consume()
+        wi.start()
+        workitems = proc.getWorkItems()
+        all_workitems = proc.result_multiple
+        nodes_workitems = [w for w in workitems.keys()]
+        self.assertEqual(len(workitems), 3)
+        self.assertIn(u'sample.ae', nodes_workitems)#D DW
+        self.assertIn(u'sample.b', nodes_workitems) #P->B W
+        self.assertIn(u'sample.a', nodes_workitems) #D DW
+        self.assertEqual(workitems['sample.ae'].__parent__.__name__, 'd')
+        self.assertEqual(workitems['sample.a'].__parent__.__name__, 'd')
+        self.assertEqual(workitems['sample.b'].__parent__.__name__, 'b')
+        self.assertEqual(len(all_workitems['sample.ae']), 1)
+
+        decision_ae = workitems['sample.ae']
+        decision_ae.consume().start()
+        workitems = proc.getWorkItems()
+        self.assertEqual(workitems.keys(), [])
+
     def test_Transitions(self):
         pd = self._process_start_refresh_decision()
         self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)

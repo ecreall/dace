@@ -86,7 +86,7 @@ class Process(Entity):
 
     def replay_path(self, decision, transaction):
         path = decision.path
-        first_transitions = path.first
+        first_transitions = decision.first_transitions
         self.replay_transitions(decision, first_transitions, transaction)
         executed_transitions = first_transitions
         next_transitions = set()
@@ -141,13 +141,17 @@ class Process(Entity):
 
         return result
 
-    def getAllWorkItems(self):
+    def getAllWorkItems(self, node_id=None):
         dace_catalog = find_catalog('dace')
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
         p_uid = get_oid(self, None)
         query = object_provides_index.any((IWorkItem.__identifier__,)) & \
                 process_inst_uid_index.any((int(p_uid),))
+        if node_id is not None:
+            node_id_index = dace_catalog['node_id']
+            query = query & node_id_index.eq(self.id+'.'+node_id)
+
         workitems = query.execute().all()
         result = []
         for wi in workitems:

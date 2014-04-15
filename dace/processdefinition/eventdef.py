@@ -36,7 +36,7 @@ class StartEventDefinition(EventDefinition):
                     initial_path = Path([transition], transaction)
                     startable_paths = nodedef.find_startable_paths(initial_path, self)
                     for startable_path in startable_paths:
-                        swi = StartWorkItem(startable_path)
+                        swi = StartWorkItem(startable_path, self)
                         if swi.node.__name__ in start_workitems:
                             start_workitems[swi.node.__name__].merge(swi)
                         else:

@@ -199,11 +199,21 @@ class Path(Persistent):
 
     @property
     def sources(self):
+        if self.is_a_cycle:
+            return [self.transitions[0].source]
+
         return [t.source for t in self.first]
 
     @property
     def targets(self):
+        if self.is_a_cycle:
+            return [self.transitions[-1].target]
+
         return [t.target for t in self.latest]
+
+    @property
+    def is_a_cycle(self):
+        return self.transitions and not self.first and not self.latest
 
     @property
     def first(self):

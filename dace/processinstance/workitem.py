@@ -27,15 +27,21 @@ class WorkItemFactory(object):
 
 class UserDecision(LockableElement):
 
-    def __init__(self, decision_path):
+    def __init__(self, decision_path, initiator):
         super(UserDecision, self).__init__()
         self.path = decision_path
+        self.initiator = initiator
+
+    @property
+    def first_transitions(self):
+        return list(set(self.path.first).union(self.path._get_transitions_source(self.initiator)))
 
     def merge(self, decision):
         self.path = self.path.merge(decision.path)
 
     def concerned_nodes(self):
-        return self.path.sources
+        result = list(set([self.initiator]).union(self.path.sources))
+        return result
 
     def __eq__(self, other):
         return isinstance(other, UserDecision) and self.path.equal(other.path)
@@ -47,8 +53,8 @@ class StartWorkItem(UserDecision):
     implements(IStartWorkItem)
 
 
-    def __init__(self, startable_path):
-        super(StartWorkItem, self).__init__(startable_path)
+    def __init__(self, startable_path, initiator):
+        super(StartWorkItem, self).__init__(startable_path, initiator)
         self.dtlock = True
         self.node = self.path.targets[0]
         self.process = None
@@ -88,7 +94,7 @@ class StartWorkItem(UserDecision):
         replay_transaction = proc.global_transaction.start_subtransaction('Replay', path=self.path, initiator=self)
         proc.replay_path(self, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
-        wi = proc[self.path.targets[0].__name__].workitems[0]
+        wi = proc[self.node.__name__]._get_workitem()
         #wi.start(*args)
         return wi, proc
 
@@ -208,9 +214,9 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
     implements(IDecisionWorkItem)
 
 
-    def __init__(self, decision_path, node):
+    def __init__(self, decision_path, node, initiator):
         BaseWorkItem.__init__(self, node)
-        UserDecision.__init__(self, decision_path)
+        UserDecision.__init__(self, decision_path, initiator)
         self.validations = []
         self._init_actions()
 
@@ -222,7 +228,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay', initiator=self)
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
-        wi = self.process[self.path.targets[0].__name__].workitems[0]
+        wi = self.process[self.node.__name__]._get_workitem()
         return wi
 
     def validate(self):
@@ -243,7 +249,8 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return True and not self.is_locked(global_request)
         
     def concerned_nodes(self):
-        return [n for n in self.path.sources if not (n in self.validations)]
+        result = set([self.initiator]).union(self.path.sources)
+        return [n for n in result if not (n in self.validations)]
 
     def __eq__(self, other):
         return   UserDecision.__eq__(self, other) and self.node is other.node

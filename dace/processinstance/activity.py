@@ -31,6 +31,8 @@ ACTIONSTEPID = '__actionstepid__'
 class Activity(BehavioralFlowNode, EventHandler):
     implements(IActivity)
 
+    def __init__(self, definition):
+        super(Activity, self).__init__(definition)
 
 class SubProcess(Activity):
 
@@ -221,7 +223,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     def execute(self, context, request, appstruct, **kw):
         self._consume_decision()
-        if isinstance(self.node, SubProcess):
+        if isinstance(self.node, SubProcess) and self.sub_process is None:
             self.sub_process = self.node._start_subprocess()
             self.sub_process.attachedTo = self
 

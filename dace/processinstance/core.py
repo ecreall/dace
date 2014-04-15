@@ -96,7 +96,7 @@ class MakerFlowNode(FlowNode):
             self.addtoproperty('workitems', workitem)
 
         for decision_workitem in workitems.values():
-            node_to_execute = decision_workitem.path.targets[0]
+            node_to_execute = decision_workitem.node
             if hasattr(node_to_execute, 'prepare_for_execution'):
                 node_to_execute.prepare_for_execution()
 
@@ -113,7 +113,7 @@ class MakerFlowNode(FlowNode):
                 subtransaction = global_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
-                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__])
+                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__], self)
                     if dwi.node.__name__ in workitems:
                         workitems[dwi.node.__name__].merge(dwi)
                     else:
@@ -179,18 +179,21 @@ class BehavioralFlowNode(MakerFlowNode):
         yield decision_path
 
     def _get_workitem(self):
-        if self.workitems:
-            return self.workitems[0]
+        workitems = [w for w in self.workitems if w.validate() and isinstance(w, WorkItem)]
+        if workitems:
+            return workitems[0]
 
-        workitems = self.process.getWorkItems()
-        if self.id in workitems.keys():
-            wi = workitems[self.id]
-            if isinstance(wi, DecisionWorkItem) and wi.validate():
+        workitems = [w for w in self.process.getAllWorkItems(node_id=self.__name__) if w.validate()]
+        if workitems:
+            wi = workitems[0]
+            if isinstance(wi, DecisionWorkItem):
                 wi = wi.consume()
                 if wi is not None:
                     self.addtoproperty('workitems', wi)
 
                 return wi
+          
+        return None 
 
     def prepare(self):
         paths = self.process.global_transaction.find_allsubpaths_for(self, 'Replay')
