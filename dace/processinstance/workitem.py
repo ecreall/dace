@@ -30,17 +30,23 @@ class UserDecision(LockableElement):
     def __init__(self, decision_path, initiator):
         super(UserDecision, self).__init__()
         self.path = decision_path
-        self.initiator = initiator
+        self.initiators = []
+        self.initiators.append(initiator)
 
     @property
     def first_transitions(self):
-        return list(set(self.path.first).union(self.path._get_transitions_source(self.initiator)))
+        result = set()
+        for initiator in self.initiators:
+            result = result.union(self.path._get_transitions_source(initiator))
+
+        return list(set(self.path.first).union(result))
 
     def merge(self, decision):
+        self.initiators = list(set(self.initiators).union(decision.initiators))
         self.path = self.path.merge(decision.path)
 
     def concerned_nodes(self):
-        result = list(set([self.initiator]).union(self.path.sources))
+        result = list(set(self.initiators).union(self.path.sources))
         return result
 
     def __eq__(self, other):
@@ -249,7 +255,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return True and not self.is_locked(global_request)
         
     def concerned_nodes(self):
-        result = set([self.initiator]).union(self.path.sources)
+        result = set(self.initiators).union(self.path.sources)
         return [n for n in result if not (n in self.validations)]
 
     def __eq__(self, other):

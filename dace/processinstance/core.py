@@ -132,7 +132,7 @@ class MakerFlowNode(FlowNode):
             return
        
         for decision_workitem in new_workitems:
-            node_to_execute = self.process[decision_workitem.path.targets[0].__name__]
+            node_to_execute = self.process[decision_workitem.node.__name__]
             if hasattr(node_to_execute, 'prepare_for_execution'):
                 node_to_execute.prepare_for_execution()
 
@@ -260,7 +260,6 @@ class BehavioralFlowNode(MakerFlowNode):
         if work_item is not None:
             start_transition = work_item.path._get_transitions_source(self)[0]
             self.process.play_transitions(self, [start_transition])
-
             paths = self.process.global_transaction.find_allsubpaths_by_source(self, 'Find')
             if paths:
                 for p in set(paths):
