@@ -55,9 +55,9 @@ class UserDecision(LockableElement):
     def consume(self):
         pass
 
+
 class StartWorkItem(UserDecision):
     implements(IStartWorkItem)
-
 
     def __init__(self, startable_path, initiator):
         super(StartWorkItem, self).__init__(startable_path, initiator)

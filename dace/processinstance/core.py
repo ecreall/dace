@@ -82,7 +82,7 @@ class FlowNode(BPMNElement, Object):
 class MakerFlowNode(FlowNode):
 
     def __init__(self, definition):
-        FlowNode.__init__(self, definition)
+        super(MakerFlowNode, self).__init__(definition)
 
     def decide(self, transaction):
         workitems = self._calculate_decisions(transaction)
@@ -170,7 +170,7 @@ class MakerFlowNode(FlowNode):
 class BehavioralFlowNode(MakerFlowNode):
 
     def __init__(self, definition):
-        MakerFlowNode.__init__(self, definition)
+        super(BehavioralFlowNode, self).__init__(definition)
 
     def find_executable_paths(self, source_path, source):
         decision_path = source_path.clone()
@@ -318,8 +318,9 @@ class Behavior(object):
 
 
 class EventHandler(FlowNode):
+
     def __init__(self, definition):
-        super(EventHandler, self).__init__( definition)
+        super(EventHandler, self).__init__(definition)
         self.boundaryEvents = []#PercistentList()
 
     def _init_boundaryEvents(self, definition):

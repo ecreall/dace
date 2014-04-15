@@ -417,7 +417,7 @@ class Object(Folder):
         return new_instance
 
     def __init__(self, **kwargs):
-        Folder.__init__(self)
+        super(Object, self).__init__(*kwargs)
         self.title = None
         if 'title' in kwargs:
             self.title = kwargs['title']
