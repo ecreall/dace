@@ -103,6 +103,12 @@ class TestsProcessRelations(FunctionalTests):
         ec.add_involved_entity('realtion1', objecta)
         relation1 = ec.get_involved_entity('realtion1')
         self.assertIs(relation1, objecta)
+
+        self.assertIs(objecta.creator, None)
+        involvers = objecta.involvers
+        self.assertEqual(len(involvers), 1)
+        self.assertIs(involvers[0], proc)
+
         relations1 = ec.get_involved_entities('realtion1')
         self.assertEqual(len(relations1), 1)
         all_relations = ec.get_involved_entities()
@@ -165,6 +171,12 @@ class TestsProcessRelations(FunctionalTests):
         relationC1 = ec.get_created_entity('realtion1')
         relationI1 = ec.get_involved_entity('realtion1')
         self.assertIs(relationC1, objecta)
+
+        self.assertIs(objecta.creator, proc)
+        involvers = objecta.involvers
+        self.assertEqual(len(involvers), 1)
+        self.assertIs(involvers[0], proc)
+
         self.assertIs(relationI1, objecta)
         relationsC1 = ec.get_created_entities('realtion1')
         relationsI1 = ec.get_involved_entities('realtion1')

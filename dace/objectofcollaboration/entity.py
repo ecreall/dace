@@ -47,6 +47,18 @@ class Entity(Object):
             self.state.append(s)
 
     @property
+    def creator(self):
+        ec_creator = self.getproperty('creator')
+        if ec_creator is not None: 
+            return ec_creator.process
+
+        return None
+
+    @property
+    def involvers(self):
+        return [e.process for e in self.getproperty('involvers')]
+
+    @property
     def actions(self):
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
