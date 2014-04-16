@@ -52,7 +52,7 @@ class UserDecision(LockableElement):
     def __eq__(self, other):
         return isinstance(other, UserDecision) and self.path.equal(other.path)
 
-    def consume(self):
+    def consume(self):# pragma: no cover
         pass
 
 

@@ -16,12 +16,109 @@ from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
 from dace.relations import find_relations, connect
 from .transition import Transition
 from dace.util import find_catalog
-from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQUE, SHARED_MULTIPLE, SHARED_UNIQUE, Object
 
 
-class WorkflowData(Persistent):
-    """Container for workflow-relevant and application-relevant data
-    """
+class ExecutionContext(Object):
+
+    properties_def = {'createds': (SHARED_MULTIPLE, 'creator', True),
+                      'involveds': (SHARED_MULTIPLE, 'involvers', True),
+                      'process': (SHARED_UNIQUE, 'execution_context', True),
+                      }
+
+    def __init__(self):
+        super(ExecutionContext, self).__init__()
+
+    @property
+    def createds(self):
+        return self.getproperty('createds')
+
+    @property
+    def involveds(self):
+        return self.getproperty('involveds')
+
+    @property
+    def process(self):
+        return self.getproperty('process')
+#entity
+    def add_involved_entity(self, name, value):
+        self.addtoproperty('involveds', value)
+        if name in self.dynamic_properties_def:
+            self.addtoproperty(name, value)
+        else:
+            opposit_name = name+'_involver'
+            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
+            value.dynamic_properties_def[opposit_name] = (SHARED_UNIQUE, name, True)
+            self._init__property(name, self.dynamic_properties_def[name])
+            value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
+            self.addtoproperty(name, value)
+
+    def remove_involved_entity(self, name, value):
+        self.delproperty('involveds', value)
+        if name in self.dynamic_properties_def:
+            self.delproperty(name, value)
+
+    def get_involved_entity(self, name, index=-1):
+        if name in self.dynamic_properties_def:
+            result = self.getproperty(name)
+            if result:
+                return result[index]
+
+        return None
+
+    def get_involved_entities(self, name=None):
+        if name is None:
+            return self.involveds
+
+        if name in self.dynamic_properties_def:
+            result = self.getproperty(name)
+            return result
+
+        return []
+
+    def add_created_entity(self, name, value):
+        self.addtoproperty('createds', value)
+        self.add_involved_entity(name, value)
+
+    def remove_created_entity(self, name, value):
+        self.delproperty('createds', value)
+        self.remove_involved_entity(name, value)
+
+    def get_created_entity(self, name, index=-1):
+        if name in self.dynamic_properties_def:
+            result = [e for e in self.getproperty(name) if e in self.createds]
+            if result:
+                return result[index]
+
+        return None
+
+    def get_created_entities(self, name=None):
+        if name is None:
+            return self.createds
+
+        if name in self.dynamic_properties_def:
+            result = [e for e in self.getproperty(name) if e in self.createds]
+            return result
+
+        return []
+
+    def has_relation(self, value, name=None):
+        if name is None:
+            return value in self.involveds
+
+        if name in self.dynamic_properties_def:
+             return value in self.getproperty(name)
+        else:
+            return False
+#collections
+#Data
+    def add_data(self, key, data):
+        if not hasattr(self, key):
+            setattr(self, key, PersistentList())
+        getattr(self, key).append(data)
+
+    def get_data(self, key, index=-1):
+        return getattr(self, key)[index]
 
 
 class Process(Entity):
@@ -29,6 +126,7 @@ class Process(Entity):
 
     properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
                       'transitions': (COMPOSITE_MULTIPLE, 'process', True),
+                      'execution_context': (COMPOSITE_UNIQUE, 'process', True),
                       }
 
     _started = False
@@ -40,8 +138,6 @@ class Process(Entity):
         self.id = definition.id
         self.global_transaction = Transaction()
         self.startTransition = startTransition
-        self.workflowRelevantData = WorkflowData()
-        self.workflowRelevantData.__parent__ = self
         if not self.title:
             self.title = definition.id
 
@@ -71,6 +167,13 @@ class Process(Entity):
     @property
     def transitions(self):
         return self.getproperty('transitions')
+
+    @property
+    def execution_context(self):
+        if self.isSubProcess:
+            return self.attachedto.process.execution_context
+        else:
+            return self.getproperty('execution_context')
 
     def definition(self):
         registry = get_current_registry()
@@ -134,7 +237,7 @@ class Process(Entity):
                     result.update(sp.getWorkItems())
 
             if wi.node.id in result:
-                self.result_multiple[wi.node.id].append(wi) #raise Exception("We have several workitems for %s" % wi.node.id)
+                self.result_multiple[wi.node.id].append(wi)
             else:
                 result[wi.node.id] = wi
                 self.result_multiple[wi.node.id] = [wi]
@@ -164,27 +267,15 @@ class Process(Entity):
 
         return result
 
-#        return dict([(w.node.id, w) for w in workitems])
 
     def start(self):
         if self._started:
             raise TypeError("Already started")
 
+        self.setproperty('execution_context', ExecutionContext())
         self._started = True
-#        definition = self.definition
-#        data = self.workflowRelevantData
-#        args = arguments
-#        for parameter in definition.parameters:
-#            if parameter.input:
-#                arg, args = args[0], args[1:]
-#                setattr(data, parameter.__name__, arg)
-#        if args:
-#            raise TypeError("Too many arguments. Expected %s. got %s" %
-#                            (len(definition.parameters), len(arguments)))
-
         registry = get_current_registry()
         registry.notify(ProcessStarted(self))
-        #self.transition(None, (self.startTransition, ))
 
     def execute(self):
         start_events = [self[s.__name__] for s in self.definition._get_start_events()]
@@ -196,7 +287,6 @@ class Process(Entity):
 
     def play_transitions(self, node, transitions):
         registry = get_current_registry()
-        #transitions = [t.creat(self.process) for t in transitions]
         if transitions:
             for transition in transitions:
                 next = transition.target
@@ -212,137 +302,6 @@ class Process(Entity):
                 if self._finished:
                     break
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "Process(%r)" % self.definition.id
 
-
-############################################################################# gestion des relation
-    def getLastIndex(self, tag):# pragma: no cover
-        if not hasattr(self.workflowRelevantData, tag + u"_index"):
-            setattr(self.workflowRelevantData, tag + u"_index", 0)
-
-        return self.getData(tag+u"_index")
-
-    def nextIndex(self, tag):# pragma: no cover
-        index = self.getLastIndex(tag)
-        index = index + 1
-        self.addData(tag + u"_index", index)
-        return index
-
-    def addData(self, key, data, loop=False):# pragma: no cover
-        if self.isSubProcess:
-            self.attachedTo.process.addData(key, data, loop)
-        else:
-            if not loop:
-                setattr(self.workflowRelevantData, key, data)
-            else:
-                if not hasattr(self.workflowRelevantData, key):
-                    setattr(self.workflowRelevantData, key, PersistentList())
-                getattr(self.workflowRelevantData, key).append(data)
-
-    def getData(self, key, loop=False, index=-1):# pragma: no cover
-        if self.isSubProcess:
-            return self.attachedTo.process.getData(key, loop, index)
-        else:
-            if not loop:
-                return getattr(self.workflowRelevantData, key, None)
-            else:
-                return getattr(self.workflowRelevantData, key)[index]
-
-    def _addRelation(self, entities, tags):# pragma: no cover
-        if not isinstance(entities, (list, tuple)):
-            entities = [entities]
-
-        source = self
-        for entity in entities:
-            target = entity
-            connect(source, target, tags=tags)
-
-    def addCreatedEntities(self, entities, tag, index=-1):# pragma: no cover
-        if self.isSubProcess:
-            self.attachedTo.process.addCreatedEntities(entities, tag, index)
-        else:
-            i = index
-            if index < 0:
-                i = self.getLastIndex(tag)
-            allTags = [u"created", u"involved"]
-            allTags.extend([t + tag for t in allTags])
-            allTags.extend([t + unicode(i) for t in allTags])
-            self._addRelation(entities, tags=allTags)
-
-    def addInvolvedEntities(self, entities, tag, index=-1):# pragma: no cover
-        if self.isSubProcess:
-            self.attachedTo.process.addInvolvedEntities(entities, tag)
-        else:
-            i = index
-            if index < 0:
-                i = self.getLastIndex(tag)
-            allTags = [u"involved"]
-            allTags.extend([t + tag for t in allTags])
-            allTags.extend([t + unicode(i) for t in allTags])
-            self._addRelation(entities, tags=allTags)
-
-    def _getEntityRelations(self, tags):# pragma: no cover
-        if self.isSubProcess:
-            yield self.attachedTo.process._getEntityRelations(tags)
-        else:
-            opts = {u'source_id': get_oid(self)}
-            if tags is not None:
-                opts[u'tag'] = tags
-            for relation in find_relations(opts):
-                yield relation.target
-
-    def getCreatedEntity(self, tag, index=-1):
-        allTags = [u"created" + tag]
-        if index < 0:
-            i = self.getLastIndex(tag)
-            if i == 0:
-                i = 1
-
-            allTags = [t + unicode(i - 1) for t in allTags]
-        else:
-            allTags = [t + unicode(index) for t in allTags]
-
-        return tuple(self._getEntityRelations(allTags))[0]
-
-    def getInvolvedEntities(self, tag=None):# pragma: no cover
-        if tag is not None:
-            return self._getEntityRelations([u"involved" + tag])
-
-        return self._getEntityRelations([u"involved"])
-
-    def getInvolvedEntity(self, tag, index=-1):# pragma: no cover
-        allTags = [u"involved" + tag]
-        if index < 0:
-            i = self.getLastIndex(tag)
-            if i == 0:
-                i = 1
-            allTags = [t + unicode(i - 1) for t in allTags]
-        else:
-            allTags = [t + unicode(index) for t in allTags]
-
-        return tuple(self._getEntityRelations(allTags))[0]
-
-    def getAllCreatedEntities(self, tag=None):# pragma: no cover
-        if tag is not None:
-            return self._getEntityRelations([u"created"+tag])
-
-        return self._getEntityRelations([u"created"])
-
-    def hasRelationWith(self, entity, tag=None):# pragma: no cover
-        tags = [u"involved"]
-        if  tag is not None:
-            tags = [t + tag for t in tags]
-        for e in self._getEntityRelations(tags):
-            if e == entity:
-                return True
-        return False
-
-    def hasCreatedEntity(self, entity, tag=None):# pragma: no cover
-        tags = [u"created"]
-        if  tag is not None:
-            tags = [t + tag for t in tags]
-        for e in self._getEntityRelations(tags):
-            if e == entity:
-                return True
-        return False

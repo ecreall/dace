@@ -329,6 +329,80 @@ class Object(Folder):
 
     implements(IObject)
     properties_def = {}
+    dynamic_properties_reloded = False
+
+    def __new__(cls, *args, **kwargs):
+        mro_cls = [c for c in cls.__mro__ if c is not cls and hasattr(c, 'properties_def')]
+        for c in mro_cls:
+            cls.properties_def.update(c.properties_def) 
+
+        if not hasattr(cls, 'properties'):
+            cls.properties = {}
+
+        new_instance = super(Object, cls).__new__(cls, *args, **kwargs)
+        new_instance.__init_proprties__()
+        return new_instance
+
+    def __init__(self, **kwargs):
+        super(Object, self).__init__(*kwargs)
+        self.dynamic_properties_def = {}
+        self.title = None
+        if 'title' in kwargs:
+            self.title = kwargs['title']
+
+        self.__property__ = None
+        for _property in self.properties_def.keys():
+            if kwargs.has_key(_property):
+                self.setproperty(_property, kwargs[_property])
+
+    def __init_proprties__(self):
+        for name, propertydef in self.properties_def.iteritems():
+            self._init__property(name, propertydef)
+
+    def _init_dynamic_properties_(self):
+        self.dynamic_properties_reloded = True
+        for name, propertydef in self.dynamic_properties_def.iteritems():
+            self._init__property(name, propertydef)
+
+    def _init__property(self, name, propertydef):
+        op = __properties__[propertydef[0]]
+        opposite = propertydef[1]
+        isunique = propertydef[2]
+        self.__addproperty__(op(name,opposite, isunique))
+
+    def __addproperty__(self, _property, default=None):
+        propertyref = _property['data']['name']
+        if propertyref not in self.__class__.properties:
+            self.__class__.properties[propertyref] = _property
+            self.__class__.properties[propertyref]['init'](self)
+
+        if default is not None:
+            _property['set'](self, default)
+
+    def __setattr__(self, name, value):
+        if name in self.__class__.properties:
+            self.setproperty(name, value)
+        else:
+            super(Folder, self).__setattr__(name, value)
+
+    def __getitem__(self, name):
+        obj = super(Object, self).__getitem__(name)
+        if hasattr(obj, 'dynamic_properties_def') and obj.dynamic_properties_def and not obj.dynamic_properties_reloded:
+            obj._init_dynamic_properties_()
+
+        return obj
+
+    def getproperty(self, name):
+        return self.__class__.properties[name]['get'](self)
+
+    def setproperty(self, name, value):
+        self.__class__.properties[name]['set'](self, value)
+
+    def addtoproperty(self, name, value):
+        self.__class__.properties[name]['add'](self, value)
+
+    def delproperty(self, name, value):
+        self.__class__.properties[name]['del'](self, value)
 
     def choose_name(self, name, object):
         """See zope.container.interfaces.INameChooser
@@ -407,61 +481,6 @@ class Object(Folder):
         name = self.choose_name(name, other)
         super(Object, self).add(name, other, send_events, reserved_names,
                 duplicating, moving, loading, registry)
-
-    def __new__(cls, *args, **kwargs):
-        if not hasattr(cls, 'properties'):
-            cls.properties = {}
-
-        new_instance = super(Object, cls).__new__(cls, *args, **kwargs)
-        new_instance.__init_proprties__()
-        return new_instance
-
-    def __init__(self, **kwargs):
-        super(Object, self).__init__(*kwargs)
-        self.title = None
-        if 'title' in kwargs:
-            self.title = kwargs['title']
-
-        self.__property__ = None
-        for _property in self.properties_def.keys():
-            if kwargs.has_key(_property):
-                self.setproperty(_property, kwargs[_property])
-
-    def __init_proprties__(self):
-        for p in self.properties_def.keys():
-            op = __properties__[self.properties_def[p][0]]
-            opposite = self.properties_def[p][1]
-            isunique = self.properties_def[p][2]
-            self.__addproperty__(op(p,opposite, isunique))
-
-    def __addproperty__(self, _property, default=None):
-        propertyref = _property['data']['name']
-        if propertyref not in self.__class__.properties:
-
-            self.__class__.properties[propertyref] = _property
-            self.__class__.properties[propertyref]['init'](self)
-
-        if default is not None:
-            _property['set'](self, default)
-
-    def __setattr__(self, name, value):
-        if name in self.__class__.properties:
-            self.setproperty(name, value)
-        else:
-            super(Folder, self).__setattr__(name, value)
-
-
-    def getproperty(self, name):
-        return self.__class__.properties[name]['get'](self)
-
-    def setproperty(self, name, value):
-        self.__class__.properties[name]['set'](self, value)
-
-    def addtoproperty(self, name, value):
-        self.__class__.properties[name]['add'](self, value)
-
-    def delproperty(self, name, value):
-        self.__class__.properties[name]['del'](self, value)
 
     def get_data(self, node):
         result = {}

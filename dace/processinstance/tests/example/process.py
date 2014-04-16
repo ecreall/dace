@@ -122,7 +122,7 @@ class WorkItemB(workitem.WorkItem):
 
     def start(self):
         # should not set a variable directly bu should use a output parameter
-        self.node.process.workflowRelevantData.choice = "b"
+        self.node.process.execution_context.add_data('choice', "b")
         self.node.finish_behavior(self)
 
 @utility(name ='sample.b')

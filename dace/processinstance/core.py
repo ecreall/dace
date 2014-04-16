@@ -79,6 +79,7 @@ class FlowNode(BPMNElement, Object):
             self.id
             )
 
+
 class MakerFlowNode(FlowNode):
 
     def __init__(self, definition):
@@ -266,7 +267,6 @@ class BehavioralFlowNode(MakerFlowNode):
                     if work_item.path.contains_transition(p.first[0]):
                         source_transaction = p.transaction.__parent__
                         source_transaction.remove_subtransaction(p.transaction)
-
 
 
 class ValidationError(Exception):

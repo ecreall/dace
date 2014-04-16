@@ -64,6 +64,6 @@ class TransitionDefinition(Object):
    # def __eq__(self, other):
    #     return self.source is other.source and self.target is other.target
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "%s(%r, %r)" % (self.__class__.__name__,
                 self.source, self.target)

@@ -4,7 +4,7 @@ from persistent.list import PersistentList
 from substanced.util import get_oid
 
 from dace.interfaces import IEntity
-from .object import Object
+from .object import Object, SHARED_UNIQUE, SHARED_MULTIPLE
 from dace.util import getAllBusinessAction
 from dace.relations import find_relations
 
@@ -30,6 +30,9 @@ class ActionCall(object):
 class Entity(Object):
     implements(IEntity)
 
+    properties_def = {'creator': (SHARED_UNIQUE, 'createds', True),
+                      'involvers': (SHARED_MULTIPLE, 'involveds', True)}
+
     def __init__(self, **kwargs):
         Object.__init__(self)
         self.state = PersistentList()
@@ -42,6 +45,11 @@ class Entity(Object):
         self.state = PersistentList()
         for s in state:
             self.state.append(s)
+
+    @property
+    def actions(self):
+        allactions = getAllBusinessAction(self)
+        return [ActionCall(a, self) for a in allactions]
 
     #les relations avec le processus sont des relations d'agregation multiple bidirectionnelles
     # il faut donc les difinir comme des properties
@@ -79,8 +87,3 @@ class Entity(Object):
     def getInvolvedProcesses(self, tag=None):
         for relation in self._getInvolvedProcessRelations(tag):
             yield relation.source
-
-    @property
-    def actions(self):
-        allactions = getAllBusinessAction(self)
-        return [ActionCall(a, self) for a in allactions]

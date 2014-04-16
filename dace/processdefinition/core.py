@@ -46,7 +46,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
         source_transaction.remove_subtransaction(source_path.transaction)
         yield decision_path
 
-    def __repr__(self):
+    def __repr__(self):# pragma: no cover
         return "<%s %r>" % (self.__class__.__name__, self.__name__)
 
 
