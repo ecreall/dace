@@ -25,6 +25,7 @@ from dace.interfaces import (
 from .workitem import UserDecision
 
 
+ITEM_INDEX = 'item'
 ACTIONSTEPID = '__actionstepid__'
 
 
@@ -210,7 +211,6 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         self.workitem.lock(request)
 
     def start(self, context, request, appstruct, **kw):
-        # il y a probablement un moyen plus simple en cherchant la methode par son nom dans self par exemple..
         if kw is not None and ACTIONSTEPID in kw and hasattr(self, kw[ACTIONSTEPID]):
             step = getattr(self, kw[ACTIONSTEPID])
             return step(context, request, appstruct, **kw)
@@ -226,6 +226,10 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         if isinstance(self.node, SubProcess) and self.sub_process is None:
             self.sub_process = self.node._start_subprocess()
             self.sub_process.attachedTo = self
+            if ITEM_INDEX in kw:
+                self.sub_process.execution_context.add_involved_entity(ITEM_INDEX, kw[ITEM_INDEX])
+
+            self.process.execution_context.add_sub_execution_context(self.sub_process.execution_context)
 
     def finish_execution(self, context, request, **kw):
         self.after_execution(context, request, **kw)
@@ -295,9 +299,9 @@ class LoopActionDataInput(BusinessAction):
         instances = self.loopDataInputRef.im_func(context, request, self.process, appstruct)
         for item in instances:
             if kw is not None:
-                kw['item'] = item
+                kw[ITEM_INDEX] = item
             else:
-                kw = {'item': item}
+                kw = {ITEM_INDEX: item}
             self.start(context, request, appstruct, **kw)
 
         self.isexecuted = True
@@ -411,11 +415,10 @@ class ActionInstance(BusinessAction):
 
     def start(self, context, request, appstruct, **kw):
         if kw is not None:
-            kw['item'] = self.item
+            kw[ITEM_INDEX] = self.item
         else:
-            kw = {'item': self.item}
+            kw = {ITEM_INDEX: self.item}
         return self.principalaction.start(context, request, appstruct, **kw)
-
 
     def execute(self, context, request, appstruct, **kw):
         super(ActionInstance, self).execute(context, request, appstruct, **kw)
@@ -436,34 +439,10 @@ class ActionInstanceAsPrincipal(ActionInstance):
         return (context is self.item) and super(ActionInstanceAsPrincipal, self).validate(context, request, **kw)
 
     def execute(self, context, request, appstruct, **kw):
-        super(ActionInstance, self).execute(context, request, appstruct, **kw)
-        if self.sub_process is not None:
-            pass #TODO: self.sub_process.add_relation('item', self.item)
-
-        isFinished = self.start(context, request, appstruct, **kw)
-        if isFinished:
-            self.isexecuted = True
-            if self.sub_process is None:
-                self.finish_execution(context, request, **kw)
+        if kw is not None:
+            kw[ITEM_INDEX] = self.item
+        else:
+            kw = {ITEM_INDEX: self.item}
+        super(ActionInstanceAsPrincipal, self).execute(context, request, appstruct, **kw)
 
 # il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
-
-# La question est comment faire pour les actions multiStep?
-# Je pense que cela peut être géré dans l'action start de l'action. La fonction start se charge d'exécuter la bonne
-# Step (voir la méthode start de la class BusinessAction (comportement par défaut en plutistep)).
-# dans ce cas le nom du step doit être ajouté dans args comme paramètre de l'action: chaque step (Vue, généralement un form)
-# demande à l'action de s'exécuter action.execut(...). Avant cela, la step rajoute dans le args une clef ACTIONSTEPID et sa valeur
-# correspondant à la méthode qui doit être exécuté. Le code associé aux steps et le start ainsi que les vues seront générés.
-
-# exemple:
-
-#class Monaction(ElementaryAction):
-#
-#    steps = {'s1':s1,'s2':s2}
-#
-#
-#    def s1(self, context, request, appstruct, args):
-#        pass
-#
-#    def s2(self, context, request, appstruct, args):
-#        pass

@@ -28,6 +28,8 @@ class ExecutionContext(Object):
 
     def __init__(self):
         super(ExecutionContext, self).__init__()
+        self.parent = None
+        self.sub_execution_contexts = PersistentList()
 
     @property
     def createds(self):
@@ -40,6 +42,15 @@ class ExecutionContext(Object):
     @property
     def process(self):
         return self.getproperty('process')
+
+    def add_sub_execution_context(self, ec):
+        self.sub_execution_contexts.append(ec)
+        ec.parent = self
+
+    def remove_sub_execution_context(self, ec):
+        self.sub_execution_contexts.remove(ec)
+        ec.parent = None
+
 #entity
     def add_involved_entity(self, name, value):
         self.addtoproperty('involveds', value)
@@ -58,7 +69,7 @@ class ExecutionContext(Object):
         if name in self.dynamic_properties_def:
             self.delproperty(name, value)
 
-    def get_involved_entity(self, name, index=-1):
+    def get_involved_entity(self, name, index=-1):#TODO sub contexts and parent
         if name in self.dynamic_properties_def:
             result = self.getproperty(name)
             if result:
@@ -66,7 +77,7 @@ class ExecutionContext(Object):
 
         return None
 
-    def get_involved_entities(self, name=None):
+    def get_involved_entities(self, name=None):#TODO sub contexts and parent
         if name is None:
             return self.involveds
 
@@ -84,7 +95,7 @@ class ExecutionContext(Object):
         self.delproperty('createds', value)
         self.remove_involved_entity(name, value)
 
-    def get_created_entity(self, name, index=-1):
+    def get_created_entity(self, name, index=-1):#TODO sub contexts and parent
         if name in self.dynamic_properties_def:
             result = [e for e in self.getproperty(name) if e in self.createds]
             if result:
@@ -92,7 +103,7 @@ class ExecutionContext(Object):
 
         return None
 
-    def get_created_entities(self, name=None):
+    def get_created_entities(self, name=None):#TODO sub contexts and parent
         if name is None:
             return self.createds
 
@@ -102,7 +113,7 @@ class ExecutionContext(Object):
 
         return []
 
-    def has_relation(self, value, name=None):
+    def has_relation(self, value, name=None):#TODO sub contexts and parent
         if name is None:
             return value in self.involveds
 
@@ -111,14 +122,107 @@ class ExecutionContext(Object):
         else:
             return False
 #collections
+
+    def add_involved_collection(self, name, values):
+        index_key = name+'_index'
+        if not self.has_data(index_key):
+            self.add_data(index_key, 0)
+        
+        index = self.get_data(index_key)+1
+        self.add_data(index_key, index)
+        name = name+'_'+str(index)
+        for value in values:
+            self.addtoproperty('involveds', value)
+            if name in self.dynamic_properties_def:
+                self.addtoproperty(name, value)
+            else:
+                opposit_name = name+'_involver'
+                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
+                value.dynamic_properties_def[opposit_name] = (SHARED_UNIQUE, name, True)
+                self._init__property(name, self.dynamic_properties_def[name])
+                value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
+                self.addtoproperty(name, value)
+
+    def remove_involved_collection(self, name, values):
+        index_key = name+'_index'
+        if not self.has_data(index_key):
+            return
+        
+        index = self.get_data(index_key)
+        name = name+'_'+str(index)
+        for value in values:
+            self.delproperty('involveds', value)
+            if name in self.dynamic_properties_def:
+                self.delproperty(name, value)
+
+    def get_involved_collection(self, name, index=-1):#TODO sub contexts and parent
+        index_key = name+'_index'
+        if not self.has_data(index_key):
+            return
+        if index == -1:
+            index = self.get_data(index_key)
+        else:
+            if index > self.get_data(index_key):
+                return []
+
+        name = name+'_'+str(index)
+        if name in self.dynamic_properties_def:
+            result = self.getproperty(name)
+            return result
+
+        return []
+
+    def get_involved_collections(self, name=None):#TODO sub contexts and parent
+        if name is None:
+            return self.involveds
+
+        index_key = name+'_index'
+        result = []
+        for index in range(self.get_data(index_key)) :
+            result.append(self.get_involved_collection(name, (index+1)))
+   
+        return result
+
+    def add_created_collection(self, name, values):
+        for value in values:
+            self.addtoproperty('createds', value)
+
+        self.add_involved_collection(name, values)
+
+    def remove_created_collection(self, name, values):
+        for value in values:
+            self.delproperty('createds', value)
+
+        self.remove_involved_collection(name, values)
+
+    def get_created_collection(self, name, index=-1):#TODO sub contexts and parent
+        collections = self.get_involved_collection(name, index)
+        if collections is None:
+            return None
+
+        result = [e for e in collections if e in self.createds]
+        return result
+
+    def get_created_collections(self, name=None):#TODO sub contexts and parent
+        result = [[e for e in c if e in self.createds] for c in self.get_involved_collections(name)]
+        return result
 #Data
     def add_data(self, key, data):
-        if not hasattr(self, key):
+        if not self.has_data(key):
             setattr(self, key, PersistentList())
+
         getattr(self, key).append(data)
 
-    def get_data(self, key, index=-1):
-        return getattr(self, key)[index]
+    def get_data(self, key, index=-1):#TODO sub contexts and parent
+        if self.has_data(key):
+            datas = getattr(self, key)
+            if index == -1 or index < len(datas): 
+                return getattr(self, key)[index]
+
+        return None
+
+    def has_data(self, key):#TODO sub contexts and parent
+        return hasattr(self, key)
 
 
 class Process(Entity):
@@ -170,10 +274,12 @@ class Process(Entity):
 
     @property
     def execution_context(self):
-        if self.isSubProcess:
-            return self.attachedto.process.execution_context
-        else:
-            return self.getproperty('execution_context')
+        #if self.isSubProcess:
+        #    return self.attachedTo.process.execution_context
+        #else:
+        #    return self.getproperty('execution_context')
+        return self.getproperty('execution_context')
+
 
     def definition(self):
         registry = get_current_registry()

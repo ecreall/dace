@@ -790,6 +790,12 @@ class TestsSubProcess(FunctionalTests):
         action_sp.execute(objectc, self.request, None, **{})
         wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
         proc =  action_sp.process
+
+        item = action_sp.sub_process.execution_context.get_involved_entity('item')
+        self.assertIs(item, objecta)
+        #item = proc.execution_context.get_involved_entity('item')
+        #self.assertIs(item, objecta)
+
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 3)
         self.assertIn(wi_sa, workitems.values())
@@ -831,6 +837,13 @@ class TestsSubProcess(FunctionalTests):
         action_sp2.execute(objectc, self.request, None, **{})
         wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
         proc =  action_sp2.process
+
+
+        item = action_sp2.sub_process.execution_context.get_involved_entity('item')
+        self.assertIs(item, objectb)
+        #item = proc.execution_context.get_involved_entity('item')
+        #self.assertIs(item, objectb)
+
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
         self.assertIn(wi_sa, workitems.values())
