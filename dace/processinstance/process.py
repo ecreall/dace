@@ -21,8 +21,8 @@ from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQ
 
 class ExecutionContext(Object):
 
-    properties_def = {'createds': (SHARED_MULTIPLE, 'creator', True),
-                      'involveds': (SHARED_MULTIPLE, 'involvers', True),
+    properties_def = {'createds': (SHARED_MULTIPLE, 'creator', False),
+                      'involveds': (SHARED_MULTIPLE, 'involvers', False),
                       'process': (SHARED_UNIQUE, 'execution_context', True),
                       }
 
@@ -38,18 +38,48 @@ class ExecutionContext(Object):
     @property
     def involveds(self):
         return self.getproperty('involveds')
-
+        
     @property
     def process(self):
         return self.getproperty('process')
 
+    def root_execution_context(self):
+        if self.parent is None:
+            return self
+        else:
+            return self.parent.root_execution_context()
+
     def add_sub_execution_context(self, ec):
-        self.sub_execution_contexts.append(ec)
-        ec.parent = self
+        if not(ec in self.sub_execution_contexts): 
+            self.sub_execution_contexts.append(ec)
+            ec.parent = self
 
     def remove_sub_execution_context(self, ec):
-        self.sub_execution_contexts.remove(ec)
-        ec.parent = None
+        if ec in self.sub_execution_contexts: 
+            self.sub_execution_contexts.remove(ec)
+            ec.parent = None
+
+    def _sub_involveds(self):
+        result = self.involveds
+        for sec in self.sub_execution_contexts:
+            result.extend(sec._sub_involveds())
+
+        return result
+
+    def all_involveds(self):
+        root = self.root_execution_context()
+        return root._sub_involveds()
+
+    def _sub_createds(self):
+        result = self.createds
+        for sec in self.sub_execution_contexts:
+            result.extend(sec._sub_createds())
+
+        return result
+
+    def all_createds(self):
+        root = self.root_execution_context()
+        return root._sub_createds()
 
 #entity
     def add_involved_entity(self, name, value):
@@ -64,20 +94,68 @@ class ExecutionContext(Object):
             value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
             self.addtoproperty(name, value)
 
-    def remove_involved_entity(self, name, value):
-        self.delproperty('involveds', value)
+    def remove_entity(self, name, value):
+        if value in self.involveds:
+            self.delproperty('involveds', value)
+
+        if value in self.createds:
+            self.delproperty('createds', value)
+
         if name in self.dynamic_properties_def:
             self.delproperty(name, value)
 
-    def get_involved_entity(self, name, index=-1):#TODO sub contexts and parent
+    def add_created_entity(self, name, value):
+        self.addtoproperty('createds', value)
+        self.add_involved_entity(name, value)
+
+    # involved_entity start
+    def involved_entity(self, name, index=-1):
+        result = self.get_involved_entity(name, index)
+        if result is not None:
+            return result
+      
+        result = self.find_involved_entity(name, index)
+        if result:
+            return result[0]
+
+    def get_involved_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
             result = self.getproperty(name)
-            if result:
+            if result and index < len(result):
                 return result[index]
+
+        collection = self.get_involved_collection(name, index)
+        if collection:
+            return collection[0]
 
         return None
 
-    def get_involved_entities(self, name=None):#TODO sub contexts and parent
+    def find_subinvolved_entity(self, name, index=-1):
+        result = self.get_involved_entity(name, index)
+        if result is not None :
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subinvolved_entity(name, index))
+
+        return result
+
+    def find_involved_entity(self, name, index=-1):
+        root = self.root_execution_context()
+        return root.find_subinvolved_entity(name, index)
+    # involved_entity end
+
+    # involved_entities start
+    def involved_entities(self, name=None):
+        result = self.get_involved_entities(name)
+        if result :
+            return result
+      
+        result = self.find_involved_entities(name)
+        return result
+
+    def get_involved_entities(self, name=None):
         if name is None:
             return self.involveds
 
@@ -85,25 +163,78 @@ class ExecutionContext(Object):
             result = self.getproperty(name)
             return result
 
-        return []
+        result = []
+        collections = self.get_involved_collections(name)
+        for c in collections:
+            result.extend(c)
 
-    def add_created_entity(self, name, value):
-        self.addtoproperty('createds', value)
-        self.add_involved_entity(name, value)
+        return result
 
-    def remove_created_entity(self, name, value):
-        self.delproperty('createds', value)
-        self.remove_involved_entity(name, value)
+    def find_subinvolved_entities(self, name=None):
+        result = self.get_involved_entities(name)
+        if result:
+            return result
+        else:
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subinvolved_entities(name))
 
-    def get_created_entity(self, name, index=-1):#TODO sub contexts and parent
+        return result
+
+    def find_involved_entities(self, name=None):
+        root = self.root_execution_context()
+        return root.find_subinvolved_entities(name)
+    # involved_entities end
+
+    # created_entity start
+    def created_entity(self, name, index=-1):
+        result = self.get_created_entity(name, index)
+        if result is not None:
+            return result
+      
+        result = self.find_created_entity(name, index)
+        if result:
+            return result[0]
+
+        return None
+
+    def get_created_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
             result = [e for e in self.getproperty(name) if e in self.createds]
             if result:
                 return result[index]
 
+        collection = self.get_created_collection(name, index)
+        if collection:
+            return collection[0]
+
         return None
 
-    def get_created_entities(self, name=None):#TODO sub contexts and parent
+    def find_subcreated_entity(self, name, index=-1):
+        result = self.get_created_entity(name, index)
+        if result is not None:
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subcreated_entity(name, index))
+
+        return result
+
+    def find_created_entity(self, name, index=-1):
+        root = self.root_execution_context()
+        return  root.find_subcreated_entity(name, index)
+    # created_entity end
+
+    # created_entities start
+    def created_entities(self, name=None):
+        result = self.get_created_entities(name)
+        if result :
+            return result
+      
+        result = self.find_created_entities(name)
+        return result
+
+    def get_created_entities(self, name=None):
         if name is None:
             return self.createds
 
@@ -113,22 +244,52 @@ class ExecutionContext(Object):
 
         return []
 
-    def has_relation(self, value, name=None):#TODO sub contexts and parent
+    def find_created_entities(self, name=None):
+        root = self.root_execution_context()
+        result_created = root.all_createds()
+        result = [e for e in root.find_involved_entities(name) if e in result_created]
+        return result
+    # created_entities end
+
+    # has relation_entity start
+    def has_relation(self, value, name=None):
+        if self.has_localrelation(value, name):
+            return True
+
+        return self.has_globalrelation(value, name)
+
+    def has_subrelation(self, value, name=None):
+        if self.has_localrelation(value, name):
+            return True
+
+        for sec in self.sub_execution_contexts:
+            if sec.has_subrelation(value, name):
+                return True
+
+        return False
+
+    def has_globalrelation(self, value, name=None):
+        root = self.root_execution_context()
+        return root.has_subrelation(value, name)
+
+    def has_localrelation(self, value, name=None):
         if name is None:
             return value in self.involveds
 
-        if name in self.dynamic_properties_def:
-             return value in self.getproperty(name)
-        else:
-            return False
-#collections
+        entities = self.get_involved_entities(name)
+        if entities and value in entities:
+            return True
 
+        return False
+    # has relation_entity end
+
+#collections
     def add_involved_collection(self, name, values):
         index_key = name+'_index'
-        if not self.has_data(index_key):
+        if not hasattr(self, index_key):
             self.add_data(index_key, 0)
         
-        index = self.get_data(index_key)+1
+        index = self.get_localdata(index_key)+1
         self.add_data(index_key, index)
         name = name+'_'+str(index)
         for value in values:
@@ -143,45 +304,15 @@ class ExecutionContext(Object):
                 value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
                 self.addtoproperty(name, value)
 
-    def remove_involved_collection(self, name, values):
+    def remove_collection(self, name, values):
         index_key = name+'_index'
-        if not self.has_data(index_key):
+        if not hasattr(self, index_key):
             return
         
-        index = self.get_data(index_key)
+        index = self.get_localdata(index_key)
         name = name+'_'+str(index)
         for value in values:
-            self.delproperty('involveds', value)
-            if name in self.dynamic_properties_def:
-                self.delproperty(name, value)
-
-    def get_involved_collection(self, name, index=-1):#TODO sub contexts and parent
-        index_key = name+'_index'
-        if not self.has_data(index_key):
-            return
-        if index == -1:
-            index = self.get_data(index_key)
-        else:
-            if index > self.get_data(index_key):
-                return []
-
-        name = name+'_'+str(index)
-        if name in self.dynamic_properties_def:
-            result = self.getproperty(name)
-            return result
-
-        return []
-
-    def get_involved_collections(self, name=None):#TODO sub contexts and parent
-        if name is None:
-            return self.involveds
-
-        index_key = name+'_index'
-        result = []
-        for index in range(self.get_data(index_key)) :
-            result.append(self.get_involved_collection(name, (index+1)))
-   
-        return result
+            self.remove_entity(name, value)
 
     def add_created_collection(self, name, values):
         for value in values:
@@ -189,40 +320,195 @@ class ExecutionContext(Object):
 
         self.add_involved_collection(name, values)
 
-    def remove_created_collection(self, name, values):
-        for value in values:
-            self.delproperty('createds', value)
+    # involved_collection start
+    def involved_collection(self, name, index=-1):
+        result = self.get_involved_collection(name, index)
+        if result:
+            return result
+      
+        result = self.find_involved_collection(name, index)
+        if result:
+            return result[0]
 
-        self.remove_involved_collection(name, values)
+        return []
 
-    def get_created_collection(self, name, index=-1):#TODO sub contexts and parent
+    def get_involved_collection(self, name, index=-1):
+        index_key = name+'_index'
+        if not hasattr(self, index_key):
+            return []
+
+        if index == -1:
+            index = self.get_localdata(index_key)
+        elif index > self.get_localdata(index_key):
+            return []
+
+        name = name+'_'+str(index)
+        result = self.getproperty(name)
+        return result
+
+    def find_subinvolved_collection(self, name, index=-1):
+        result = self.get_involved_collection(name, index)
+        if result:
+            return [result]
+        else:
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subinvolved_collection(name, index))
+
+        return result
+
+    def find_involved_collection(self, name, index=-1):
+        root = self.root_execution_context()
+        return root.find_subinvolved_collection(name, index)
+    # involved_collection end
+
+    # involved_collections start
+    def involved_collections(self, name=None):
+        result = self.get_involved_collections(name)
+        if result :
+            return result
+      
+        result = self.find_involved_collections(name)
+        return result
+
+    def get_involved_collections(self, name=None):
+        if name is None:
+            return self.involveds
+
+        index_key = name+'_index'
+        result = []
+        if hasattr(self, index_key):
+            for index in range(self.get_localdata(index_key)) :
+                result.append(self.get_involved_collection(name, (index+1)))
+   
+        return result
+
+    def find_subinvolved_collections(self, name=None):
+        result = self.get_involved_collections(name)
+        if result:
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subinvolved_collections(name))
+
+        return result
+
+    def find_involved_collections(self, name=None):
+        root = self.root_execution_context()
+        return root.find_subinvolved_collections(name)
+    # involved_collections end
+
+    # created_collection start
+    def created_collection(self, name, index=-1):
+        result = self.get_created_collection(name, index)
+        if result:
+            return result
+      
+        result = self.find_created_collection(name, index)
+        if result:
+            return result[0]
+
+        return []
+
+    def get_created_collection(self, name, index=-1):
         collections = self.get_involved_collection(name, index)
-        if collections is None:
-            return None
+        if not collections:
+            return []
 
         result = [e for e in collections if e in self.createds]
         return result
 
-    def get_created_collections(self, name=None):#TODO sub contexts and parent
-        result = [[e for e in c if e in self.createds] for c in self.get_involved_collections(name)]
+    def find_subcreated_collection(self, name, index=-1):
+        result = self.get_created_collection(name, index)
+        if result:
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subcreated_collection(name, index))
+
         return result
+
+    def find_created_collection(self, name, index=-1):
+        root = self.root_execution_context()
+        return root.find_subcreated_collection(name, index)
+    # created_collection end
+
+    # created_collections start
+    def created_collections(self, name=None):
+        result = self.get_created_collections(name)
+        if result :
+            return result
+       
+        result = self.find_created_collections(name)
+        return result
+
+    def get_created_collections(self, name=None):
+        if name is None:
+            return self.createds
+
+        index_key = name+'_index'
+        result = []
+        if hasattr(self, index_key):
+            for index in range(self.get_localdata(index_key)) :
+                result.append(self.get_created_collection(name, (index+1)))
+   
+        return result
+
+    def find_subcreated_collections(self, name):
+        result = self.get_created_collections(name)
+        if result:
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subcreated_collections(name))
+
+        return result
+
+    def find_created_collections(self, name=None):
+        root = self.root_execution_context()
+        return root.find_subcreated_collections(name)
+    # created_collections end
+
+
 #Data
-    def add_data(self, key, data):
-        if not self.has_data(key):
-            setattr(self, key, PersistentList())
+    def add_data(self, name, data):
+        if not hasattr(self, name):
+            setattr(self, name, PersistentList())
 
-        getattr(self, key).append(data)
+        getattr(self, name).append(data)
 
-    def get_data(self, key, index=-1):#TODO sub contexts and parent
-        if self.has_data(key):
-            datas = getattr(self, key)
+    def get_data(self, name, index=-1):
+        data = self.get_localdata(name, index)
+        if data is not None:
+            return data 
+
+        datas = self.find_data(name, index)
+        return datas[0] 
+
+    def get_localdata(self, name, index=-1):
+        if hasattr(self, name):
+            datas = getattr(self, name)
             if index == -1 or index < len(datas): 
-                return getattr(self, key)[index]
+                return getattr(self, name)[index]
 
         return None
 
-    def has_data(self, key):#TODO sub contexts and parent
-        return hasattr(self, key)
+    def find_subdata(self, name, index=-1):
+        result = self.get_localdata(name, index)
+        if result is not None :
+            return [result]
+        else:
+            result = []
+            for sec in self.sub_execution_contexts:
+                result.extend(sec.find_subdata(name, index))
+
+        return result
+
+    def find_data(self, name, index=-1):
+        root = self.root_execution_context()
+        return root.find_subdata(name, index)
 
 
 class Process(Entity):
