@@ -11,6 +11,7 @@ from zope.processlifetime import IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime
+from dace.objectofcollaboration.services.processdef_container import ProcessDefinitionContainer
 
 from substanced.event import RootAdded
 from substanced.util import find_service
@@ -18,7 +19,7 @@ from substanced.util import find_service
 from .interfaces import IWorkItem
 from .processinstance.event import IntermediateCatchEvent
 from .objectofcollaboration.system import start_crawler
-
+from .objectofcollaboration.services.processdef_container import DEFINITIONS
 
 class ConsumeTasks(threading.Thread):
 
@@ -84,6 +85,10 @@ def add_catalogs(event):
     catalogs = find_service(root, 'catalogs')
     catalogs.add_catalog('dace')
     root['runtime'] = Runtime()
+    def_container = root['process_definition_container']
+    for definition in def_container.definitions:
+        definition._init_definition()
+
 
 
 @subscriber(IApplicationCreated)

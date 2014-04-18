@@ -26,7 +26,7 @@ def add_relations_catalog(event):
 @subscriber(IRelationAdded)
 def add_relation(event):
     relation = event.object
-    catalog = get_relations_catalog()
+    catalog = get_relations_catalog(relation.source)
     objectid = oid_from_resource(relation)
     catalog.index_doc(objectid, relation)
 
@@ -34,7 +34,7 @@ def add_relation(event):
 @subscriber(IRelationModified)
 def update_relation(event):
     relation = event.object
-    catalog = get_relations_catalog()
+    catalog = get_relations_catalog(relation.source)
     objectid = oid_from_resource(relation)
     catalog.reindex_doc(objectid, relation)
 
@@ -45,7 +45,7 @@ def object_deleted(event):
     request = get_current_request()
     objectmap = find_objectmap(request.root)
     ob = event.object
-    catalog = get_relations_catalog()
+    catalog = get_relations_catalog(request.root)
     if catalog is None:
         # We don't have a Catalog installed in this part of the site
         return

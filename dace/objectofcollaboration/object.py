@@ -119,7 +119,6 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
         elif hasattr(value,'__parent__') and value.__parent__ is not None:
             value.__parent__.remove(value.__name__)
 
-
         self.add(value.__name__, value)
         value.__property__ = propertyref
         contents_keys.append(value.__name__)
@@ -191,7 +190,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
         opts = {u'source_id': get_oid(self)}
         opts[u'relation_id'] = propertyref
         try:
-            return [r for r in find_relations(opts).all()][0].target
+            return [r for r in find_relations(self, opts).all()][0].target
         except Exception:
             return None
 
@@ -224,7 +223,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
 
             opts = {u'target_id': get_oid(value)}
             opts[u'relation_id'] = propertyref
-            relation = [r for r in find_relations(opts).all()][0]
+            relation = [r for r in find_relations(self, opts).all()][0]
             disconnect(relation)
 
     def init(self):
@@ -251,7 +250,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         opts = {u'source_id': get_oid(self)}
         opts[u'relation_id'] = propertyref
         try:
-            return [r.target for r in find_relations(opts).all()]
+            return [r.target for r in find_relations(self, opts).all()]
         except Exception:
             return None
 
@@ -300,7 +299,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
 
             opts = {u'target_id': get_oid(v)}
             opts[u'relation_id'] = propertyref
-            relation = [r for r in find_relations(opts).all()][0]
+            relation = [r for r in find_relations(self, opts).all()][0]
             disconnect(relation)
 
     def init(self):
@@ -344,7 +343,7 @@ class Object(Folder):
         return new_instance
 
     def __init__(self, **kwargs):
-        super(Object, self).__init__(*kwargs)
+        super(Object, self).__init__()
         self.dynamic_properties_def = {}
         self.title = None
         if 'title' in kwargs:

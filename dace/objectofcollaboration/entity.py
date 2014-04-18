@@ -65,37 +65,4 @@ class Entity(Object):
 
     #les relations avec le processus sont des relations d'agregation multiple bidirectionnelles
     # il faut donc les difinir comme des properties
-    def getCreator(self):
-        relations = find_relations({
-            u'target_id': get_oid(self),
-            u'tags': u"created"})
-        return tuple(relations)[0].source
 
-    def setCreator(self, creator, tag, index=-1):
-        creator.addCreatedEntities(self, tag, index)
-
-    def addInvolvedProcesses(self, processes, tag, index=-1):
-        if not isinstance(processes, (list, tuple)):
-            processes = [processes]
-
-        for proc in processes:
-            proc.addInvolvedEntities(self, tag, index)
-
-    def _getInvolvedProcessRelations(self, tag=None, index=-1):
-        tags = [u"involved"]
-        if tag is not None:
-            tags = [t + tag for t in tags]
-
-        opts = {u'target_id': get_oid(self)}
-        opts[u'tags'] = tags
-        for relation in find_relations(opts):
-            yield relation
-
-    def getInvolvedProcessIds(self, tag=None):
-        for a in self.actions:
-            if a.action.process is not None:
-                yield get_oid(a.action.process)
-
-    def getInvolvedProcesses(self, tag=None):
-        for relation in self._getInvolvedProcessRelations(tag):
-            yield relation.source

@@ -614,9 +614,9 @@ class TestsBusinessAction(FunctionalTests):
         wi, proc = action_y.workitem.consume()
         wi.start()
         action_y.execute(objecta, self.request, None, **{})
-        validator_y = ActionY.get_validator(ActionY)
+        validator_y = ActionY.get_validator()
         self.assertEqual(validator_y.validate(objecta, self.request), True)
-        all_y = ActionY.get_allinstances(ActionY, objecta, self.request)
+        all_y = ActionY.get_allinstances( objecta, self.request)
         actions_all_y = [a for a in actions_y if a in all_y]
         self.assertEqual((action_y in all_y), False)
         self.assertEqual(len(actions_all_y), len(actions_y)-1) # -1 for action_y

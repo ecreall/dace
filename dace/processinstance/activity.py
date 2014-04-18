@@ -69,7 +69,7 @@ def getBusinessActionValidator(action_cls):
 
         @classmethod
         def validate(cls, context, request, **kw):
-            instance = action_cls.get_instance(action_cls, context, request, **kw)
+            instance = action_cls.get_instance(context, request, **kw)
             if instance is None:
                 e = ValidationError()
                 raise e
@@ -106,7 +106,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         self.behavior_id = self.node_id
         self.sub_process = None
 
-    @staticmethod
+    @classmethod
     def get_instance(cls, context, request, **kw):
         instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
         if instance is None:
@@ -114,7 +114,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
         return instance[0]
 
-    @staticmethod
+    @classmethod
     def get_allinstances(cls, context, request, **kw):
         instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
         if instance is None:
@@ -122,7 +122,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
         return instance
 
-    @staticmethod
+    @classmethod
     def get_validator(cls, **kw):
         return getBusinessActionValidator(cls)
 

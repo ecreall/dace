@@ -1,23 +1,26 @@
-from pyramid.threadlocal import get_current_request
+from pyramid.threadlocal import get_current_request, get_current_registry
 from substanced.util import find_objectmap, set_oid
-
+from pyramid.traversal import find_root
 from .values import RelationValue
 
 
-def get_relations_container():
-    request = get_current_request()
-    return request.root['relations_container']
+# TODO def get_relations_container(root, query)
+def get_relations_container(resource):
+    root = find_root(resource)
+    return root['relations_container']
 
 
-def get_relations_catalog():
-    request = get_current_request()
-    return request.root.get('relations', None)
+# TODO get_relations_catalog(root, query)
+def get_relations_catalog(resource):
+    root = find_root(resource)
+    return root.get('relations', None)
 
 
-def find_relations(query):
-    catalog = get_relations_catalog()
-    request = get_current_request()
-    objectmap = find_objectmap(request.root)
+# TODO def find_relations(root, query)
+def find_relations(resource, query):
+    catalog = get_relations_catalog(resource)
+    root = find_root(resource)
+    objectmap = find_objectmap(root)
     queryobject = None
     for index, value in query.items():
         if isinstance(value, (tuple, list)):
@@ -37,7 +40,7 @@ def find_relations(query):
 
 
 def connect(source, target, **kwargs):
-    container = get_relations_container()
+    container = get_relations_container(source)
     objectmap = find_objectmap(container)
     source_id, target_id = objectmap._refids_for(source, target)
     relation = RelationValue(source_id, target_id, **kwargs)

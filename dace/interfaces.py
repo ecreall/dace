@@ -122,6 +122,10 @@ class IRuntime(IEntity):
     """
     #contains(IProcess)
 
+class IProcessDefinitionContainer(IEntity):
+    """Process definition container.
+    """
+
 
 class IBPMNElement(Interface):
     process = Attribute("Process")
