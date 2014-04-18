@@ -191,8 +191,6 @@ class EndEvent(Throwing):
         super(EndEvent, self).finish_behavior(work_item)
         if isinstance(self.eventKind, TerminateEvent):
             return
-        # il faut supprimer les wi des subprocess aussi
-        # gerer la suppression dans les noeuds... la suppression dans les subprocess est differente
         # Remove all workitems from process
         for node in self.process.nodes:
             node.stop()
@@ -201,13 +199,12 @@ class EndEvent(Throwing):
         self.process._finished = True
         registry = get_current_registry()
         registry.notify(ProcessFinished(self))
-        # ici test pour les sous processus
         if self.process.definition.isSubProcess:
             request = get_current_request()
             self.process.attachedTo.finish_execution(None, request)
 
         if self.process.definition.isVolatile:
-            self.process.__parent__.delproperty('processes', self.process)
+            self.process.__parent__.__class__.properties[self.process.__property__]['del'](self.process.__parent__, self.process)
 
 
 class EventKind(object):

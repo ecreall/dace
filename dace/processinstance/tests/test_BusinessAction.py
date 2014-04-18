@@ -869,7 +869,3 @@ class TestsSubProcess(FunctionalTests):
         wi_sb.start()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 0)
-
-
-
-

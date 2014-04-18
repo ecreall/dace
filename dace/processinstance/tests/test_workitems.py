@@ -301,6 +301,23 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.b', nodes_workitems)
 
+    def test_process_volatile(self):
+        from dace.util import find_service
+        pd = self._process_a_g_bc()
+        pd.isVolatile = True
+        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        start_wi = pd.start_process('a')
+        start_swi = ISearchableObject(start_wi)
+        wi, proc = start_wi.consume()
+        runtime = find_service('runtime')
+        self.assertIs(proc.__parent__, runtime)
+        wi.start()
+        workitems = proc.getWorkItems()
+
+        dwi_b = workitems['sample.b']
+        wi_b = dwi_b.consume()
+        wi_b.start()
+        self.assertIs(proc.__parent__, None)
 
     def _process_start_complex_Exclusive_process(self):
         """
