@@ -60,22 +60,22 @@ class ExecutionContext(Object):
             ec.parent = None
 
     def _sub_involveds(self):
-        result = self.involveds
+        result = list(self.involveds)
         for sec in self.sub_execution_contexts:
             result.extend(sec._sub_involveds())
 
-        return result
+        return set(result)
 
     def all_involveds(self):
         root = self.root_execution_context()
         return root._sub_involveds()
 
     def _sub_createds(self):
-        result = self.createds
+        result = list(self.createds)
         for sec in self.sub_execution_contexts:
             result.extend(sec._sub_createds())
 
-        return result
+        return set(result)
 
     def all_createds(self):
         root = self.root_execution_context()
@@ -157,7 +157,7 @@ class ExecutionContext(Object):
 
     def get_involved_entities(self, name=None):
         if name is None:
-            return self.involveds
+            return list(self.involveds)
 
         if name in self.dynamic_properties_def:
             result = self.getproperty(name)
@@ -236,7 +236,7 @@ class ExecutionContext(Object):
 
     def get_created_entities(self, name=None):
         if name is None:
-            return self.createds
+            return list(self.createds)
 
         if name in self.dynamic_properties_def:
             result = [e for e in self.getproperty(name) if e in self.createds]
@@ -372,7 +372,7 @@ class ExecutionContext(Object):
 
     def get_involved_collections(self, name=None):
         if name is None:
-            return self.involveds
+            return list(self.involveds)
 
         index_key = name+'_index'
         result = []
@@ -445,7 +445,7 @@ class ExecutionContext(Object):
 
     def get_created_collections(self, name=None):
         if name is None:
-            return self.createds
+            return list(self.createds)
 
         index_key = name+'_index'
         result = []

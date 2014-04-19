@@ -17,6 +17,7 @@ def create_process_definition_container(root):
     root['process_definition_container'] = def_container
     registry = get_current_registry()
     for definition in DEFINITIONS.values():
+        definition.__name__ = definition.id
         def_container.add_definition(definition)
         registry.registerUtility(definition, provided=IProcessDefinition, name=definition.id)
 

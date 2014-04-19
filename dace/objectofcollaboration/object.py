@@ -1,4 +1,5 @@
 from zope.interface import implements
+from persistent.list import PersistentList
 import colander
 
 from substanced.folder import Folder
@@ -72,7 +73,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def init(self):
         if not hasattr(self, key):
-            self.__dict__[key] = None
+            setattr(self, key, None)
 
     return {'add':_add,
             'get':_get,
@@ -166,7 +167,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 
     def init(self):
         if not hasattr(self, keys):
-            self.__dict__[keys] = []
+            setattr(self, keys, PersistentList())
 
     return {'add':_add,
             'get':_get,
@@ -184,7 +185,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 SHARED_UNIQUE = 'su'
 
 
-def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
+def SharedUniquePropertyRelation(propertyref, opposite=None, isunique=False):
 
     def _get(self,):
         opts = {u'source_id': get_oid(self)}
@@ -244,7 +245,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
 
 SHARED_MULTIPLE = 'sm'
 
-def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
+def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
 
     def _get(self):
         opts = {u'source_id': get_oid(self)}
@@ -318,6 +319,150 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
            }
 
 
+def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
+
+    key = propertyref+'_value'
+
+    def _get(self,):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        return self.__dict__[key]
+
+    def _add(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        myproperty['set'](self, value, initiator)
+
+    def _set(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        currentvalue = myproperty['get'](self)
+        if currentvalue == value:
+            return
+
+        if initiator and opposite is not None:
+            value.__class__.properties[opposite]['add'](value, self, False)
+
+        myproperty['del'](self, currentvalue)
+        if value is None:
+            return
+
+        setattr(self, key, value)
+
+    def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        currentvalue = myproperty['get'](self)
+        if currentvalue is not None and currentvalue == value:
+            if initiator and opposite is not None:
+                value.__class__.properties[opposite]['del'](value, self, False)
+
+            setattr(self, key, None)
+
+    def init(self):
+        if not hasattr(self, key):
+            setattr(self, key, None)
+
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'data':{'name':propertyref,
+                    'opposite': opposite,
+                    'isunique': isunique,
+                    'type':SHARED_UNIQUE
+                   }
+           }
+
+
+def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
+
+    key = propertyref+'_value'
+
+    def _get(self):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        return self.__dict__[key]
+
+    def _add(self, value, initiator=True):
+        if value is None:
+            return
+
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        currentvalue = myproperty['get'](self)
+        if isunique and value in currentvalue:
+            return
+
+        if initiator and opposite is not None:
+            value.__class__.properties[opposite]['add'](value, self, False)
+
+        self.__dict__[key].append(value)
+
+    def _set(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        if not isinstance(value, (list, tuple)):
+            value = [value]
+
+        oldvalues = myproperty['get'](self)
+        toremove = []
+        toadd = []
+        if value is None:
+            toremove = oldvalues
+        else:
+            toremove = [v for v in oldvalues if not (v in value)]
+            toadd = [v for v in value if not (v in oldvalues)]
+
+        myproperty['del'](self, toremove)
+        if toadd:
+            for v in toadd:
+                myproperty['add'](self, v)
+
+    def _del(self, value, initiator=True):
+        myproperty = self.__class__.properties[propertyref]
+        if not hasattr(self, key):
+            myproperty['init'](self)
+
+        if not isinstance(value, (list, tuple)):
+            value = [value]
+
+        for v in value:
+            if initiator and opposite is not None:
+                v.__class__.properties[opposite]['del'](v, self, False)
+
+            if v in self.__dict__[key]:
+                self.__dict__[key].remove(v)
+
+    def init(self):
+        if not hasattr(self, key):
+            setattr(self, key, PersistentList())
+
+    return {'add':_add,
+            'get':_get,
+            'set':_set,
+            'del':_del,
+            'init': init,
+            'data': {'name':propertyref,
+                     'opposite': opposite,
+                     'isunique': isunique,
+                     'type':SHARED_MULTIPLE
+                    }
+           }
+
+
 __properties__ = { COMPOSITE_UNIQUE: CompositeUniqueProperty,
                    SHARED_UNIQUE: SharedUniqueProperty,
                    COMPOSITE_MULTIPLE: CompositeMultipleProperty,
@@ -353,6 +498,8 @@ class Object(Folder):
         for _property in self.properties_def.keys():
             if kwargs.has_key(_property):
                 self.setproperty(_property, kwargs[_property])
+            else:
+                self.__class__.properties[_property]['init'](self)
 
     def __init_proprties__(self):
         for name, propertydef in self.properties_def.iteritems():
