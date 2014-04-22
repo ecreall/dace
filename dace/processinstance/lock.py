@@ -24,7 +24,8 @@ def get_unlock_operation(request):
 
 class LockableElement(object):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
+        super(LockableElement, self).__init__(**kwargs)
         self.dtlock = False
         self.tocall = []
 
