@@ -44,10 +44,8 @@ class SubProcess(Activity):
 
     def _start_subprocess(self):
         registry = get_current_registry()
-        pd = registry.getUtility(
-                IProcessDefinition,
-                self.definition.sub_process_definition.id)
-
+        def_container = find_service('process_definition_container')
+        pd = def_container.get_definition(self.definition.sub_process_definition.id)
         proc = pd()
         proc.__name__ = proc.id
         runtime = find_service('runtime')

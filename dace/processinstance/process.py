@@ -15,7 +15,7 @@ from .gateway import ExclusiveGateway
 from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
 from dace.relations import find_relations, connect
 from .transition import Transition
-from dace.util import find_catalog
+from dace.util import find_catalog, find_service
 from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQUE, SHARED_MULTIPLE, SHARED_UNIQUE, Object
 
 
@@ -575,11 +575,10 @@ class Process(Entity):
 
 
     def definition(self):
-        registry = get_current_registry()
-        return registry.getUtility(
-            IProcessDefinition,
-            self.id,
-            )
+        def_container = find_service('process_definition_container')
+        pd = def_container.get_definition(self.id)
+        return pd
+
     definition = property(definition)
 
     @property

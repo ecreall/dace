@@ -48,7 +48,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -94,7 +94,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -132,7 +132,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = self._process_non_valid_normalize()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         self.assertEqual(len(pd._get_start_events()), 1)
         self.assertEqual(pd._get_start_events()[0].id, pd.id+".emptystart")
 
@@ -159,7 +159,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_normalized_valid_process(self):
         pd = self._process_valid_normalize()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
 
         self.assertEqual(len(pd._get_start_events()), 1)
         self.assertEqual(pd._get_start_events()[0].id, pd.id+".s")
@@ -169,7 +169,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_process(self):
         pd = self._process_valid_normalize()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 3)
         self.assertIn('a', start_wis)
@@ -196,7 +196,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -226,7 +226,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_process_parallel(self):
         pd = self._process_start_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 2)
         self.assertIn('a', start_wis)
@@ -246,7 +246,7 @@ class TestsWorkItems(FunctionalTests):
                                      -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -267,7 +267,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_getWorkItem_startworkitem(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         wi = queryWorkItem('sample', 'a', self.request, None)
         self.assertIsNot(wi, None)
         self.assertTrue(IStartWorkItem.providedBy(wi))
@@ -279,7 +279,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_workitem(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         start_swi = ISearchableObject(start_wi)
         self.assertEqual(start_swi.process_id(), 'sample')
@@ -305,7 +305,7 @@ class TestsWorkItems(FunctionalTests):
         from dace.util import find_service
         pd = self._process_a_g_bc()
         pd.isVolatile = True
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         start_swi = ISearchableObject(start_wi)
         wi, proc = start_wi.consume()
@@ -342,7 +342,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -378,7 +378,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Exclusive_workitem_a(self):
         pd = self._process_start_complex_Exclusive_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 2)
         self.assertIn('a', start_wis)
@@ -395,7 +395,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Exclusive_workitem_d(self):
         pd = self._process_start_complex_Exclusive_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 2)
         self.assertIn('a', start_wis)
@@ -434,7 +434,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -470,7 +470,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_a(self):
         pd = self._process_start_complex_Parallel_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 4)
         self.assertIn('a', start_wis)
@@ -491,7 +491,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_d(self):
         pd = self._process_start_complex_Parallel_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 4)
         self.assertIn('a', start_wis)
@@ -511,7 +511,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_b(self):
         pd = self._process_start_complex_Parallel_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 4)
         self.assertIn('a', start_wis)
@@ -553,7 +553,7 @@ class TestsWorkItems(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -593,7 +593,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_MultiDecision_workitem_ea(self):
         pd = self._process_start_complex_MultiDecision_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 5)
         self.assertIn('a', start_wis)
@@ -625,7 +625,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_MultiDecision_workitem_b(self):
         pd = self._process_start_complex_MultiDecision_process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 5)
         self.assertIn('a', start_wis)
@@ -669,7 +669,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_blocked_gateway_because_no_workitems(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         proc = pd()
         self.app['process'] = proc
         workitems = proc.getWorkItems()
@@ -677,7 +677,7 @@ class TestsWorkItems(FunctionalTests):
 
     def _test_waiting_workitem_to_finish(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         wi, proc = start_wi.consume()
         wi.start()
@@ -712,7 +712,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_no_start_workitem_for_pd_subprocessOnly(self):
         pd = self._process_a_g_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = queryWorkItem('sample', 'a', self.request, None)
         self.assertIsNot(start_wi, None)
         pd.isControlled = True
@@ -735,7 +735,7 @@ class TestsWorkItems(FunctionalTests):
                                      -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -756,7 +756,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_end_event_delete_all_workitems(self):
         pd = self._process_a_pg_bc()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         proc = pd()
         self.app['proc'] = proc
         self.assertEqual(len(proc.getWorkItems()), 0)
@@ -791,7 +791,7 @@ class TestsWorkItems(FunctionalTests):
 
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -827,7 +827,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_refresh_decision(self):
         pd = self._process_start_refresh_decision()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 2)
         self.assertIn('a', start_wis)
@@ -887,7 +887,7 @@ class TestsWorkItems(FunctionalTests):
                                   -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -929,7 +929,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_aSync(self):
         pd = self._process_start_complex_Parallel_process_decision()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         transition = pd['p0-g0']
         transition.sync = True
         pd.bool = True
@@ -967,7 +967,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_decision(self):
         pd = self._process_start_complex_Parallel_process_decision()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 1)
         self.assertIn('f', start_wis)
@@ -1038,7 +1038,7 @@ class TestsWorkItems(FunctionalTests):
                                   -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -1079,7 +1079,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_start_complex_Parallel_workitem_decision_cycle(self):
         pd = self._process_start_complex_Parallel_process_decision_cycle()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 1)
         self.assertIn('f', start_wis)
@@ -1183,7 +1183,7 @@ class TestsWorkItems(FunctionalTests):
 
     def test_Transitions(self):
         pd = self._process_start_refresh_decision()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 2)
         self.assertIn('a', start_wis)
@@ -1350,7 +1350,7 @@ class TestGatewayChain(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -1380,7 +1380,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_end_event_a(self):
         pd = self._process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1389,7 +1389,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_end_event_d_b(self):
         pd = self._process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('d')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1401,7 +1401,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_end_event_b(self):
         pd = self._process()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('b')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1428,7 +1428,7 @@ class TestGatewayChain(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -1458,7 +1458,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_parallel_d_b_and_blocked(self):
         pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('d')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1472,7 +1472,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_parallel_a_b(self):
         pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1485,7 +1485,7 @@ class TestGatewayChain(FunctionalTests):
 
     def test_gateway_chain_parallel_b_a(self):
         pd = self._process_parallel_join()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('b')
         wi, proc = start_wi.consume()
         wi.start()
@@ -1526,7 +1526,7 @@ class EventsTests(FunctionalTests):
                 TransitionDefinition('s', 'a'),
         )
 
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('s')
         self.assertIs(start_wi, None)
         pd.set_start_condition(return_true)
@@ -1549,7 +1549,7 @@ class EventsTests(FunctionalTests):
         We need to start all coroutines at application startup.
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         ced = ConditionalEventDefinition(condition=return_false)
         from dace.processinstance import event
         self.assertEqual(len(event.callbacks), 0)
@@ -1564,7 +1564,7 @@ class EventsTests(FunctionalTests):
         )
         pd._normalize_definition()
         self.config.scan(example)
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         # commit the application
         transaction.commit()
         start_wi = pd.start_process('a')
@@ -1576,6 +1576,8 @@ class EventsTests(FunctionalTests):
         self.assertEqual(len(workitems), 1)
         self.assertEqual(sorted(workitems.keys()), ['sample.cie'])
         workitems['sample.cie'].node.eventKind.definition.condition = return_true
+        workitems['sample.cie'].node.definition._p_changed = 1
+        transaction.commit()
         import time
         time.sleep(6)
         transaction.begin()
@@ -1608,7 +1610,7 @@ class EventsTests(FunctionalTests):
         workitem B is created, else the work item is blocked.
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
@@ -1623,7 +1625,7 @@ class EventsTests(FunctionalTests):
                 TransitionDefinition('b', 'e'),
         )
         self.config.scan(example)
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         # commit the application
         transaction.commit()
         start_wi = pd.start_process('a')

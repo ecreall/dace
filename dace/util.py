@@ -173,8 +173,8 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
             if action.validate(context, request):
                 allactions.append(action)
 
-    registry = get_current_registry()
-    pd = registry.getUtility(IProcessDefinition, process_id)
+    def_container = find_service('process_definition_container')
+    pd = def_container.get_definition(process_id)
     # Add start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
         s_wi = pd.start_process(node_id)
@@ -196,6 +196,7 @@ def queryBusinessAction(process_id, node_id, behavior_id, request, context):
 def getAllBusinessAction(context, request=None, isautomatic=False):
     if request is None:
         request = get_current_request()
+
     allactions = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
@@ -213,8 +214,9 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
             if action.validate(context, request):
                 allactions.append(action)
 
-    registry = get_current_registry()
-    allprocess = registry.getUtilitiesFor(IProcessDefinition)
+    def_container = find_service('process_definition_container')
+    allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+    
     # Add start workitem
     for name, pd in allprocess:
         if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
@@ -249,7 +251,8 @@ def getWorkItem(process_id, node_id, request, context,
     process_inst_uid_index = dace_catalog['process_inst_uid']
     object_provides_index = dace_catalog['object_provides']
 
-    pd = get_current_registry().getUtility(IProcessDefinition, process_id)
+    def_container = find_service('process_definition_container')
+    pd = def_container.get_definition(process_id)
     # Retrieve the same workitem we used to show the link
     p_uid = get_current_process_uid(request)
     process_ids = ()

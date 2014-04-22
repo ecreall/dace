@@ -42,7 +42,7 @@ class TestsSignal(FunctionalTests):
                               ------  -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
@@ -71,7 +71,7 @@ class TestsSignal(FunctionalTests):
 
     def xtest_signal_event_start_sc(self):
         pd = self._process_definition()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('sc')
         sc_wi, proc = start_wi.start()
         sc_wi.start()
@@ -80,7 +80,7 @@ class TestsSignal(FunctionalTests):
 
     def test_signal_event(self):
         pd = self._process_definition()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         # commit the application
         transaction.commit()
@@ -116,7 +116,7 @@ class TestsSignal(FunctionalTests):
         """
 
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
@@ -149,7 +149,7 @@ class TestsSignal(FunctionalTests):
         from zope.processlifetime import DatabaseOpenedWithRoot
         from dace.processinstance.event import callbacks as event_callbacks
         pd = self._process_definition_with_activity_after_start_event()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('b')
 
         # commit the application

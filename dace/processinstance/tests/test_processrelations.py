@@ -50,7 +50,7 @@ class TestsProcessRelations(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
                 x = ActivityDefinition(contexts=[ActionX]),
@@ -80,7 +80,7 @@ class TestsProcessRelations(FunctionalTests):
 
     def test_add_involved(self):
         pd = self._process_valid_actions()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()
@@ -147,7 +147,7 @@ class TestsProcessRelations(FunctionalTests):
 
     def test_add_created(self):
         pd = self._process_valid_actions()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()
@@ -226,7 +226,7 @@ class TestsProcessRelations(FunctionalTests):
 
     def test_add_involved_collection(self):
         pd = self._process_valid_actions()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()
@@ -280,7 +280,7 @@ class TestsProcessRelations(FunctionalTests):
 
     def test_add_created_collection(self):
         pd = self._process_valid_actions()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()
@@ -339,7 +339,7 @@ class TestsProcessRelations(FunctionalTests):
 
     def test_add_data(self):
         pd = self._process_valid_actions()
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()

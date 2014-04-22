@@ -85,9 +85,8 @@ class StartWorkItem(UserDecision):
 
     def consume(self):
         registry = get_current_registry()
-        pd = registry.getUtility(
-                IProcessDefinition,
-                self.process_id)
+        def_container = find_service('process_definition_container')
+        pd = def_container.get_definition(self.process_id)
         proc = pd()
         runtime = find_service('runtime')
         proc.__name__ = proc.id

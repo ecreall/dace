@@ -65,7 +65,7 @@ class TestsBusinessAction(FunctionalTests):
                               -----
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         y = ActivityDefinition()
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -97,7 +97,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionY]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -183,7 +183,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YParallel(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYP]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -232,7 +232,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YParallelI(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYPI]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -278,7 +278,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialI(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYI]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -326,7 +326,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialD(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYD] # multi instance (pour chaque instance nous avons un objet)
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
         objectb= ObjectA()
@@ -382,7 +382,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialDp(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYDp] # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal) 
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
         objectc= ObjectA()
@@ -476,20 +476,20 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YLC_TestAfter(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYLC]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
 
     def test_actions_YLC_TestBefore(self):
         y, pd = self._process_valid_actions()
         ActionYLC.testBefore = True
         y.contexts = [ActionYLC]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
      
     def test_actions_YLD(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYLD]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
         objectb= ObjectA()
@@ -535,7 +535,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_steps(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionYSteps]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -602,7 +602,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_validator(self):
         y, pd = self._process_valid_actions()
         y.contexts = [ActionY]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
+        self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
 
         objecta= ObjectA()
@@ -661,7 +661,7 @@ class TestsSubProcess(FunctionalTests):
         """
         sp = ProcessDefinition(**{'id':u'sub_process'})
         sp.isSubProcess = True
-        self.app['sp'] = sp
+        self.app['sub_process'] = sp
         sp.defineNodes(
                 ss = StartEventDefinition(),
                 sa = ActivityDefinition(),
@@ -679,7 +679,7 @@ class TestsSubProcess(FunctionalTests):
                 TransitionDefinition('sc', 'se'),
         )
         pd = ProcessDefinition(**{'id':u'sample'})
-        self.app['pd'] = pd
+        self.app['sample'] = pd
         spaction = SubProcessDefinition(pd=sp)
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -712,8 +712,8 @@ class TestsSubProcess(FunctionalTests):
     def test_subprocess_elementary(self):
         spaction, sp, pd = self._process_valid_subprocess()
         spaction.contexts=[ActionSP]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
-        self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
+        self.def_container.add_definition(pd)
+        self.def_container.add_definition(sp)
         start_wi = pd.start_process('sp')
         actions_sp = start_wi.actions
         self.assertEqual(len(actions_sp), 1)
@@ -764,8 +764,8 @@ class TestsSubProcess(FunctionalTests):
     def test_subprocess_multiinstance(self):
         spaction, sp, pd = self._process_valid_subprocess()
         spaction.contexts=[ActionSPMI]
-        self.registry.registerUtility(pd, provided=IProcessDefinition, name=pd.id)
-        self.registry.registerUtility(sp, provided=IProcessDefinition, name=sp.id)
+        self.def_container.add_definition(pd)
+        self.def_container.add_definition(sp)
         objecta= ObjectA()
         objecta.is_executed = False
         objectb= ObjectA()
