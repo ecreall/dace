@@ -85,10 +85,6 @@ def add_catalogs(event):
     catalogs = find_service(root, 'catalogs')
     catalogs.add_catalog('dace')
     root['runtime'] = Runtime()
-    def_container = root['process_definition_container']
-    for definition in def_container.definitions:
-        definition._init_definition()
-
 
 
 @subscriber(IApplicationCreated)

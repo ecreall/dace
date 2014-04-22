@@ -22,8 +22,3 @@ def add_process_def(event):
     definition._init_definition()
     registry.registerUtility(definition, provided=IProcessDefinition, name=definition.id)
 
-
-def add_definition(definition):
-    DEFINITIONS[definition.id] = definition
-
-
