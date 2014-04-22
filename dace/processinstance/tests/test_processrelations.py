@@ -49,7 +49,7 @@ class TestsProcessRelations(FunctionalTests):
                           \-->| Z |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),

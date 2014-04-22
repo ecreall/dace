@@ -47,7 +47,7 @@ class TestsWorkItems(FunctionalTests):
                           \-->| D |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -93,7 +93,7 @@ class TestsWorkItems(FunctionalTests):
                               | D |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 a = ActivityDefinition(),
@@ -195,7 +195,7 @@ class TestsWorkItems(FunctionalTests):
                           \-->| D |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -245,7 +245,7 @@ class TestsWorkItems(FunctionalTests):
         -----   -----   -------- \-->| C |
                                      -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -341,7 +341,7 @@ class TestsWorkItems(FunctionalTests):
                           \-->| D |---------------------/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -433,7 +433,7 @@ class TestsWorkItems(FunctionalTests):
                           \-->| D |---------------------/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -552,7 +552,7 @@ class TestsWorkItems(FunctionalTests):
                           \-->| D |---------------------/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -734,7 +734,7 @@ class TestsWorkItems(FunctionalTests):
         -----   -----   -------- \-->| C |
                                      -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -790,7 +790,7 @@ class TestsWorkItems(FunctionalTests):
             -----                                   ----- /
 
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -886,7 +886,7 @@ class TestsWorkItems(FunctionalTests):
                               \-->| D |---------------------/
                                   -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -1037,7 +1037,7 @@ class TestsWorkItems(FunctionalTests):
                               \-->| D |----------------------/
                                   -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -1349,7 +1349,7 @@ class TestGatewayChain(FunctionalTests):
                           \-->| D |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -1427,7 +1427,7 @@ class TestGatewayChain(FunctionalTests):
                           \-->| D |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -1548,7 +1548,7 @@ class EventsTests(FunctionalTests):
         It is unblocked when the condition is True.
         We need to start all coroutines at application startup.
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         ced = ConditionalEventDefinition(condition=return_false)
         from dace.processinstance import event
@@ -1607,7 +1607,7 @@ class EventsTests(FunctionalTests):
         If start_date is equal to now, the work item is consumed and
         workitem B is created, else the work item is blocked.
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),

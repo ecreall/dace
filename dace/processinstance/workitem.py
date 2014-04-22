@@ -90,6 +90,7 @@ class StartWorkItem(UserDecision):
                 self.process_id)
         proc = pd()
         runtime = find_service('runtime')
+        proc.__name__ = proc.id
         runtime.addtoproperty('processes', proc)
         proc.defineGraph(pd)
         proc.start()
@@ -231,7 +232,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return not self.concerned_nodes()
 
     def consume(self):
-        replay_transaction = self.process.global_transaction.start_subtransaction('Replay', initiator=self)
+        replay_transaction = self.process.global_transaction.start_subtransaction('Replay', path= self.path, initiator=self)
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
         wi = self.process[self.node.__name__]._get_workitem()

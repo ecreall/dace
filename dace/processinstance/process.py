@@ -85,6 +85,7 @@ class ExecutionContext(Object):
     def add_involved_entity(self, name, value):
         self.addtoproperty('involveds', value)
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
         else:
             opposit_name = name+'_involver'
@@ -102,6 +103,7 @@ class ExecutionContext(Object):
             self.delproperty('createds', value)
 
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             self.delproperty(name, value)
 
     def add_created_entity(self, name, value):
@@ -120,6 +122,7 @@ class ExecutionContext(Object):
 
     def get_involved_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             result = self.getproperty(name)
             if result and index < len(result):
                 return result[index]
@@ -160,6 +163,7 @@ class ExecutionContext(Object):
             return list(self.involveds)
 
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             result = self.getproperty(name)
             return result
 
@@ -199,6 +203,7 @@ class ExecutionContext(Object):
 
     def get_created_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             result = [e for e in self.getproperty(name) if e in self.createds]
             if result:
                 return result[index]
@@ -239,6 +244,7 @@ class ExecutionContext(Object):
             return list(self.createds)
 
         if name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
             result = [e for e in self.getproperty(name) if e in self.createds]
             return result
 
@@ -295,6 +301,7 @@ class ExecutionContext(Object):
         for value in values:
             self.addtoproperty('involveds', value)
             if name in self.dynamic_properties_def:
+                self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
             else:
                 opposit_name = name+'_involver'
@@ -664,7 +671,9 @@ class Process(Entity):
         if self._started:
             raise TypeError("Already started")
 
-        self.setproperty('execution_context', ExecutionContext())
+        execution_context = ExecutionContext()
+        execution_context.__name__ = 'execution_context'
+        self.setproperty('execution_context', execution_context)
         self._started = True
         registry = get_current_registry()
         registry.notify(ProcessStarted(self))

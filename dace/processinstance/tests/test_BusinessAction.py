@@ -64,7 +64,7 @@ class TestsBusinessAction(FunctionalTests):
                           \-->| Z |--/
                               -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         y = ActivityDefinition()
         pd.defineNodes(
@@ -659,7 +659,7 @@ class TestsSubProcess(FunctionalTests):
         -----   -----   -------- \-->| SC|--/
                                      -----
         """
-        sp = ProcessDefinition(u'sub_process')
+        sp = ProcessDefinition(**{'id':u'sub_process'})
         sp.isSubProcess = True
         self.app['sp'] = sp
         sp.defineNodes(
@@ -678,7 +678,7 @@ class TestsSubProcess(FunctionalTests):
                 TransitionDefinition('sb', 'se'),
                 TransitionDefinition('sc', 'se'),
         )
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         spaction = SubProcessDefinition(pd=sp)
         pd.defineNodes(

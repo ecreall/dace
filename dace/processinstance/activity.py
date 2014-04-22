@@ -14,7 +14,8 @@ from .core import (
         BehavioralFlowNode,
         Behavior,
         Validator,
-        ValidationError)
+        ValidationError,
+        DEFAULTMAPPING_ACTIONS_VIEWS)
 from .lock import LockableElement
 from dace.util import getBusinessAction, queryWorkItem
 from dace.interfaces import (
@@ -48,6 +49,7 @@ class SubProcess(Activity):
                 self.definition.sub_process_definition.id)
 
         proc = pd()
+        proc.__name__ = proc.id
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
         proc.defineGraph(pd)
@@ -88,7 +90,6 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     node_id = NotImplemented
     #execution
     context = NotImplemented
-    view_action =  NotImplemented
     report =  NotImplemented
     study =  NotImplemented
     actionType = NotImplemented #!!
@@ -136,7 +137,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     @property
     def view_name(self):
-        return self.view_action.__view_name__
+        return self.action_view.__view_name__
 
     @property
     def request(self):
@@ -154,6 +155,13 @@ class BusinessAction(LockableElement, Behavior,Persistent):
             return True
 
         return False
+
+    @property
+    def action_view(self):
+        if self.__class__ in DEFAULTMAPPING_ACTIONS_VIEWS:
+            return DEFAULTMAPPING_ACTIONS_VIEWS[self.__class__]
+
+        return None
 
     def url(self, obj):
         actionuid = get_oid(self.workitem)
@@ -391,14 +399,21 @@ class ActionInstance(BusinessAction):
         cls.process_id = principalaction.process_id
         cls.node_id = principalaction.node_id
         cls.context = principalaction.context
-        cls.view_action =  principalaction.view_action
+        cls.title = principalaction.title
+        cls.actionType =  principalaction.actionType
         cls.report =  principalaction.report
         cls.study =  principalaction.study
-        cls.actionType = principalaction.actionType
         cls.relation_validation = principalaction.relation_validation
         cls.roles_validation =  principalaction.roles_validation
         cls.processsecurity_validation = principalaction.processsecurity_validation
         cls.state_validation =  principalaction.state_validation
+
+    @property
+    def action_view(self):
+        if self.principalaction.__class__ in DEFAULTMAPPING_ACTIONS_VIEWS:
+            return DEFAULTMAPPING_ACTIONS_VIEWS[self.principalaction.__class__]
+
+        return None
 
     def before_execution(self,context, request, **kw):
         self.lock(request)

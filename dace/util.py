@@ -155,7 +155,6 @@ def get_current_process_uid(request):
 #    set the cookie in the update() of a form only
 
 def getBusinessAction(process_id, node_id, behavior_id, request, context):
-    global_request = get_current_request() 
     allactions = []
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
@@ -171,17 +170,19 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     results = [w for w in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            if action.validate(context, global_request):
+            if action.validate(context, request):
                 allactions.append(action)
 
     registry = get_current_registry()
     pd = registry.getUtility(IProcessDefinition, process_id)
     # Add start workitem
     if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
-        wis = pd.start_process(node_id)
-        for action in wis.actions:
-            if action.validate(context, global_request) :
-                allactions.append(action)
+        s_wi = pd.start_process(node_id)
+        if s_wi is not None:
+            swisactions = s_wi.actions
+            for action in swisactions:
+                if action.validate(context, request) :
+                    allactions.append(action)
 
     if allactions:
         return allactions
@@ -192,8 +193,9 @@ def queryBusinessAction(process_id, node_id, behavior_id, request, context):
     return getBusinessAction(process_id, node_id, behavior_id,
                  request, context)
 
-def getAllBusinessAction(context):
-    global_request = get_current_request() 
+def getAllBusinessAction(context, request=None, isautomatic=False):
+    if request is None:
+        request = get_current_request()
     allactions = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
@@ -201,10 +203,14 @@ def getAllBusinessAction(context):
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.declared]))
 
+    if isautomatic:
+        isautomatic_index = dace_catalog['isautomatic']
+        query = query & isautomatic_index.eq(True)
+
     results = [a for a in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            if action.validate(context, global_request):
+            if action.validate(context, request):
                 allactions.append(action)
 
     registry = get_current_registry()
@@ -213,13 +219,15 @@ def getAllBusinessAction(context):
     for name, pd in allprocess:
         if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
             wis = pd.start_process()
-            for key in wis.keys():
-                swisactions = wis[key].actions
-                for action in swisactions:
-                    if action.validate(context, global_request) :
-                        allactions.append(action)
+            if wis:
+                for key in wis.keys():
+                    swisactions = wis[key].actions
+                    for action in swisactions:
+                        if ((isautomatic and action.isautomatic) or not isautomatic) and action.validate(context, request) :
+                            allactions.append(action)
 
     return allactions
+
 
 def getWorkItem(process_id, node_id, request, context,
                 behavior_validator=lambda p, c: True):

@@ -34,7 +34,7 @@ class Entity(Object):
                       'involvers': (SHARED_MULTIPLE, 'involveds', True)}
 
     def __init__(self, **kwargs):
-        Object.__init__(self)
+        Object.__init__(self,**kwargs)
         self.state = PersistentList()
         self.__property__ = None
 

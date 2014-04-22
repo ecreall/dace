@@ -1,0 +1,20 @@
+<div metal:use-macro="main_template">
+   <div metal:fill-slot="main">
+    <div class="panel panel-primary" >
+        <div class="panel-heading">Runtime</div>
+         <div class="panel-body">
+            <div  tal:omit-tag=""  tal:repeat="p processes">
+              <h3>
+                <a tal:attributes="href p['url']">
+                ${p['process'].__name__.capitalize()}</a> <span class="label label-${(p['process']._finished and 'danger') or 'success'}">${(p['process']._finished and "Termine") or "En cours"}</span>
+                 <p class="text-muted" tal:condition="not p['process']._finished">
+                   <small tal:repeat="n set([w.node for w in p['process'].getWorkItems().values() if w.validate()])">
+                     ${n.__name__.capitalize()}
+                   </small>
+                 </p>
+               </h3>
+            </div>
+         </div>
+     </div>
+   </div>
+</div>

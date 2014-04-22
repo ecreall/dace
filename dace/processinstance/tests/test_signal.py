@@ -41,7 +41,7 @@ class TestsSignal(FunctionalTests):
         -----   --------- \-->| Sc |->| D |---/ ---------   -----
                               ------  -----
         """
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -115,7 +115,7 @@ class TestsSignal(FunctionalTests):
                                       ------  -----
         """
 
-        pd = ProcessDefinition(u'sample')
+        pd = ProcessDefinition(**{'id':u'sample'})
         self.app['pd'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),

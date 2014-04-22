@@ -30,10 +30,11 @@ class ProcessDefinition(Object):
     isVolatile = False
     isUnique = False
 
-    def __init__(self, id):
-        Object.__init__(self)
-        self.id = id
-        self.description = None
+    def __init__(self, **kwargs):
+        super(ProcessDefinition, self).__init__(**kwargs)
+        self.id = None
+        if 'id' in kwargs:
+            self.id = kwargs['id']
 
     def __call__(self, **kwargs):
         try:

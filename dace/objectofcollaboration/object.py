@@ -48,12 +48,13 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
             setattr(self, key, None)
             return
 
+        value_name= value.__name__
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
         elif hasattr(value,'__parent__') and value.__parent__ is not None :
-            value.__parent__.remove(value.__name__)
+            value.__parent__.remove(value_name)
 
-        self.add(value.__name__, value)
+        self.add(value_name, value)
         value.__property__ = propertyref
         setattr(self, key, value.__name__)
         if initiator and opposite is not None:
@@ -114,13 +115,13 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
 
         if isunique and value in myproperty['get'](self):
             return
-
+        value_name= value.__name__
         if getattr(value,'__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
         elif hasattr(value,'__parent__') and value.__parent__ is not None:
-            value.__parent__.remove(value.__name__)
+            value.__parent__.remove(value_name)
 
-        self.add(value.__name__, value)
+        self.add(value_name, value)
         value.__property__ = propertyref
         contents_keys.append(value.__name__)
         setattr(self, keys, contents_keys)
@@ -511,17 +512,16 @@ class Object(Folder):
             self._init__property(name, propertydef)
 
     def _init__property(self, name, propertydef):
-        op = __properties__[propertydef[0]]
-        opposite = propertydef[1]
-        isunique = propertydef[2]
-        self.__addproperty__(op(name,opposite, isunique))
+        if name not in self.__class__.properties:
+            op = __properties__[propertydef[0]]
+            opposite = propertydef[1]
+            isunique = propertydef[2]
+            self.__addproperty__(op(name,opposite, isunique))
 
     def __addproperty__(self, _property, default=None):
         propertyref = _property['data']['name']
-        if propertyref not in self.__class__.properties:
-            self.__class__.properties[propertyref] = _property
-            self.__class__.properties[propertyref]['init'](self)
-
+        self.__class__.properties[propertyref] = _property
+        self.__class__.properties[propertyref]['init'](self)
         if default is not None:
             _property['set'](self, default)
 

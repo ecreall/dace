@@ -332,6 +332,7 @@ class EventHandler(FlowNode):
             be.__name__ = bedef.__name__
             self.process.addtoproperty('nodes', node)
 
+DEFAULTMAPPING_ACTIONS_VIEWS = {}
 
 class ProcessStarted:
     implements(IProcessStarted)
