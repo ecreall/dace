@@ -29,7 +29,8 @@ class process_definition(object):
                 component._init_definition()
 
             try:
-                def_container = scanner.config.registry._zodb_databases[''].open().root()['app_root']['process_definition_container']
+                db = scanner.config.registry._zodb_databases['']
+                def_container = db.open().root()['app_root']['process_definition_container']
                 old_def = def_container.get_definition(component.id)
                 if old_def is not None:
                     def_container.delproperty('definitions', old_def)

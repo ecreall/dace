@@ -58,4 +58,3 @@ class ProcessDefinitionContainerView(object):
     def __call__(self):
        result = {'processes': self._processes()}
        return result
-

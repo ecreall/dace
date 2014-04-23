@@ -290,6 +290,9 @@ class Behavior(object):
     title = NotImplemented
     description = NotImplemented
 
+    def __init__(self, **kwargs):
+        super(Behavior, self).__init__(**kwargs)
+
     @classmethod
     def get_instance(cls, context, request, **kw):
         return cls() #raise ValidationError if no action

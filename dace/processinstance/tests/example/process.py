@@ -255,6 +255,7 @@ class ActionX(ElementaryAction):
     groups = ['groupX']
     process_id = 'sample'
     node_id = 'x'
+    title = 'action x'
     context = IObjectA
     #validation
     relation_validation = relation_validationA
@@ -273,6 +274,7 @@ class ActionY(LimitedCardinality):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action y'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -287,6 +289,7 @@ class ActionYP(LimitedCardinality):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action yp'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -300,6 +303,7 @@ class ActionYPI(InfiniteCardinality):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action ypi'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -313,6 +317,7 @@ class ActionYI(InfiniteCardinality):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action yi'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -333,6 +338,7 @@ class ActionYD(DataInput):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action yd'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -354,6 +360,7 @@ class ActionYDp(DataInput):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action ydp'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -376,6 +383,7 @@ class ActionYLD(LoopActionDataInput):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action ylp'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -403,6 +411,7 @@ class ActionYLC(LoopActionCardinality):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action ylc'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -419,6 +428,7 @@ class ActionZ(ElementaryAction):
     process_id = 'sample'
     node_id = 'z'
     context = IObjectA
+    title = 'action z'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -431,6 +441,7 @@ class ActionYSteps(ElementaryAction):
     process_id = 'sample'
     node_id = 'y'
     context = IObjectA
+    title = 'action ystep'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -455,6 +466,7 @@ class ActionSP(ElementaryAction):
     process_id = 'sample'
     node_id = 'sp'
     context = IObjectA
+    title = 'action sp'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -470,6 +482,7 @@ class ActionSPMI(DataInput):
     process_id = 'sample'
     node_id = 'sp'
     context = IObjectA
+    title = 'action spmi'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA

@@ -1,0 +1,14 @@
+<div metal:use-macro="main_template">
+   <div metal:fill-slot="main">
+    <div class="panel panel-primary" >
+        <div class="panel-heading">Definitions</div>
+         <div class="panel-body">
+            <div  tal:omit-tag=""  tal:repeat="p processes">
+              <h3>
+                <a tal:attributes="href p['url']">${p['process'].__name__.capitalize()}</a>
+               </h3>
+            </div>
+         </div>
+     </div>
+   </div>
+</div>

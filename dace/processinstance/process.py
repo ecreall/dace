@@ -90,7 +90,9 @@ class ExecutionContext(Object):
         else:
             opposit_name = name+'_involver'
             self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
-            value.dynamic_properties_def[opposit_name] = (SHARED_UNIQUE, name, True)
+            if not (opposit_name in value.dynamic_properties_def):
+                value.dynamic_properties_def[opposit_name] = (SHARED_MULTIPLE, name, True)
+
             self._init__property(name, self.dynamic_properties_def[name])
             value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
             self.addtoproperty(name, value)
@@ -306,7 +308,9 @@ class ExecutionContext(Object):
             else:
                 opposit_name = name+'_involver'
                 self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
-                value.dynamic_properties_def[opposit_name] = (SHARED_UNIQUE, name, True)
+                if not (opposit_name in value.dynamic_properties_def):
+                    value.dynamic_properties_def[opposit_name] = (SHARED_MULTIPLE, name, True)
+
                 self._init__property(name, self.dynamic_properties_def[name])
                 value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
                 self.addtoproperty(name, value)
@@ -536,7 +540,7 @@ class Process(Entity):
         self.global_transaction = Transaction()
         self.startTransition = startTransition
         if not self.title:
-            self.title = definition.id
+            self.title = definition.__name__
 
         # do a commit so all events have a _p_oid
         # mail delivery doesn't support savepoint

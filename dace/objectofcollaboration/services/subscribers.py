@@ -20,5 +20,3 @@ def add_process_definition_container(event):
 def add_process_def(event):
     definition = event.object
     definition._init_definition()
-    registry.registerUtility(definition, provided=IProcessDefinition, name=definition.id)
-

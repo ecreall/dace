@@ -18,9 +18,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
     #relation s_u opposite s_m avec les transitions
     #relation s_u opposite c_m avec les Processdef
     factory = Attribute("factory")
-    incoming = ()
-    outgoing = ()
-    performer = ''
+    performer = '' #??
 
     def create(self):
         return self.factory(self)

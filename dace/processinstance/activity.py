@@ -23,7 +23,7 @@ from dace.interfaces import (
     IActivity,
     IBusinessAction)
 
-from .workitem import UserDecision
+from .workitem import UserDecision, StartWorkItem
 
 
 ITEM_INDEX = 'item'
@@ -79,7 +79,7 @@ def getBusinessActionValidator(action_cls):
     return BusinessActionValidator
 
 
-class BusinessAction(LockableElement, Behavior,Persistent):
+class BusinessAction(Behavior, LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
 
     #identification et classification
@@ -98,8 +98,8 @@ class BusinessAction(LockableElement, Behavior,Persistent):
     state_validation = NotImplemented
 
 
-    def __init__(self, workitem):
-        super(BusinessAction, self).__init__()
+    def __init__(self, workitem, **kwargs):
+        super(BusinessAction, self).__init__(**kwargs)
         self.workitem = workitem
         self.isexecuted = False
         self.behavior_id = self.node_id
@@ -135,7 +135,7 @@ class BusinessAction(LockableElement, Behavior,Persistent):
 
     @property
     def view_name(self):
-        return self.action_view.__view_name__
+        return self.action_view.name
 
     @property
     def request(self):
@@ -155,6 +155,18 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return False
 
     @property
+    def isstart(self):
+        return isinstance(self.workitem, StartWorkItem)
+
+
+    @property
+    def informations(self):
+        if self.process is not None:
+            return 'Description: '+self.description +'\n Process: '+self.process.title
+        else:
+            return 'Description: '+self.description +'\n Process: '+self.node.process.id
+
+    @property
     def action_view(self):
         if self.__class__ in DEFAULTMAPPING_ACTIONS_VIEWS:
             return DEFAULTMAPPING_ACTIONS_VIEWS[self.__class__]
@@ -162,12 +174,14 @@ class BusinessAction(LockableElement, Behavior,Persistent):
         return None
 
     def url(self, obj):
-        actionuid = get_oid(self.workitem)
-        if self.process is None:
-            # TODO url
-            return get_current_request().mgmt_path(obj, self.view_name,  query={'action_uid':actionuid})
+        query = {}
+        try:
+            actionuid = get_oid(self)
+            query={'action_uid':actionuid}
+        except AttributeError:
+            pass
 
-        return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query={'action_uid':actionuid})
+        return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query=query)
 
     def content(self, obj):
         content = u''
@@ -389,16 +403,20 @@ class ActionInstance(BusinessAction):
         id = item
         if not isinstance(item, int):
             id  = get_oid(item)
+            self.title = self.title+' ('+item.title+')'
 
         self.behavior_id = self.principalaction.node_id+'_'+str(id)
+        
 
     @staticmethod
     def _init_attributes_(cls, principalaction):
         cls.process_id = principalaction.process_id
         cls.node_id = principalaction.node_id
         cls.context = principalaction.context
+        cls.groups = principalaction.groups
         cls.title = principalaction.title
         cls.actionType =  principalaction.actionType
+        cls.description = principalaction.description
         cls.report =  principalaction.report
         cls.study =  principalaction.study
         cls.relation_validation = principalaction.relation_validation
@@ -412,6 +430,17 @@ class ActionInstance(BusinessAction):
             return DEFAULTMAPPING_ACTIONS_VIEWS[self.principalaction.__class__]
 
         return None
+
+    @property
+    def informations(self):
+        id = str(self.item)
+        if not isinstance(self.item, int):
+            id  = self.item.title
+
+        if self.process is not None:
+            return 'Description: '+self.description +'\n Process: '+self.process.title+'\n Instance: '+id
+        else:
+            return 'Description: '+self.description +'\n Process: '+self.node.process.id+'\n Instance: '+id
 
     def before_execution(self,context, request, **kw):
         self.lock(request)
