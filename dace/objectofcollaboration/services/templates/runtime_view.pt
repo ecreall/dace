@@ -1,10 +1,10 @@
 <div metal:use-macro="main_template">
    <div metal:fill-slot="main">
-    <div class="panel panel-primary" >
+    <div class="panel panel-default" >
         <div class="panel-heading">Runtime</div>
          <div class="panel-body">
             <div  tal:omit-tag=""  tal:repeat="p processes">
-              <h3>
+              <h4>
                 <a tal:attributes="href p['url']">
                 ${p['process'].__name__.capitalize()}</a> <span class="label label-${(p['process']._finished and 'danger') or 'success'}">${(p['process']._finished and "Termine") or "En cours"}</span>
                  <p class="text-muted" tal:condition="not p['process']._finished">
@@ -12,7 +12,7 @@
                      ${n.__name__.capitalize()}
                    </small>
                  </p>
-               </h3>
+               </h4>
             </div>
          </div>
      </div>

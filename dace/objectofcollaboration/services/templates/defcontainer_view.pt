@@ -4,9 +4,9 @@
         <div class="panel-heading">Definitions</div>
          <div class="panel-body">
             <div  tal:omit-tag=""  tal:repeat="p processes">
-              <h3>
+              <h4>
                 <a tal:attributes="href p['url']">${p['process'].__name__.capitalize()}</a>
-               </h3>
+               </h4>
             </div>
          </div>
      </div>
