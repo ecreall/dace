@@ -173,6 +173,10 @@ class BehavioralFlowNode(MakerFlowNode):
     def __init__(self, definition):
         super(BehavioralFlowNode, self).__init__(definition)
 
+    @property
+    def description(self):
+        return self.__name__
+
     def find_executable_paths(self, source_path, source):
         decision_path = source_path.clone()
         source_transaction = source_path.transaction.__parent__

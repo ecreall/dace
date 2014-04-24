@@ -1,13 +1,10 @@
 # -*- coding: utf-8 -*-
 from pyramid.events import subscriber
-from pyramid.threadlocal import get_current_registry, get_current_request
 
 from substanced.event import RootAdded
 
-from dace.interfaces import IProcessDefinition
-from dace.util import find_service
 from .interfaces import IProcessDefinitionAdded
-from .processdef_container import create_process_definition_container, DEFINITIONS
+from .processdef_container import create_process_definition_container
 
 
 @subscriber(RootAdded)

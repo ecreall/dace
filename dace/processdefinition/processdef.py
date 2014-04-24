@@ -206,24 +206,28 @@ class ProcessDefinition(Object):
         return start_workitems.get(node_name, None)
 
     @property
+    def started_processes(self):
+        dace_catalog = find_catalog('dace')
+        system_catalog = find_catalog('system')
+        object_provides_index = dace_catalog['object_provides']
+        processid_index = system_catalog['name']
+        # TODO: process_id should be indexed for IProcess
+        query = object_provides_index.any((IProcess.__identifier__,)) & processid_index.eq(self.id)
+        results = query.execute().all()
+        processes = [p for p in results]
+        return processes        
+
+    @property
     def isInstantiated(self):
-        site_id = getSite().__name__
-        created = getattr(self, '_isIntanciated_%s' % site_id, self)
-        if created is not self:
+        created = getattr(self, '_isIntanciated_', None)
+        if created is not None:
             return created
 
-        dace_catalog = find_catalog('dace')
-        object_provides_index = dace_catalog['object_provides']
-        # TODO: process_id should be indexed for IProcess
-        query = object_provides_index.any((IProcess.__identifier__,))
-        results = query.execute().all()
         created = False
-        for p in results:
-            if p.id == self.id:
-                created = True
-                break
+        if self.started_processes:
+            created = True
 
-        setattr(self, '_isIntanciated_%s' % site_id, created)
+        setattr(self, '_isIntanciated_', created)
         return created
 
 # TODO pyramid don't support subscriber with two args

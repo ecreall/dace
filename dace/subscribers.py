@@ -84,7 +84,7 @@ def add_catalogs(event):
     root = event.object
     catalogs = find_service(root, 'catalogs')
     catalogs.add_catalog('dace')
-    root['runtime'] = Runtime()
+    root['runtime'] = Runtime(title='Runtime')
 
 
 @subscriber(IApplicationCreated)
@@ -96,6 +96,8 @@ def application_created(event):
 #    app = db.open().root().get('app_root')
     # Create app_root if it doesn't exist yet.
     request = DummyRequest()
+    from dace.db import root_factory
+    event.app.root_factory = root_factory
     event.app.root_factory(request)
     # there is a commit done in root_factory if app_root was created
     registry.notify(DatabaseOpenedWithRoot(db))

@@ -36,6 +36,15 @@ class Activity(BehavioralFlowNode, EventHandler):
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
 
+    @property
+    def description(self):
+        description = ''
+        behaviors = self.definition.contexts
+        for b in behaviors:
+            description = description+'\n'+b.description
+
+        return description
+
 class SubProcess(Activity):
 
     def __init__(self, definition):
@@ -351,7 +360,7 @@ class LimitedCardinality(MultiInstanceAction):
         self.isexecuted = True
 
 
-class InfiniteCardinality(BusinessAction):
+class InfiniteCardinality(MultiInstanceAction):
 
     loopCardinality = -1
 

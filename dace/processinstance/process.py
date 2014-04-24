@@ -678,6 +678,7 @@ class Process(Entity):
         execution_context.__name__ = 'execution_context'
         self.setproperty('execution_context', execution_context)
         self._started = True
+        setattr(self.definition, '_isIntanciated_', True)
         registry = get_current_registry()
         registry.notify(ProcessStarted(self))
 

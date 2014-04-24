@@ -5,7 +5,7 @@ from zope.interface import Interface, Attribute
 #from dolmen.app.content import IDescriptiveSchema
 #from dolmen.authentication import (
 #    IPrincipal, IPasswordProtected, IPrincipalFolder)
-from substanced.interfaces import IPrincipal, IFolder
+from substanced.interfaces import IPrincipal, IFolder, IRoot
 #from dolmen.file import ImageField 
 #from z3c.schema.email import RFC822MailAddress
 #from zope.i18nmessageid import MessageFactory
@@ -314,3 +314,7 @@ class IProcessFinished(Interface):
 
 class IBusinessAction(Interface):
     pass
+
+class IApplication(IEntity, IRoot):
+    pass
+
