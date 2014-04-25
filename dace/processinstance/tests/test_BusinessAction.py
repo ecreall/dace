@@ -120,7 +120,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
@@ -172,7 +172,7 @@ class TestsBusinessAction(FunctionalTests):
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 1)
         self.assertIn('sample.x', workitems.keys())
-        workitems['sample.x'].start()
+        workitems['sample.x'].start_test_empty()
         actions_x[0].before_execution(objecta, self.request)
         actions_x[0].execute(objecta, self.request, None, **{})
 
@@ -206,7 +206,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
@@ -255,7 +255,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
@@ -301,7 +301,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
@@ -364,7 +364,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIs(action_a.workitem, action_b.workitem)
 
         wi, proc = action_a.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_a.execute(objectc, self.request, None, **{})
         self.assertEqual(objecta.is_executed, True)
         self.assertEqual(objectb.is_executed, False)
@@ -461,7 +461,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         self.request.bool = True
         self.request.ylc = 0
         action_y.execute(objecta, self.request, None, **{})
@@ -520,7 +520,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         self.request.bool = True
         action_y.execute(objectc, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
@@ -559,7 +559,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step1'}) #execute step1
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
@@ -612,7 +612,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
-        wi.start()
+        wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         validator_y = ActionY.get_validator()
         self.assertEqual(validator_y.validate(objecta, self.request), True)
@@ -738,7 +738,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sa', workitems_keys)
 
-        wi_sa.consume().start()
+        wi_sa.consume().start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
@@ -749,14 +749,14 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sc', workitems_keys)
 
         wi_sb = workitems['sub_process.sb'].consume()
-        wi_sb.start()
+        wi_sb.start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 1)
         workitems_keys = workitems.keys()
         self.assertIn('sample.y', workitems_keys)
 
         wi_y = workitems['sample.y'].consume()
-        wi_y.start()
+        wi_y.start_test_activity()
         wi_y.node.finish_behavior(wi_y)
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 0)
@@ -807,7 +807,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sa', workitems_keys)
 
-        wi_sa.consume().start()
+        wi_sa.consume().start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
@@ -818,7 +818,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sc', workitems_keys)
 
         wi_sb = workitems['sub_process.sb'].consume()
-        wi_sb.start()
+        wi_sb.start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
         workitems_keys = workitems.keys()
@@ -826,7 +826,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sample.sp', workitems_keys)
 
         wi_y = workitems['sample.y'].consume()
-        wi_y.start()
+        wi_y.start_test_activity()
         wi_y.node.finish_behavior(wi_y)
         workitems = proc.getWorkItems()
         workitems_keys = workitems.keys()
@@ -856,7 +856,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
         self.assertIn('sub_process.sa', workitems_keys)
 
-        wi_sa.consume().start()
+        wi_sa.consume().start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 3)
         workitems_keys = workitems.keys()
@@ -866,6 +866,6 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sc', workitems_keys)
 
         wi_sb = workitems['sub_process.sb'].consume()
-        wi_sb.start()
+        wi_sb.start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 0)

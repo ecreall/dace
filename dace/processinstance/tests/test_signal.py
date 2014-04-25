@@ -73,8 +73,8 @@ class TestsSignal(FunctionalTests):
         pd = self._process_definition()
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('sc')
-        sc_wi, proc = start_wi.start()
-        sc_wi.start()
+        sc_wi, proc = start_wi.consume()
+        sc_wi.start_test_activity()
         self.assertEqual(len(proc.getWorkItems()), 2)
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
 
@@ -85,7 +85,7 @@ class TestsSignal(FunctionalTests):
         # commit the application
         transaction.commit()
         a_wi, proc = start_wi.consume()
-        a_wi.start()
+        a_wi.start_test_activity()
         transaction.commit()
 
         import time
@@ -96,7 +96,7 @@ class TestsSignal(FunctionalTests):
         d_wi = proc.getWorkItems()['sample.d']
         self.assertEqual(len(proc.getWorkItems()), 1)
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
-        d_wi.consume().start()
+        d_wi.consume().start_test_activity()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
     def _process_definition_with_activity_after_start_event(self):
@@ -155,7 +155,7 @@ class TestsSignal(FunctionalTests):
         # commit the application
         transaction.commit()
         b_wi, proc = start_wi.consume()
-        b_wi.start()
+        b_wi.start_test_activity()
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
         # simulate application shutdown
@@ -169,7 +169,7 @@ class TestsSignal(FunctionalTests):
         self.assertEqual(len(event_callbacks), 1)
 
         a_wi = proc.getWorkItems()['sample.a']
-        a_wi.consume().start()
+        a_wi.consume().start_test_activity()
         # we need to commit so the catching event Job 
         # see the modified process.
         transaction.commit()

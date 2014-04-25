@@ -213,7 +213,7 @@ class BehavioralFlowNode(MakerFlowNode):
         registry = get_current_registry()
         registry.notify(ActivityPrepared(self))
         factoryname = self.definition.id
-        workitem = createObject(factoryname, self)
+        workitem = WorkItem(self)
         workitem.id = 1
         workitem.__name__ = str(1)
         self.addtoproperty('workitems', workitem)

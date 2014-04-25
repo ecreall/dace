@@ -212,6 +212,16 @@ class WorkItem(BaseWorkItem):
         global_request = get_current_request() 
         return True and not self.is_locked(global_request)
 
+    def start_test_event(self): #for tests
+        self.node.execute()
+        self.node.finish_behavior(self)
+
+    def start_test_activity(self): #for tests
+        self.node.finish_behavior(self)
+
+    def start_test_empty(self): #for tests
+        pass
+
     def __eq__(self, other):
         return isinstance(other, WorkItem) and self.node is other.node
 

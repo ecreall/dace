@@ -17,7 +17,8 @@ from pontus.schema import Schema
 from dace.objectofcollaboration.application import Application
 
 from pontus.core import VisualisableElement, VisualisableElementSchema
-
+from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput
+from dace.objectofcollaboration.tests.example.objects import IObjectA
 
 
 @content(
@@ -28,228 +29,9 @@ class TestApplication(Application):
 
     def __init__(self, **kwargs):
         super(TestApplication, self).__init__(**kwargs)
-        if self.title == '':
+        if not self.title:
             self.title = 'TestApplication'
 
-
-class WorkItemX(workitem.WorkItem):
-    def start(self):
-        pass
-
-@utility(name='sample.x')
-class WorkItemFactoryX(workitem.WorkItemFactory):
-    factory = WorkItemX
-
-class WorkItemY(workitem.WorkItem):
-    def start(self):
-        pass
-
-@utility(name='sample.y')
-class WorkItemFactoryY(workitem.WorkItemFactory):
-    factory = WorkItemY
-
-class WorkItemZ(workitem.WorkItem):
-    def start(self):
-        pass
-
-@utility(name='sample.z')
-class WorkItemFactoryZ(workitem.WorkItemFactory):
-    factory = WorkItemZ
-
-class WorkItemSP(workitem.WorkItem):
-    def start(self):
-        pass
-
-@utility(name='sample.sp')
-class WorkItemFactorySP(workitem.WorkItemFactory):
-    factory = WorkItemSP
-
-class WorkItemSS(workitem.WorkItem):
-    def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
-
-@utility(name='sub_process.ss')
-class WorkItemFactorySS(workitem.WorkItemFactory):
-    factory = WorkItemSS
-
-
-class WorkItemSA(workitem.WorkItem):
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name='sub_process.sa')
-class WorkItemFactorySA(workitem.WorkItemFactory):
-    factory = WorkItemSA
-
-
-class WorkItemSB(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sub_process.sb')
-class WorkItemFactorySB(workitem.WorkItemFactory):
-    factory = WorkItemSB
-
-
-class WorkItemSC(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sub_process.sc')
-class WorkItemFactorySC(workitem.WorkItemFactory):
-    factory = WorkItemSC
-
-class WorkItemSE(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sub_process.se')
-class WorkItemFactorySE(workitem.WorkItemFactory):
-    factory = WorkItemSE
-
-####################################################
-
-class WorkItemS(workitem.WorkItem):
-    def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
-
-@utility(name='sample.s')
-class WorkItemFactoryS(workitem.WorkItemFactory):
-    factory = WorkItemS
-
-
-class WorkItemA(workitem.WorkItem):
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name='sample.a')
-class WorkItemFactoryA(workitem.WorkItemFactory):
-    factory = WorkItemA
-
-
-class WorkItemD(workitem.WorkItem):
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.d')
-class WorkItemFactoryD(workitem.WorkItemFactory):
-    factory = WorkItemD
-
-
-class WorkItemB(workitem.WorkItem):
-
-    def start(self):
-        # should not set a variable directly bu should use a output parameter
-        self.node.process.execution_context.add_data('choice', "b")
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.b')
-class WorkItemFactoryB(workitem.WorkItemFactory):
-    factory = WorkItemB
-
-
-class WorkItemC(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.c')
-class WorkItemFactoryC(workitem.WorkItemFactory):
-    factory = WorkItemC
-
-class WorkItemEA(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.ea')
-class WorkItemFactoryEA(workitem.WorkItemFactory):
-    factory = WorkItemEA
-
-class WorkItemF(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.f')
-class WorkItemFactoryF(workitem.WorkItemFactory):
-    factory = WorkItemF
-
-class WorkItemAE(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.ae')
-class WorkItemFactoryAE(workitem.WorkItemFactory):
-    factory = WorkItemAE
-
-
-class WorkItemE(workitem.WorkItem):
-
-    def start(self):
-        pass
-
-@utility(name ='sample.e')
-class WorkItemFactoryE(workitem.WorkItemFactory):
-    factory = WorkItemE
-
-
-class WorkItemSc(workitem.WorkItem):
-
-    def start(self):
-        self.node.execute()
-        self.node.finish_behavior(self)
-
-@utility(name ='sample.sc')
-class WorkItemFactorySc(workitem.WorkItemFactory):
-    factory = WorkItemSc
-
-
-class WorkItemSt(workitem.WorkItem):
-
-    def start(self):
-        pass
-
-@utility(name ='sample.st')
-class WorkItemFactorySt(workitem.WorkItemFactory):
-    factory = WorkItemSt
-
-
-class WorkItemCIE(workitem.WorkItem):
-
-    def start(self):
-        pass
-
-@utility(name ='sample.cie')
-class WorkItemFactoryCIE(workitem.WorkItemFactory):
-    factory = WorkItemCIE
-
-
-class WorkItemTIE(workitem.WorkItem):
-
-    def start(self):
-        pass
-
-@utility(name ='sample.tie')
-class WorkItemFactoryTIE(workitem.WorkItemFactory):
-    factory = WorkItemTIE
-
-
-class WorkItemD(workitem.WorkItem):
-
-    def start(self):
-        self.node.finish_behavior(self)
-
-
-@utility(name ='sample.d')
-class WorkItemFactoryD(workitem.WorkItemFactory):
-    factory = WorkItemD
 
 def relation_validationA(process, context):
     return True
@@ -269,9 +51,6 @@ def condition(obj):
         return True
 
     return obj.bool
-
-from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput
-from dace.objectofcollaboration.tests.example.objects import IObjectA
 
 class ActionX(ElementaryAction):
     #identification et classification
