@@ -491,9 +491,13 @@ class Object(Folder):
     def __init__(self, **kwargs):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
-        self.title = None
+        self.title = ''
         if 'title' in kwargs:
             self.title = kwargs['title']
+
+        self.description = ''
+        if 'description' in kwargs:
+            self.description = kwargs['description']
 
         self.__property__ = None
         for _property in self.properties_def.keys():

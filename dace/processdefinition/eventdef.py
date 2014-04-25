@@ -9,13 +9,13 @@ class EventHandlerDefinition(FlowNodeDefinition):
     factory = EventHandler
     boundaryEvents = ()
 
-    def __init__(self):
-        super(FlowNodeDefinition, self).__init__()
+    def __init__(self, **kwargs):
+        super(EventHandlerDefinition, self).__init__(**kwargs)
 
 class EventDefinition(FlowNodeDefinition):
 
-    def __init__(self, eventKind=None):
-        super(EventDefinition, self).__init__()
+    def __init__(self, eventKind=None, **kwargs):
+        super(EventDefinition, self).__init__( **kwargs)
         self.eventKind = eventKind
         self.contexts = ()
 
@@ -69,8 +69,8 @@ class SignalEventDefinition(EventKindDefinition):
     factory = SignalEvent
     # Les parametres de l' __init__ sont calculables (i.e. des operations). Il faut donc les generer
     # voir avec les adaptateurs ....
-    def __init__(self, refSignal=None):
-        super(SignalEventDefinition, self).__init__()
+    def __init__(self, refSignal=None, **kwargs):
+        super(SignalEventDefinition, self).__init__( **kwargs)
         self.refSignal = refSignal
 
 
@@ -81,8 +81,8 @@ class TerminateEventDefinition(EventKindDefinition):
 class ConditionalEventDefinition(EventKindDefinition):
     factory = ConditionalEvent
     # the condition is a function with the process as parameter
-    def __init__(self, condition):
-        super(ConditionalEventDefinition, self).__init__()
+    def __init__(self, condition, **kwargs):
+        super(ConditionalEventDefinition, self).__init__(**kwargs)
         self.condition = condition
         self.initialize()
 
@@ -95,8 +95,9 @@ class TimerEventDefinition(EventKindDefinition):
 
     def __init__(self, time_date=None,
                  time_duration=None,
-                 time_cycle=None):
-        super(TimerEventDefinition, self).__init__()
+                 time_cycle=None,
+                 **kwargs):
+        super(TimerEventDefinition, self).__init__(**kwargs)
         self.time_date = time_date
         self.time_duration = time_duration
         self.time_cycle = time_cycle

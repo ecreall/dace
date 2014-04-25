@@ -540,8 +540,10 @@ class Process(Entity):
         self.global_transaction = Transaction()
         self.startTransition = startTransition
         if not self.title:
-            self.title = definition.__name__
+            self.title = definition.title
 
+        if not self.description:
+            self.description = definition.description
         # do a commit so all events have a _p_oid
         # mail delivery doesn't support savepoint
         transaction.commit()

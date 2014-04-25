@@ -11,12 +11,20 @@ from dace import log
 from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE
 from dace.processdefinition.core import Path
 
-class BPMNElement(object):
-    def __init__(self, definition):
+from dace.objectofcollaboration.entity import Entity
+
+class BPMNElement(Entity):
+    def __init__(self, definition, **kwargs):
+        super(BPMNElement,self).__init__(**kwargs)
         self.id = definition.id
+        if not self.title:
+            self.title = definition.title
+
+        if not self.description:
+            self.description = definition.description
 
 
-class FlowNode(BPMNElement, Object):
+class FlowNode(BPMNElement):
     implements(ILocation)
 
     properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
@@ -25,9 +33,9 @@ class FlowNode(BPMNElement, Object):
                       'process': (SHARED_UNIQUE, 'nodes', False),
                       }
 
-    def __init__(self, definition):
-        BPMNElement.__init__(self, definition)
-        Object.__init__(self)
+    def __init__(self, definition, **kwargs):
+        super(FlowNode,self).__init__( definition, **kwargs)
+
 
     @property
     def workitems(self):
@@ -82,8 +90,8 @@ class FlowNode(BPMNElement, Object):
 
 class MakerFlowNode(FlowNode):
 
-    def __init__(self, definition):
-        super(MakerFlowNode, self).__init__(definition)
+    def __init__(self, definition, **kwargs):
+        super(MakerFlowNode, self).__init__(definition, **kwargs)
 
     def decide(self, transaction):
         workitems = self._calculate_decisions(transaction)
@@ -170,12 +178,8 @@ class MakerFlowNode(FlowNode):
 
 class BehavioralFlowNode(MakerFlowNode):
 
-    def __init__(self, definition):
-        super(BehavioralFlowNode, self).__init__(definition)
-
-    @property
-    def description(self):
-        return self.__name__
+    def __init__(self, definition, **kwargs):
+        super(BehavioralFlowNode, self).__init__(definition, **kwargs)
 
     def find_executable_paths(self, source_path, source):
         decision_path = source_path.clone()
@@ -290,9 +294,9 @@ class Validator(object):
 
 class Behavior(object):
 
-    behavior_id = NotImplemented
     title = NotImplemented
     description = NotImplemented
+    behavior_id = NotImplemented
 
     def __init__(self, **kwargs):
         super(Behavior, self).__init__(**kwargs)
@@ -326,8 +330,8 @@ class Behavior(object):
 
 class EventHandler(FlowNode):
 
-    def __init__(self, definition):
-        super(EventHandler, self).__init__(definition)
+    def __init__(self, definition, **kwargs):
+        super(EventHandler, self).__init__(definition, **kwargs)
         self.boundaryEvents = []#PercistentList()
 
     def _init_boundaryEvents(self, definition):

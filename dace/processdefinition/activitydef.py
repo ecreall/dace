@@ -9,14 +9,19 @@ class ActivityDefinition(EventHandlerDefinition):
     factory = Activity
     implements(IActivityDefinition)
 
-    def __init__(self, contexts=()):
-        super(ActivityDefinition, self).__init__()
+    def __init__(self, contexts=(), **kwargs):
+        super(ActivityDefinition, self).__init__(**kwargs)
+        self._init_contexts(contexts)
+
+    def _init_contexts(self, contexts):
         self.contexts = contexts
+        for c in contexts:
+            c.node_definition = self
 
 
 class SubProcessDefinition(ActivityDefinition):
     factory = SubProcess
 
-    def __init__(self, contexts=(), pd=None):
-        super(SubProcessDefinition, self).__init__(contexts)
+    def __init__(self, contexts=(), pd=None, **kwargs):
+        super(SubProcessDefinition, self).__init__(contexts, **kwargs)
         self.sub_process_definition = pd

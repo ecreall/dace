@@ -36,14 +36,6 @@ class Activity(BehavioralFlowNode, EventHandler):
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
 
-    @property
-    def description(self):
-        description = ''
-        behaviors = self.definition.contexts
-        for b in behaviors:
-            description = description+'\n'+b.description
-
-        return description
 
 class SubProcess(Activity):
 
@@ -91,11 +83,7 @@ def getBusinessActionValidator(action_cls):
 class BusinessAction(Behavior, LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
 
-    #identification et classification
-    groups = []
-    process_id = NotImplemented
-    node_id = NotImplemented
-    #execution
+    node_definition = NotImplemented
     context = NotImplemented
     report =  NotImplemented
     study =  NotImplemented
@@ -113,10 +101,15 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         self.isexecuted = False
         self.behavior_id = self.node_id
         self.sub_process = None
+        if self.title == '' or self.title is NotImplemented:
+            self.title = self.node.title
+
+        if self.description == ''  or self.description is NotImplemented:
+            self.description = self.node.description
 
     @classmethod
     def get_instance(cls, context, request, **kw):
-        instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
+        instance = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
         if instance is None:
             return None
 
@@ -124,7 +117,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
-        instance = getBusinessAction(cls.process_id, cls.node_id, cls.behavior_id, request, context)
+        instance = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
         if instance is None:
             return None
 
@@ -141,6 +134,18 @@ class BusinessAction(Behavior, LockableElement, Persistent):
     @property
     def node(self):
         return self.workitem.node
+
+    @property
+    def process_id(self):
+        return self.workitem.process_id
+
+    @property
+    def node_id(self):
+        return self.node_definition.__name__
+
+    @property
+    def groups(self):
+        return self.node_definition.groups
 
     @property
     def view_name(self):
@@ -166,7 +171,6 @@ class BusinessAction(Behavior, LockableElement, Persistent):
     @property
     def isstart(self):
         return isinstance(self.workitem, StartWorkItem)
-
 
     @property
     def informations(self):
@@ -289,8 +293,8 @@ class LoopActionCardinality(BusinessAction):
     loopCondition = None
     testBefore = False
 
-    def __init__(self, workitem):
-        super(LoopActionCardinality, self).__init__(workitem)
+    def __init__(self, workitem, **kwargs):
+        super(LoopActionCardinality, self).__init__(workitem, **kwargs)
         self.loopMaximum = self.loopMaximum.im_func(self.process)
 
     def _executeBefore(self, context, request, appstruct, **kw):
@@ -346,8 +350,8 @@ class MultiInstanceAction(BusinessAction):
 class LimitedCardinality(MultiInstanceAction):
 
 
-    def __init__(self, workitem):
-        super(LimitedCardinality, self).__init__(workitem)
+    def __init__(self, workitem, **kwargs):
+        super(LimitedCardinality, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
         self.numberOfInstances = self.loopCardinality.im_func(self.process)
         for instance_num in range(self.numberOfInstances):
@@ -386,8 +390,8 @@ class DataInput(MultiInstanceAction):
     loopDataInputRef = None
     dataIsPrincipal = True
 
-    def __init__(self, workitem):
-        super(DataInput, self).__init__(workitem)
+    def __init__(self, workitem, **kwargs):
+        super(DataInput, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
         self.instances = self.loopDataInputRef.im_func(self.process)
@@ -405,8 +409,8 @@ class DataInput(MultiInstanceAction):
 class ActionInstance(BusinessAction):
 
     # principalaction = multi instance action
-    def __init__(self, item, principalaction, workitem):
-        super(ActionInstance, self).__init__(workitem)
+    def __init__(self, item, principalaction, workitem, **kwargs):
+        super(ActionInstance, self).__init__(workitem, **kwargs)
         self.principalaction = principalaction
         self.item = item
         id = item
@@ -419,13 +423,9 @@ class ActionInstance(BusinessAction):
 
     @staticmethod
     def _init_attributes_(cls, principalaction):
-        cls.process_id = principalaction.process_id
-        cls.node_id = principalaction.node_id
         cls.context = principalaction.context
-        cls.groups = principalaction.groups
-        cls.title = principalaction.title
+        cls.node_definition = principalaction.node_definition
         cls.actionType =  principalaction.actionType
-        cls.description = principalaction.description
         cls.report =  principalaction.report
         cls.study =  principalaction.study
         cls.relation_validation = principalaction.relation_validation

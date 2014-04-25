@@ -70,8 +70,9 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
 
 
 class Event(BehavioralFlowNode, FlowNode):
-    def __init__(self, definition, eventKind):
-        super(Event, self).__init__(definition)
+
+    def __init__(self, definition, eventKind, **kwargs):
+        super(Event, self).__init__(definition, **kwargs)
         self.eventKind = eventKind
         self.execution_prepared = False
         self.execution_finished = False

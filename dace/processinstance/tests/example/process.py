@@ -8,6 +8,29 @@ from dace.processdefinition.gatewaydef import GatewayDefinition
 from dace.processdefinition.transitiondef import TransitionDefinition
 from dace.interfaces import IProcessDefinition
 
+from substanced.content import content
+from substanced.property import PropertySheet
+from substanced.schema import NameSchemaNode
+from substanced.util import renamer
+
+from pontus.schema import Schema
+from dace.objectofcollaboration.application import Application
+
+from pontus.core import VisualisableElement, VisualisableElementSchema
+
+
+
+@content(
+    'dace_root',
+    )
+class TestApplication(Application):
+    name = renamer()
+
+    def __init__(self, **kwargs):
+        super(TestApplication, self).__init__(**kwargs)
+        if self.title == '':
+            self.title = 'TestApplication'
+
 
 class WorkItemX(workitem.WorkItem):
     def start(self):

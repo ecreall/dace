@@ -1,12 +1,15 @@
 from persistent import Persistent
 from zope.interface import Attribute
 
-from dace.objectofcollaboration.object import Object, SHARED_MULTIPLE, SHARED_UNIQUE
+from dace.objectofcollaboration.object import SHARED_MULTIPLE, SHARED_UNIQUE
+from dace.objectofcollaboration.entity import Entity
 
 
-class BPMNElementDefinition(Object):
-    def __init__(self):
-        super(BPMNElementDefinition, self).__init__()
+
+class BPMNElementDefinition(Entity):
+
+    def __init__(self, **kwargs):
+        super(BPMNElementDefinition, self).__init__(**kwargs)
 
 
 class FlowNodeDefinition(BPMNElementDefinition):
@@ -15,6 +18,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
                       'outgoing': (SHARED_MULTIPLE, 'source', False),
                       'process': (SHARED_UNIQUE, 'nodes', False)
                       }
+
     #relation s_u opposite s_m avec les transitions
     #relation s_u opposite c_m avec les Processdef
     factory = Attribute("factory")
@@ -23,8 +27,11 @@ class FlowNodeDefinition(BPMNElementDefinition):
     def create(self):
         return self.factory(self)
 
-    def __init__(self):
-        super(FlowNodeDefinition, self).__init__()
+    def __init__(self, **kwargs):
+        super(FlowNodeDefinition, self).__init__(**kwargs)
+        self.groups = []
+        if 'groups' in kwargs:
+            self.groups = kwargs['groups']
 
     @property
     def incoming(self):

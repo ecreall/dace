@@ -15,17 +15,16 @@ from .eventdef import StartEventDefinition, EndEventDefinition
 from .gatewaydef import ParallelGatewayDefinition, ExclusiveGatewayDefinition
 from dace.util import find_catalog
 from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.entity import Entity
 
-class ProcessDefinition(Object):
+class ProcessDefinition(Entity):
     implements(IProcessDefinition)
 
     properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
                       'transitions': (COMPOSITE_MULTIPLE, 'process', True),
                       }
     TransitionDefinitionFactory = TransitionDefinition
-    # il faut changer subprocessOnly par  isControlled: Pour les processus imbriques
     isControlled = False
-    # pour les sous processus
     isSubProcess = False
     isVolatile = False
     isUnique = False
@@ -208,9 +207,8 @@ class ProcessDefinition(Object):
     @property
     def started_processes(self):
         dace_catalog = find_catalog('dace')
-        system_catalog = find_catalog('system')
         object_provides_index = dace_catalog['object_provides']
-        processid_index = system_catalog['name']
+        processid_index = dace_catalog['process_id']
         # TODO: process_id should be indexed for IProcess
         query = object_provides_index.any((IProcess.__identifier__,)) & processid_index.eq(self.id)
         results = query.execute().all()

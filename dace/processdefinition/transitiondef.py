@@ -17,8 +17,8 @@ class TransitionDefinition(Object):
                       'process': (SHARED_UNIQUE, 'transitions', False)
                       }
 
-    def __init__(self, source_id, target_id, condition=always_true, sync=False):
-        super(TransitionDefinition, self).__init__()
+    def __init__(self, source_id, target_id, condition=always_true, sync=False, **kwargs):
+        super(TransitionDefinition, self).__init__(**kwargs)
         self.id = '%s-%s' % (source_id, target_id)
         self.source_id = source_id
         self.target_id = target_id

@@ -96,7 +96,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionY]
+        y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
@@ -182,7 +182,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YParallel(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYP]
+        y._init_contexts([ActionYP])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
@@ -231,7 +231,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YParallelI(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYPI]
+        y._init_contexts([ActionYPI])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
@@ -277,7 +277,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YSequentialI(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYI]
+        y._init_contexts([ActionYI])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
@@ -325,7 +325,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YSequentialD(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYD] # multi instance (pour chaque instance nous avons un objet)
+        y._init_contexts([ActionYD]) # multi instance (pour chaque instance nous avons un objet)
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
@@ -381,7 +381,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YSequentialDp(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYDp] # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal) 
+        y._init_contexts([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal) 
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
@@ -475,20 +475,20 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YLC_TestAfter(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYLC]
+        y._init_contexts([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
 
     def test_actions_YLC_TestBefore(self):
         y, pd = self._process_valid_actions()
         ActionYLC.testBefore = True
-        y.contexts = [ActionYLC]
+        y._init_contexts([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
      
     def test_actions_YLD(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYLD]
+        y._init_contexts([ActionYLD])
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
@@ -534,7 +534,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_steps(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionYSteps]
+        y._init_contexts([ActionYSteps])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
@@ -601,7 +601,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_validator(self):
         y, pd = self._process_valid_actions()
-        y.contexts = [ActionY]
+        y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')
 
@@ -711,7 +711,7 @@ class TestsSubProcess(FunctionalTests):
 
     def test_subprocess_elementary(self):
         spaction, sp, pd = self._process_valid_subprocess()
-        spaction.contexts=[ActionSP]
+        spaction._init_contexts([ActionSP])
         self.def_container.add_definition(pd)
         self.def_container.add_definition(sp)
         start_wi = pd.start_process('sp')
@@ -763,7 +763,7 @@ class TestsSubProcess(FunctionalTests):
 
     def test_subprocess_multiinstance(self):
         spaction, sp, pd = self._process_valid_subprocess()
-        spaction.contexts=[ActionSPMI]
+        spaction._init_contexts([ActionSPMI])
         self.def_container.add_definition(pd)
         self.def_container.add_definition(sp)
         objecta= ObjectA()

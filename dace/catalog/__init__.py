@@ -11,7 +11,7 @@ from substanced.catalog import (
     )
 from dace.util import Adapter, adapter
 from dace.interfaces import (
-    IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem)
+    IBusinessAction, IStartWorkItem, IDecisionWorkItem, IWorkItem, IProcess)
 from dace.catalog.interfaces import IObjectProvides, ISearchableObject
 
 
@@ -279,3 +279,26 @@ class BusinessActionSearch(Adapter):
 
     def isautomatic(self):
         return self.context.isautomatic
+
+
+@adapter(context=IProcess)
+class ProcessSearch(Adapter):
+    implements(ISearchableObject)
+
+    def process_id(self):
+        return self.context.id
+
+    def node_id(self):
+        return ''
+
+    def process_inst_uid(self):
+        return [get_oid(self.context, None)]
+
+    def context_provides(self):
+        return []
+
+    def context_id(self):
+        return []
+
+    def isautomatic(self):
+        return False

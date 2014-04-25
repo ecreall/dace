@@ -10,8 +10,8 @@ class Gateway(FlowNode):
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway, MakerFlowNode):
 
-    def __init__(self, definition):
-        super(ExclusiveGateway, self).__init__(definition)
+    def __init__(self, definition, **kwargs):
+        super(ExclusiveGateway, self).__init__(definition, **kwargs)
 
     def start(self, transaction):
         registry = get_current_registry()
