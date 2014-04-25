@@ -3,6 +3,8 @@ from zope.annotation.interfaces import IAnnotations, Interface
 from zope.interface import implements, providedBy, implementedBy
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.traversal import find_root
+
 from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd, get_oid
 from substanced.util import find_service as fssd
 from .interfaces import (
@@ -15,73 +17,37 @@ from .interfaces import (
 from . import log
 
 
-class Adapter(object):
+def getSite(resource=None):
+    request = get_current_request()
+    if resource is not None:
+        return find_root(resource)
+    elif request is not None:
+        return request.root
 
-    def __init__(self, context):
-        self.context = context
+    return None
 
 
 def get_obj(oid):
-    request = get_current_request()
-    objectmap = find_objectmap(request.root)
+    root = getSite()
+    objectmap = find_objectmap(root)
     obj = objectmap.object_for(oid)
     return obj
 
 
-class utility(object):
-
-    def __init__(self, name, provides=None, direct=False, **kw):
-       self.name = name
-       self.provides = provides
-       self.direct = direct
-       self.kw = kw
-
-    def __call__(self, wrapped):
-        def callback(scanner, name, ob):
-            provides = self.provides
-            if self.direct:
-                component = ob
-                if self.provides is None:
-                    provides = list(implementedBy(component))[0]
-            else:
-                component = ob(**self.kw)
-                if self.provides is None:
-                    provides = list(providedBy(component))[0]
-
-            scanner.config.registry.registerUtility(component, provides, self.name)
-
-        venusian.attach(wrapped, callback)
-        return wrapped
-
-
-class adapter(object):
-
-    def __init__(self, context, name=u''):
-       self.context = context
-       self.name = name
-
-    def __call__(self, wrapped):
-        def callback(scanner, name, ob):
-            mprovided = list(ob.__implemented__.interfaces())[0]
-            scanner.config.registry.registerAdapter(factory=ob, required=(self.context,), provided=mprovided, name=self.name)
-
-        venusian.attach(wrapped, callback)
-        return wrapped
-
-
 def find_catalog(name=None):
-    resource = get_current_request().root
+    resource = getSite()
     return fcsd(resource, name)
 
 
 def find_service(name=None):
-    resource = get_current_request().root
+    resource = getSite()
     return fssd(resource, name)
 
 
-def allSubobjectsOfType(root = None, interface = None):
+def allSubobjectsOfType(root=None, interface=None):
     root_oid = get_oid(root)
-    if root is None or root == get_current_request().root:
+    site = getSite(root)
+    if root is None or root is site:
         root_oid = 0
 
     if interface is None:
@@ -95,9 +61,10 @@ def allSubobjectsOfType(root = None, interface = None):
     return [o for o in query.execute().all()]
 
 
-def allSubobjectsOfKind(root = None, interface = None):
+def allSubobjectsOfKind(root=None, interface=None):
     root_oid = get_oid(root)
-    if root is None or root == get_current_request().root:
+    site = getSite(root)
+    if root is None or root is site:
         root_oid = 0
 
     if interface is None:
@@ -111,9 +78,10 @@ def allSubobjectsOfKind(root = None, interface = None):
     return [o for o in query.execute().all()]
 
 
-def subobjectsOfType(root = None, interface = None):
+def subobjectsOfType(root=None, interface=None):
     root_oid = get_oid(root)
-    if root is None or root == get_current_request().root:
+    site = getSite(root)
+    if root is None or root is site:
         root_oid = 0
 
     if interface is None:
@@ -127,9 +95,10 @@ def subobjectsOfType(root = None, interface = None):
     return [o for o in query.execute().all()]
 
 
-def subobjectsOfKind(root = None, interface = None):
+def subobjectsOfKind(root=None, interface=None):
     root_oid = get_oid(root)
-    if root is None or root == get_current_request().root:
+    site = getSite(root)
+    if root is None or root is site:
         root_oid = 0
 
     if interface is None:
@@ -143,16 +112,13 @@ def subobjectsOfKind(root = None, interface = None):
     return [o for o in query.execute().all()]
 
 
-def get_current_process_uid(request):
-    p_uid = request.params.get('p_uid', None)
-#    if p_uid is not None:
-#        request.response.setCookie('p_uid', p_uid)
-#    else:
-#        p_uid = request.cookies.get('p_uid', None)
-    return p_uid
-# TODO expire cookie when a form action succeeded
-#    request.response.expireCookie('p_uid')
-#    set the cookie in the update() of a form only
+def get_current_process_uid(request): 
+    action_uid = request.params.get('action_uid', None)
+    if action_uid is not None:
+        return get_oid(get_obj(int(action_uid)).process)
+
+    return None
+
 
 def getBusinessAction(process_id, node_id, behavior_id, request, context):
     allactions = []
@@ -189,9 +155,11 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     else:
         return None
 
+
 def queryBusinessAction(process_id, node_id, behavior_id, request, context):
     return getBusinessAction(process_id, node_id, behavior_id,
                  request, context)
+
 
 def getAllBusinessAction(context, request=None, isautomatic=False):
     if request is None:
@@ -237,14 +205,6 @@ def getWorkItem(process_id, node_id, request, context,
     # and returned a workitem from a gateway, search first in the
     # same gateway
 
-    #annotations = IAnnotations(request)
-    #workitems = annotations.get('workitems', None)
-    #if workitems is not None:
-    #    wi = workitems.get('%s.%s' % (process_id, node_id), None)
-    #    if wi is not None and condition(wi.__parent__.__parent__, context):
-    #        return wi
-
-    # Not found in gateway, we search in catalog
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
     node_id_index = dace_catalog['node_id']
@@ -279,18 +239,9 @@ def getWorkItem(process_id, node_id, request, context,
                 wi = wv
                 break
 
-        if IDecisionWorkItem.providedBy(wi):
-            gw = wi.__parent__
-            #for workitem in gw.workitems:
-                #workitems = annotations.setdefault('workitems', {})
-                # TODO: I think node_id is a callable here, can't we just
-                # use workitem[0].node_id?
-                #from .catalog.interfaces import ISearchableObject
-                #key = '%s.%s' % (process_id,
-                #                 ISearchableObject(workitem[0]).node_id)
-                #workitems[key] = workitem[0]
         if wi is None:
             raise Forbidden
+
         return wi
 
     # Not found in catalog, we return a start workitem
@@ -299,8 +250,6 @@ def getWorkItem(process_id, node_id, request, context,
         if wi is None:
             raise Forbidden
         else:
-            #if not condition(None, context):
-            #    raise Forbidden
             return wi
 
     raise Forbidden
@@ -315,21 +264,48 @@ def queryWorkItem(process_id, node_id, request, context):
         return None
 
 
-def workItemAvailable(menu_entry, process_id, node_id):
-    try:
-        wi = queryWorkItem(process_id, node_id,
-                     menu_entry.request, menu_entry.context)
-        if wi is None:
-            return False
+class Adapter(object):
 
-#        if wi.is_locked(menu_entry.request):
-#            menu_entry.title = translate(menu_entry.title, context=menu_entry.request) + \
-#                               translate(_(u" (locked)"), context=menu_entry.request)
-        from .catalog.interfaces import ISearchableObject
-        p_uid = ISearchableObject(wi).process_inst_uid()
-        if p_uid:
-            menu_entry.params = {'p_uid': p_uid[0]}
-    except Exception as e:
-        log.exception(e)
-        return False
-    return True
+    def __init__(self, context):
+        self.context = context
+
+
+class adapter(object):
+
+    def __init__(self, context, name=u''):
+       self.context = context
+       self.name = name
+
+    def __call__(self, wrapped):
+        def callback(scanner, name, ob):
+            mprovided = list(ob.__implemented__.interfaces())[0]
+            scanner.config.registry.registerAdapter(factory=ob, required=(self.context,), provided=mprovided, name=self.name)
+
+        venusian.attach(wrapped, callback)
+        return wrapped
+
+
+class utility(object):
+
+    def __init__(self, name, provides=None, direct=False, **kw):
+       self.name = name
+       self.provides = provides
+       self.direct = direct
+       self.kw = kw
+
+    def __call__(self, wrapped):
+        def callback(scanner, name, ob):
+            provides = self.provides
+            if self.direct:
+                component = ob
+                if self.provides is None:
+                    provides = list(implementedBy(component))[0]
+            else:
+                component = ob(**self.kw)
+                if self.provides is None:
+                    provides = list(providedBy(component))[0]
+
+            scanner.config.registry.registerUtility(component, provides, self.name)
+
+        venusian.attach(wrapped, callback)
+        return wrapped

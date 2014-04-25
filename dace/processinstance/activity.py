@@ -7,7 +7,7 @@ from pyramid.threadlocal import get_current_registry, get_current_request
 from pyramid.interfaces import ILocation
 
 from substanced.util import get_oid
-from dace.util import find_service
+from dace.util import find_service, get_obj
 
 from .core import (
         EventHandler,
@@ -109,10 +109,25 @@ class BusinessAction(Behavior, LockableElement, Persistent):
 
     @classmethod
     def get_instance(cls, context, request, **kw):
+        action_uid = request.params.get('action_uid', None)
+        source_action = None
+        if action_uid is not None:
+            source_action = get_obj(int(action_uid))
+
+        if source_action is not None and isinstance(source_action, cls) and source_action.validate(context, request):
+            return source_action
+
         instance = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
         if instance is None:
             return None
 
+        isstart = request.params.get('isstart', None)
+        source_start_action = None
+        if isstart is not None:
+            for inst in instance:
+                if inst.isstart:
+                    return inst
+            
         return instance[0]
 
     @classmethod
@@ -192,7 +207,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
             actionuid = get_oid(self)
             query={'action_uid':actionuid}
         except AttributeError:
-            pass
+            query={'isstart':'True'} 
 
         return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query=query)
 
