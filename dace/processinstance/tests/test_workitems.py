@@ -1497,6 +1497,59 @@ class TestGatewayChain(FunctionalTests):
         self.assertTrue(proc._finished)
 
 
+    def  _process_start_Parallel_process_isUnique(self):
+        """
+        """
+        pd = ProcessDefinition(**{'id':u'sample'})
+        pd.isUnique = True
+        self.app['sample'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(),
+                b = ActivityDefinition(),
+                c = ActivityDefinition(),
+                p = ParallelGatewayDefinition(),
+                g = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'p'),
+                TransitionDefinition('p', 'a'),
+                TransitionDefinition('p', 'b'),
+                TransitionDefinition('p', 'c'),
+                TransitionDefinition('c', 'g'),
+                TransitionDefinition('b', 'g'),
+                TransitionDefinition('a', 'g'),
+                TransitionDefinition('g', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def test_isUnique(self):
+        pd = self. _process_start_Parallel_process_isUnique()
+        self.def_container.add_definition(pd)
+        start_wis = pd.start_process()
+        self.assertEqual(len(start_wis), 3)
+        self.assertIn('a', start_wis)
+        self.assertIn('b', start_wis)
+        self.assertIn('c', start_wis)
+
+        start_b = start_wis['b']
+        wi, proc = start_b.consume()
+        self.assertEqual(u'sample.b', wi.node.id)
+
+        workitems = proc.getWorkItems()
+        self.assertIn('sample.a', workitems.keys())
+        wi_a = workitems['sample.a']
+
+        start_a = start_wis['a']
+        wi2, proc2 = start_a.consume()
+        self.assertIs(wi2, wi_a)
+        self.assertIs(proc2, proc)
+
+
+
 ##############################################################################################
 
 

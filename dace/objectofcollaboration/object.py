@@ -1,6 +1,7 @@
 from zope.interface import implements
 from persistent.list import PersistentList
 import colander
+import datetime
 
 from substanced.folder import Folder
 from substanced.util import get_oid
@@ -491,6 +492,7 @@ class Object(Folder):
     def __init__(self, **kwargs):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
+        self.created_at = datetime.datetime.today()
         self.title = ''
         if 'title' in kwargs:
             self.title = kwargs['title']

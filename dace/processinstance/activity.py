@@ -117,18 +117,24 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         if source_action is not None and isinstance(source_action, cls) and source_action.validate(context, request):
             return source_action
 
-        instance = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
-        if instance is None:
+        instances = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
+        if instances is None:
             return None
 
         isstart = request.params.get('isstart', None)
         source_start_action = None
         if isstart is not None:
-            for inst in instance:
+            for inst in instances:
                 if inst.isstart:
                     return inst
-            
-        return instance[0]
+
+        action_instance = instances[0]
+        #if action_instance.isstart:
+        #    request.params['isstart'] = 'True'
+        #else:
+        #    request.params['action_uid'] = get_oid(action_instance)
+              
+        return action_instance
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
@@ -271,6 +277,9 @@ class BusinessAction(Behavior, LockableElement, Persistent):
 
     def execute(self, context, request, appstruct, **kw):
         self._consume_decision()
+        if self.isstart:
+            return
+
         if isinstance(self.node, SubProcess) and self.sub_process is None:
             self.sub_process = self.node._start_subprocess()
             self.sub_process.attachedTo = self

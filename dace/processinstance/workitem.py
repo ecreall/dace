@@ -87,6 +87,19 @@ class StartWorkItem(UserDecision):
         registry = get_current_registry()
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(self.process_id)
+        if pd.isUnique and pd.isInstantiated:
+            proc = pd.started_processes[0]
+            self.process = proc
+            wi = proc[self.node.__name__]._get_workitem()
+            if wi is None:
+                return 
+
+            wi.set_actions(self.actions)
+            if self.dtlock:
+                self.call(wi)
+
+            return wi, proc
+
         proc = pd()
         runtime = find_service('runtime')
         proc.__name__ = proc.id
@@ -241,6 +254,15 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return not self.concerned_nodes()
 
     def consume(self):
+        if self.__parent__ is None: # deleted by another consumer
+            proc = pd.started_process[0]
+            self.process = proc
+            wi = self.process[self.node.__name__]._get_workitem()
+            if wi is not None:
+                wi.set_actions(self.actions)
+
+            return wi
+
         replay_transaction = self.process.global_transaction.start_subtransaction('Replay', path= self.path, initiator=self)
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)

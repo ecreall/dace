@@ -191,6 +191,11 @@ class ProcessDefinition(Entity):
     _startTransition = zope.cachedescriptors.property.Lazy(_startTransition)
 
     def start_process(self, node_name=None):
+        if self.isUnique and self.started_processes:
+            if node_name is not None:
+                return None
+
+            return []
         #une transaction globale pour chaque demande
         self.global_transaction = Transaction()
         start_transition = self._startTransition

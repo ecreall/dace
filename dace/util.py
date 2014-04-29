@@ -131,7 +131,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     query = process_id_index.eq(process_id) & \
             node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.declared]))
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
 
     results = [w for w in query.execute().all()]
     if len(results) > 0:
@@ -142,7 +142,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
     # Add start workitem
-    if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
+    if not pd.isControlled:
         s_wi = pd.start_process(node_id)
         if s_wi is not None:
             swisactions = s_wi.actions
@@ -170,7 +170,7 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     context_id_index = dace_catalog['context_id']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.declared]))
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
 
     if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']
@@ -187,7 +187,7 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     
     # Add start workitem
     for name, pd in allprocess:
-        if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
+        if not pd.isControlled:
             wis = pd.start_process()
             if wis:
                 for key in wis.keys():
@@ -245,7 +245,7 @@ def getWorkItem(process_id, node_id, request, context,
         return wi
 
     # Not found in catalog, we return a start workitem
-    if not pd.isControlled and (not pd.isUnique or (pd.isUnique and not pd.isInstantiated)):
+    if not pd.isControlled:
         wi = pd.start_process(node_id)
         if wi is None:
             raise Forbidden
