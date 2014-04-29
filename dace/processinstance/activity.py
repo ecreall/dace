@@ -114,7 +114,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         if action_uid is not None:
             source_action = get_obj(int(action_uid))
 
-        if source_action is not None and isinstance(source_action, cls) and source_action.validate(context, request):
+        if source_action is not None and (source_action._class is cls) and source_action.validate(context, request):
             return source_action
 
         instances = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
@@ -147,6 +147,10 @@ class BusinessAction(Behavior, LockableElement, Persistent):
     @classmethod
     def get_validator(cls, **kw):
         return getBusinessActionValidator(cls)
+
+    @property
+    def _class(self):
+        return self.__class__
 
     @property
     def process(self):
@@ -441,9 +445,14 @@ class ActionInstance(BusinessAction):
         if not isinstance(item, int):
             id  = get_oid(item)
             self.title = self.title+' ('+item.title+')'
+        else:
+            self.title = self.title+' ('+str(item)+')'
 
         self.behavior_id = self.principalaction.node_id+'_'+str(id)
         
+    @property
+    def _class(self):
+        return self.principalaction.__class__
 
     @staticmethod
     def _init_attributes_(cls, principalaction):
