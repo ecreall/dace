@@ -88,13 +88,8 @@ class ExecutionContext(Object):
             self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
         else:
-            opposit_name = name+'_involver'
-            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
-            if not (opposit_name in value.dynamic_properties_def):
-                value.dynamic_properties_def[opposit_name] = (SHARED_MULTIPLE, name, True)
-
+            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
             self._init__property(name, self.dynamic_properties_def[name])
-            value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
             self.addtoproperty(name, value)
 
     def remove_entity(self, name, value):
@@ -306,13 +301,8 @@ class ExecutionContext(Object):
                 self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
             else:
-                opposit_name = name+'_involver'
-                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, opposit_name, True)
-                if not (opposit_name in value.dynamic_properties_def):
-                    value.dynamic_properties_def[opposit_name] = (SHARED_MULTIPLE, name, True)
-
+                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
                 self._init__property(name, self.dynamic_properties_def[name])
-                value._init__property(opposit_name, value.dynamic_properties_def[opposit_name])
                 self.addtoproperty(name, value)
 
     def remove_collection(self, name, values):

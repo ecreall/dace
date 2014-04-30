@@ -58,7 +58,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
         self.add(value_name, value)
         value.__property__ = propertyref
         setattr(self, key, value.__name__)
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
     def _del(self, value, initiator=True):
@@ -68,7 +68,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
         keyvalue = self.__dict__[key]
         if keyvalue is not None and self.__contains__(keyvalue) and self[keyvalue] == value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in value.__class__.properties:
                 value.__class__.properties[opposite]['del'](value, self, False)
 
             self.remove(keyvalue)
@@ -127,7 +127,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
         contents_keys.append(value.__name__)
         setattr(self, keys, contents_keys)
 
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
     def _set(self, value, initiator=True):
@@ -160,7 +160,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             value = [value]
 
         for v in value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in v.__class__.properties:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
             if self.__contains__(v.__name__):
@@ -207,7 +207,7 @@ def SharedUniquePropertyRelation(propertyref, opposite=None, isunique=False):
         if currentvalue == value:
             return
 
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
         myproperty['del'](self, currentvalue)
@@ -221,7 +221,7 @@ def SharedUniquePropertyRelation(propertyref, opposite=None, isunique=False):
         myproperty = self.__class__.properties[propertyref]
         currentvalue = myproperty['get'](self)
         if currentvalue is not None and currentvalue == value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in value.__class__.properties:
                 value.__class__.properties[opposite]['del'](value, self, False)
 
             opts = {u'target_id': get_oid(value)}
@@ -266,7 +266,7 @@ def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
         if isunique and value in currentvalue:
             return
 
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
         kw = {}
@@ -297,7 +297,7 @@ def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
             value = [value]
 
         for v in value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in v.__class__.properties:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
             opts = {u'target_id': get_oid(v)}
@@ -345,7 +345,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
         if currentvalue == value:
             return
 
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
         myproperty['del'](self, currentvalue)
@@ -361,7 +361,7 @@ def SharedUniqueProperty(propertyref, opposite=None, isunique=False):
 
         currentvalue = myproperty['get'](self)
         if currentvalue is not None and currentvalue == value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in value.__class__.properties:
                 value.__class__.properties[opposite]['del'](value, self, False)
 
             setattr(self, key, None)
@@ -406,7 +406,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         if isunique and value in currentvalue:
             return
 
-        if initiator and opposite is not None:
+        if initiator and opposite is not None and opposite in value.__class__.properties:
             value.__class__.properties[opposite]['add'](value, self, False)
 
         self.__dict__[key].append(value)
@@ -442,7 +442,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
             value = [value]
 
         for v in value:
-            if initiator and opposite is not None:
+            if initiator and opposite is not None and opposite in v.__class__.properties:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
             if v in self.__dict__[key]:
