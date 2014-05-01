@@ -81,6 +81,38 @@ class ExecutionContext(Object):
         root = self.root_execution_context()
         return root._sub_createds()
 
+    @property
+    def avtive_involveds(self):
+        result = {}
+        for name in self.dynamic_properties_def:
+            self._init__property(name, self.dynamic_properties_def[name])
+            relation_result = self.get_involved_collection(name)
+            if relation_result:
+                result[name] = relation_result
+                continue
+
+            relation_result = self.involved_entity(name) 
+            if relation_result is not None:
+                relation_result = [relation_result]
+            else:
+                continue
+
+            result[name] = relation_result
+
+        return result
+
+    def _sub_active_involveds(self):
+        result = dict(self.avtive_involveds)
+        for sec in self.sub_execution_contexts:
+            result.update(sec._sub_active_involveds())
+
+        return result
+
+    def all_active_involveds(self):
+        root = self.root_execution_context()
+        return root._sub_active_involveds()
+
+
 #entity
     def add_involved_entity(self, name, value):
         self.addtoproperty('involveds', value)

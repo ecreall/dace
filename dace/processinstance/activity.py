@@ -17,12 +17,12 @@ from .core import (
         ValidationError,
         DEFAULTMAPPING_ACTIONS_VIEWS)
 from .lock import LockableElement
-from dace.util import getBusinessAction, queryWorkItem
+from dace.util import getBusinessAction, getAllBusinessAction, getSite
 from dace.interfaces import (
     IProcessDefinition,
     IActivity,
     IBusinessAction)
-
+from dace.objectofcollaboration.entity import ActionCall
 from .workitem import UserDecision, StartWorkItem
 
 
@@ -35,7 +35,29 @@ class Activity(BehavioralFlowNode, EventHandler):
 
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
+        self.assigned_to = PersistentList()
 
+
+    def assigne_to(self, users):
+        if not isinstance(users, (list, tuple)):
+            users = [users]
+
+        users = [u for u in users if not(u in self.assigned_to)]
+        self.assigned_to.extend(users)
+
+    def unassigne(self, users):
+        if not isinstance(users, (list, tuple)):
+            users = [users]
+
+        users = [u for u in users if (u in self.assigned_to)]
+        for u in users:
+            self.assigned_to.remove(u)
+
+    def set_assignment(self, users=None):
+        self.assigned_to = PersistentList()
+        if users is not None:
+            self.assigne_to(users)
+           
 
 class SubProcess(Activity):
 
@@ -101,6 +123,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         self.isexecuted = False
         self.behavior_id = self.node_id
         self.sub_process = None
+        self.local_assigned_to = PersistentList()
         if self.title == '' or self.title is NotImplemented:
             self.title = self.node.title
 
@@ -147,6 +170,11 @@ class BusinessAction(Behavior, LockableElement, Persistent):
     @classmethod
     def get_validator(cls, **kw):
         return getBusinessActionValidator(cls)
+
+    @property
+    def actions(self):
+        allactions = getAllBusinessAction(self)
+        return [ActionCall(a, self) for a in allactions]
 
     @property
     def _class(self):
@@ -236,6 +264,37 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         # TODO url
         return content
 
+    @property
+    def assigned_to(self):
+        if hasattr(self, 'local_assigned_to') and self.local_assigned_to:
+            return self.local_assigned_to
+
+        node = self.node
+        if hasattr(node, 'assigned_to'):
+            return self.node.assigned_to
+
+        return []
+
+    def assigne_to(self, users):
+        if not isinstance(users, (list, tuple)):
+            users = [users]
+
+        users = [u for u in users if not(u in self.local_assigned_to)]
+        self.local_assigned_to.extend(users)
+
+    def unassigne(self, users):
+        if not isinstance(users, (list, tuple)):
+            users = [users]
+
+        users = [u for u in users if (u in self.local_assigned_to)]
+        for u in users:
+            self.local_assigned_to.remove(u)
+
+    def set_assignment(self, users=None):
+        self.local_assigned_to = PersistentList()
+        if users is not None:
+            self.assigne_to(users)
+
     def validate(self, context, request, **kw):
         if self.isexecuted:
             return False
@@ -253,7 +312,13 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         if self.relation_validation and not self.relation_validation.im_func(process, context):
             return False
 
-        if self.roles_validation and not self.roles_validation.im_func(process, context):
+        _assigned_to = self.assigned_to
+        if _assigned_to:
+            admin = getSite()['principals']['users']['admin']
+            if not( request.user in _assigned_to) and not(request.user is admin):
+                return False
+
+        elif self.roles_validation and not self.roles_validation.im_func(process, context):
             return False
 
         if self.processsecurity_validation and not self.processsecurity_validation.im_func(process, context):
