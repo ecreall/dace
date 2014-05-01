@@ -112,6 +112,75 @@ class TestsWorkItems(FunctionalTests):
         self.config.scan(example)
         return pd
 
+
+
+    def _process_valid_normalize_multiendstart(self):
+        """
+        G3(x): XOR Gateway
+        G2(+): Parallel Gateway
+        A, B, D: activities
+                                       -----
+                                    -->| A |
+                                   /   -----
+                        --------- /
+                        | G2(+) |-
+                        --------- \    ---------   -----
+                                   \-->| G3(x) |-->| B |
+                                       /--------   -----
+                              -----   /
+                              | D |--/
+                              -----
+        """
+        pd = ProcessDefinition(**{'id':u'sample'})
+        self.app['sample'] = pd
+        pd.defineNodes(
+                a = ActivityDefinition(),
+                e = EndEventDefinition(),
+                d = ActivityDefinition(),
+                s = StartEventDefinition(),
+                g3 = ExclusiveGatewayDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'a'),
+                TransitionDefinition('s', 'g3'),
+                TransitionDefinition('s', 'd'),
+                TransitionDefinition('d', 'g3'),
+                TransitionDefinition('g3', 'e'),
+                TransitionDefinition('a', 'e'),
+
+        )
+        pd._normalize_definition()
+        self.config.scan(example)
+        return pd
+
+    def test_normalized_process_multistartend(self):
+        pd = self._process_valid_normalize_multiendstart()
+        self.def_container.add_definition(pd)
+        self.assertEqual(len(pd._get_start_events()), 1)
+        self.assertEqual(pd._get_start_events()[0].id, pd.id+".s")
+
+        self.assertEqual(len(pd._get_end_events()), 1)
+        self.assertEqual(pd._get_end_events()[0].id, pd.id+".e")
+
+        start_event = pd._get_start_events()[0]
+        self.assertEqual(len(start_event.outgoing), 1)
+        self.assertEqual(start_event.outgoing[0].target.id, pd.id+".mergepg")
+        pg = start_event.outgoing[0].target
+        pg_transitions = [t.target_id for t in pg.outgoing]
+        self.assertEqual(len(pg.outgoing), 3)
+        self.assertIn('d', pg_transitions)
+        self.assertIn('g3', pg_transitions)
+        self.assertIn('a', pg_transitions)
+
+        end_event = pd._get_end_events()[0]
+        self.assertEqual(len(end_event.incoming), 1)
+        self.assertEqual(end_event.incoming[0].source.id, pd.id+".mergeeg")
+        eg = end_event.incoming[0].source
+        eg_transitions = [t.source_id for t in eg.incoming]
+        self.assertEqual(len(eg.incoming), 2)
+        self.assertIn('a', eg_transitions)
+        self.assertIn('g3', eg_transitions)
+
     def test_normalized_process(self):
         """
         S: start event (emptystart)
@@ -1098,13 +1167,17 @@ class TestsWorkItems(FunctionalTests):
 
         decision_b = workitems['sample.b']
         wi = decision_b.consume()
+        wi_a = workitems['sample.a'].consume()
+        wi_c = workitems['sample.c'].consume()
+        self.assertIs(wi_a, None)
         self.assertEqual(u'sample.b', wi.node.id)
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
-
+        self.assertIs(wi_c, workitems['sample.c'])
+        
         wi.start_test_activity()
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]

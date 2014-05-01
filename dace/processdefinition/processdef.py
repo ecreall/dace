@@ -96,12 +96,16 @@ class ProcessDefinition(Entity):
                 empty_start_event = StartEventDefinition()
 
             p_g = ParallelGatewayDefinition()
-            self.defineNodes(emptystart=empty_start_event, startpg=p_g)
+            if not (empty_start_event in self.nodes):
+                self.defineNodes(emptystart=empty_start_event, startpg=p_g)
+            else: 
+                self.defineNodes(startpg=p_g)
+                  
             oldtransitions = list(empty_start_event.outgoing)
             for oldtransition in oldtransitions:
                 oldtransition.set_source(p_g) 
   
-            new_transitions += (TransitionDefinition('emptystart', 'startpg'), )
+            new_transitions += (TransitionDefinition(empty_start_event.__name__, 'startpg'), )
             for on in orphan_nodes:
                 new_transitions+= (TransitionDefinition('startpg', on.__name__), )
 
@@ -123,12 +127,16 @@ class ProcessDefinition(Entity):
                 empty_end_event = EndEventDefinition()
 
             e_g = ExclusiveGatewayDefinition()
-            self.defineNodes(emptyend=empty_end_event, endeg=e_g)
+            if not (empty_end_event in self.nodes):
+                self.defineNodes(emptyend=empty_end_event, endeg=e_g)
+            else: 
+                self.defineNodes(endeg=e_g)
+
             oldtransitions = list(empty_end_event.incoming)
             for oldtransition in oldtransitions:
                 oldtransition.set_target(e_g) 
 
-            new_transitions += (TransitionDefinition('endeg', 'emptyend'), )
+            new_transitions += (TransitionDefinition('endeg', empty_end_event.__name__), )
             for on in orphan_nodes:
                 new_transitions += (TransitionDefinition(on.__name__, 'endeg'), )
 
@@ -233,13 +241,3 @@ class ProcessDefinition(Entity):
 
         setattr(self, '_isIntanciated_', created)
         return created
-
-# TODO pyramid don't support subscriber with two args
-#@subscriber(IProcess, IObjectAdded)
-def invalidate_isInstantiated_cache(obj, event):
-    definition = obj.definition
-    site_id = getSite().__name__
-    key = '_isIntanciated_%s' % site_id
-    if hasattr(definition,  key):
-        del definition.__dict__[key]
-

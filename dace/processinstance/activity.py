@@ -226,7 +226,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         return isinstance(self.workitem, StartWorkItem)
 
     @property
-    def informations(self):
+    def informations(self):# pragma: no cover
         if self.process is not None:
             return 'Description: '+self.description +'\n Process: '+self.process.title
         else:
@@ -539,7 +539,7 @@ class ActionInstance(BusinessAction):
         return None
 
     @property
-    def informations(self):
+    def informations(self):# pragma: no cover
         id = str(self.item)
         if not isinstance(self.item, int):
             id  = self.item.title

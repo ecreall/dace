@@ -167,10 +167,21 @@ class TestsProcessRelations(FunctionalTests):
         relationsC1 = ec.created_entities('realtion1')
         self.assertEqual(len(relationsC1), 0)
 
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 0)
+
         ec.add_created_entity('realtion1', objecta)
         relationC1 = ec.created_entity('realtion1')
         relationI1 = ec.involved_entity('realtion1')
         self.assertIs(relationC1, objecta)
+
+
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertEqual('element', active_ivs['realtion1'][0])
+        self.assertIn('realtion1', active_ivs)
+        self.assertIn(objecta, active_ivs['realtion1'][1])
+
 
         self.assertIs(objecta.creator, proc)
         involvers = objecta.involvers
@@ -202,6 +213,15 @@ class TestsProcessRelations(FunctionalTests):
         ec.add_created_entity('realtion1', objectb)
         relation1 = ec.created_entity('realtion1')
         self.assertIs(relation1, objectb)
+
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertEqual('element', active_ivs['realtion1'][0])
+        self.assertIn('realtion1', active_ivs)
+        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
+        self.assertIn(objectb, active_ivs['realtion1'][1])
+
+
         relations1 = ec.created_entities('realtion1')
         self.assertEqual(len(relations1), 2)
         all_relations = ec.created_entities()
@@ -213,6 +233,15 @@ class TestsProcessRelations(FunctionalTests):
         ec.add_created_entity('realtion1', objectc)
         relation1 = ec.created_entity('realtion1')
         self.assertIs(relation1, objectc)
+
+
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertIn('realtion1', active_ivs)
+        self.assertEqual('element', active_ivs['realtion1'][0])
+        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
+        self.assertIn(objectc, active_ivs['realtion1'][1])
+
         relations1 = ec.created_entities('realtion1')
         self.assertEqual(len(relations1), 2)
         all_relations = ec.created_entities()
@@ -244,11 +273,22 @@ class TestsProcessRelations(FunctionalTests):
         relationC1 = ec.involved_collection('realtion1')
         self.assertEqual(len(relationC1), 0)
 
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 0)
+
         ec.add_involved_collection('realtion1', [objecta, objectb])
         relation1 = ec.involved_collection('realtion1')
         self.assertEqual(len(relation1), 2)
         self.assertIn(objecta, relation1)
         self.assertIn(objectb, relation1)
+
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertIn('realtion1', active_ivs.keys())
+        self.assertEqual(len(active_ivs['realtion1'][1]), 2)
+        self.assertEqual('collection', active_ivs['realtion1'][0])
+        self.assertIn(objecta, active_ivs['realtion1'][1])
+        self.assertIn(objectb, active_ivs['realtion1'][1])
 
         self.assertIs(objecta.creator, None)
         involvers = objecta.involvers
@@ -265,11 +305,27 @@ class TestsProcessRelations(FunctionalTests):
         self.assertEqual(len(relation1), 1)
         self.assertIn(objectb, relation1)
 
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertIn('realtion1', active_ivs)
+        self.assertEqual('collection', active_ivs['realtion1'][0])
+        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
+        self.assertIn(objectb, active_ivs['realtion1'][1])
+
         ec.add_involved_collection('realtion1', [objecta, objectc])
         relation1 = ec.involved_collection('realtion1')
         self.assertEqual(len(relation1), 2)
         self.assertIn(objecta, relation1)
         self.assertIn(objectc, relation1)
+
+        active_ivs = ec.all_active_involveds()
+        self.assertEqual(len(active_ivs.keys()), 1)
+        self.assertIn('realtion1', active_ivs)
+        self.assertEqual('collection', active_ivs['realtion1'][0])
+        self.assertEqual(len(active_ivs['realtion1'][1]), 2)
+        self.assertIn(objecta, active_ivs['realtion1'][1])
+        self.assertIn(objectc, active_ivs['realtion1'][1])
+
         relation1 = ec.involved_collections('realtion1')
         self.assertEqual(len(relation1), 2)
         self.assertEqual(len(relation1[0]), 1)

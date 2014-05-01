@@ -30,6 +30,7 @@ class ExecutionContext(Object):
         super(ExecutionContext, self).__init__()
         self.parent = None
         self.sub_execution_contexts = PersistentList()
+        self.properties_names = PersistentList()
 
     @property
     def createds(self):
@@ -84,11 +85,10 @@ class ExecutionContext(Object):
     @property
     def avtive_involveds(self):
         result = {}
-        for name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+        for name in self.properties_names:
             relation_result = self.get_involved_collection(name)
             if relation_result:
-                result[name] = relation_result
+                result[name] = ('collection', relation_result)
                 continue
 
             relation_result = self.involved_entity(name) 
@@ -97,14 +97,19 @@ class ExecutionContext(Object):
             else:
                 continue
 
-            result[name] = relation_result
+            result[name] = ('element', relation_result)
 
         return result
 
     def _sub_active_involveds(self):
         result = dict(self.avtive_involveds)
         for sec in self.sub_execution_contexts:
-            result.update(sec._sub_active_involveds())
+            sub_active = sec._sub_active_involveds()
+            for k, v in sub_active.iteritems():
+                if k in result:
+                    result[k][1].extend(v[1])
+                else:
+                    result[k] = v
 
         return result
 
@@ -120,6 +125,7 @@ class ExecutionContext(Object):
             self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
         else:
+            self.properties_names.append(name)
             self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
             self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
@@ -320,6 +326,7 @@ class ExecutionContext(Object):
 
 #collections
     def add_involved_collection(self, name, values):
+        prop_name = name
         index_key = name+'_index'
         if not hasattr(self, index_key):
             self.add_data(index_key, 0)
@@ -333,6 +340,7 @@ class ExecutionContext(Object):
                 self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
             else:
+                self.properties_names.append(prop_name)
                 self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
                 self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)

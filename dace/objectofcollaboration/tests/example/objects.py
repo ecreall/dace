@@ -49,8 +49,6 @@ class ObjectA(Entity):
 
     def __init__(self, **kwargs):
         Entity.__init__(self, **kwargs)
-        if self.title is None:
-            self.title = self.__class__.__name__
 
 
 class ObjectB(Object):
@@ -58,8 +56,6 @@ class ObjectB(Object):
 
     def __init__(self, **kwargs):
         Object.__init__(self, **kwargs)
-        if self.title is None:
-            self.title = self.__class__.__name__
 
 
 class ObjectC(ObjectB):
@@ -67,5 +63,3 @@ class ObjectC(ObjectB):
 
     def __init__(self, **kwargs):
         ObjectB.__init__(self, **kwargs)
-        if self.title is None:
-            self.title = self.__class__.__name__

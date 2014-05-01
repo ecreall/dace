@@ -122,9 +122,6 @@ class StartWorkItem(UserDecision):
         action.workitem = self
         self.actions.append(action)
 
-    def get_actions_validators(self):
-        return [a.__class__.get_validator() for a in self.actions]
-
     def validate(self):
         """If all transitions (including incoming TODO) are async, return True
         Else if a one transition in the chain is sync,
@@ -195,9 +192,6 @@ class BaseWorkItem(LockableElement, Object):
                 action.dtlock = False
                 action.call(action)
 
-    def get_actions_validators(self):
-        return [a.__class__.get_validator() for a in self.actions]
-
     def validate(self):
         raise NotImplementedError # pragma: no cover
 
@@ -225,10 +219,6 @@ class WorkItem(BaseWorkItem):
         global_request = get_current_request() 
         return True and not self.is_locked(global_request)
 
-    def start_test_event(self): #for tests
-        self.node.execute()
-        self.node.finish_behavior(self)
-
     def start_test_activity(self): #for tests
         self.node.finish_behavior(self)
 
@@ -255,8 +245,6 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
 
     def consume(self):
         if self.__parent__ is None: # deleted by another consumer
-            proc = pd.started_process[0]
-            self.process = proc
             wi = self.process[self.node.__name__]._get_workitem()
             if wi is not None:
                 wi.set_actions(self.actions)
@@ -276,7 +264,6 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         """
         global_request = get_current_request() 
         transitions = self.path.transitions
-        # TODO il faut verifier la condition
         if not [t for t in transitions if t.sync]:
             return True and not self.is_locked(global_request)
         else:
