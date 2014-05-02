@@ -42,6 +42,7 @@ class FunctionalTests(unittest.TestCase):
         request.root = self.app
         self.users = self.app['principals']['users']
         self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
+        self.app['principals'].add_user('bob', password='bob', email='alice@example.com')
         request.user = self.users['admin']
         self.def_container = self.app['process_definition_container']
 

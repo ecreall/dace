@@ -620,7 +620,79 @@ class TestsBusinessAction(FunctionalTests):
         actions_all_y = [a for a in actions_y if a in all_y]
         self.assertEqual((action_y in all_y), False)
         self.assertEqual(len(actions_all_y), len(actions_y)-1) # -1 for action_y
-         
+
+    def test_actions_assignement(self):
+        y, pd = self._process_valid_actions()
+        y._init_contexts([ActionY])
+        self.def_container.add_definition(pd)
+        start_wi = pd.start_process('x')
+
+        objecta= ObjectA()
+        self.app['objecta'] = objecta
+        call_actions = objecta.actions
+        actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
+        action_y = actions_y[0]
+        action_y.before_execution(objecta, self.request)
+        wi, proc = action_y.workitem.consume()
+        wi.start_test_empty()
+        action_y.execute(objecta, self.request, None, **{})
+        node_x = proc['x']
+        action_x = proc['x'].workitems[0].actions[0]
+
+        self.assertEqual(len(action_x.assigned_to), 0)
+        self.assertEqual(len(node_x.assigned_to), 0)
+
+        node_x.set_assignment(self.users['alice'])
+
+        self.assertEqual(len(action_x.assigned_to), 1)
+        self.assertEqual(len(node_x.assigned_to), 1)
+        self.assertIn(self.users['alice'],action_x.assigned_to)
+        self.assertIn(self.users['alice'],node_x.assigned_to)
+
+        #admin
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+
+        #bob
+        self.request.user = self.users['bob']     
+        self.assertEqual(action_x.validate(objecta, self.request), False)
+
+        #alice
+        self.request.user = self.users['alice']
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+
+        node_x.assigne_to(self.users['bob'])
+        #bob
+        self.request.user = self.users['bob']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        self.request.user = self.users['alice']
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        node_x.unassigne(self.users['bob'])
+        self.request.user = self.users['alice']
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        self.request.user = self.users['bob']  
+        self.assertEqual(action_x.validate(objecta, self.request), False)
+        self.request.user = self.users['admin']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        node_x.unassigne(self.users['alice'])
+        self.request.user = self.users['bob']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+
+
+        action_x.set_assignment(self.users['bob'])
+        self.request.user = self.users['alice']
+        self.assertEqual(action_x.validate(objecta, self.request), False)
+        self.request.user = self.users['bob']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        self.request.user = self.users['admin']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        action_x.unassigne(self.users['bob'])
+        self.request.user = self.users['alice']
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        self.request.user = self.users['bob']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+        self.request.user = self.users['admin']  
+        self.assertEqual(action_x.validate(objecta, self.request), True)
+
 
 
 class TestsSubProcess(FunctionalTests):
