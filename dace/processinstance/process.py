@@ -85,19 +85,24 @@ class ExecutionContext(Object):
     @property
     def avtive_involveds(self):
         result = {}
-        for name in self.properties_names:
+        properties = dict(self.properties_names) 
+        for name in properties.keys():
             relation_result = self.get_involved_collection(name)
             if relation_result:
-                result[name] = ('collection', relation_result)
+                index_key = name+'_index'
+                i = self.get_localdata(index_key)
+                result[name] = ('collection', relation_result, name, i, True, properties[name])
                 continue
 
-            relation_result = self.involved_entity(name) 
+            relation_result = self.involved_entity(name)
+            i = 0
             if relation_result is not None:
+                i = len(self.getproperty(name))
                 relation_result = [relation_result]
             else:
                 continue
 
-            result[name] = ('element', relation_result)
+            result[name] = ('element', relation_result, name, i, True, properties[name])
 
         return result
 
@@ -117,15 +122,47 @@ class ExecutionContext(Object):
         root = self.root_execution_context()
         return root._sub_active_involveds()
 
+    @property
+    def classified_involveds(self):
+        result = {}
+        properties = dict(self.properties_names) 
+        for name in properties.keys():
+            index_key = name+'_index'
+            if hasattr(self, index_key):
+                index = self.get_localdata(index_key)+1
+                for i in range(index)[1:]:
+                    prop_name = name+'_'+str(i)
+                    self._init__property(prop_name, self.dynamic_properties_def[prop_name])
+                    result[prop_name] = ('collection', self.getproperty(prop_name), name, i, (i==(index-1)), properties[name])
+            else:
+                result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])    
+
+        return result
+
+    def _sub_classified_involveds(self):
+        result = dict(self.classified_involveds)
+        for sec in self.sub_execution_contexts:
+            sub_classified = sec._sub_classified_involveds()
+            for k, v in sub_classified.iteritems():
+                if k in result:
+                    result[k][1].extend(v[1])
+                else:
+                    result[k] = v
+
+        return result
+
+    def all_classified_involveds(self):
+        root = self.root_execution_context()
+        return root._sub_classified_involveds()
 
 #entity
-    def add_involved_entity(self, name, value):
+    def add_involved_entity(self, name, value, type='involved'):
         self.addtoproperty('involveds', value)
         if name in self.dynamic_properties_def:
             self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
         else:
-            self.properties_names.append(name)
+            self.properties_names.append((name, type))
             self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
             self._init__property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
@@ -143,7 +180,7 @@ class ExecutionContext(Object):
 
     def add_created_entity(self, name, value):
         self.addtoproperty('createds', value)
-        self.add_involved_entity(name, value)
+        self.add_involved_entity(name, value, 'created')
 
     # involved_entity start
     def involved_entity(self, name, index=-1):
@@ -325,7 +362,7 @@ class ExecutionContext(Object):
     # has relation_entity end
 
 #collections
-    def add_involved_collection(self, name, values):
+    def add_involved_collection(self, name, values, type='involved'):
         prop_name = name
         index_key = name+'_index'
         if not hasattr(self, index_key):
@@ -340,7 +377,7 @@ class ExecutionContext(Object):
                 self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
             else:
-                self.properties_names.append(prop_name)
+                self.properties_names.append((prop_name, type))
                 self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
                 self._init__property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
@@ -359,7 +396,7 @@ class ExecutionContext(Object):
         for value in values:
             self.addtoproperty('createds', value)
 
-        self.add_involved_collection(name, values)
+        self.add_involved_collection(name, values, 'created')
 
     # involved_collection start
     def involved_collection(self, name, index=-1):
@@ -384,6 +421,7 @@ class ExecutionContext(Object):
             return []
 
         name = name+'_'+str(index)
+        self._init__property(name, self.dynamic_properties_def[name])
         result = self.getproperty(name)
         return result
 

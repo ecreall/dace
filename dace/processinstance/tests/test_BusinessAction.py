@@ -638,12 +638,10 @@ class TestsBusinessAction(FunctionalTests):
         action_y.execute(objecta, self.request, None, **{})
         node_x = proc['x']
         action_x = proc['x'].workitems[0].actions[0]
-
         self.assertEqual(len(action_x.assigned_to), 0)
         self.assertEqual(len(node_x.assigned_to), 0)
 
         node_x.set_assignment(self.users['alice'])
-
         self.assertEqual(len(action_x.assigned_to), 1)
         self.assertEqual(len(node_x.assigned_to), 1)
         self.assertIn(self.users['alice'],action_x.assigned_to)
@@ -677,7 +675,6 @@ class TestsBusinessAction(FunctionalTests):
         self.request.user = self.users['bob']  
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
-
         action_x.set_assignment(self.users['bob'])
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), False)
@@ -692,7 +689,6 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(action_x.validate(objecta, self.request), True)
         self.request.user = self.users['admin']  
         self.assertEqual(action_x.validate(objecta, self.request), True)
-
 
 
 class TestsSubProcess(FunctionalTests):

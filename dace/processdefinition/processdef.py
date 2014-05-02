@@ -28,6 +28,7 @@ class ProcessDefinition(Entity):
     isSubProcess = False
     isVolatile = False
     isUnique = False
+    discriminator = 'Application'
 
     def __init__(self, **kwargs):
         super(ProcessDefinition, self).__init__(**kwargs)
