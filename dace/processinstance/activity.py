@@ -363,6 +363,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)
+        self.workitem.unlock(request)
         # TODO self.workitem is a real workitem?
         self.workitem.node.finish_behavior(self.workitem)
 
