@@ -368,15 +368,20 @@ class Behavior(Step):
         pass# pragma: no cover
 
 
+def default_condition(context, request):
+    return True
+
+
 class Transition(Persistent):
 
-    def __init__(self, source, target, id, condition=(lambda x, y:True)):
+    def __init__(self, source, target, id, condition=(lambda x, y:True), isdefault=False):
         self.wizard = source.wizard
         self.source = source
         self.target = target
         self.source.add_outgoing(self)
         self.target.add_incoming(self)
         self.condition = condition
+        self.isdefault = isdefault
         self.id = id
 
     def validate(self, context, request, **args):
@@ -400,7 +405,19 @@ class Wizard(Behavior):
             sourceinstance = _stepinstances[transition[0]]
             targetinstance = _stepinstances[transition[1]]
             transitionid = transition[0]+'->'+transition[1]
-            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, transition[2])            
+            condition = None
+            try:
+                condition = transition[3]
+            except Exception:
+                condition = default_condition
+ 
+            default = False
+            try:
+                default = transition[2]
+            except Exception:
+                pass
+
+            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, condition, default)            
             self.transitionsinstances.append((transitionid, transitioninstance))
 
 
