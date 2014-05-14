@@ -12,6 +12,7 @@ from dace.util import find_service, get_obj
 from .core import (
         EventHandler,
         BehavioralFlowNode,
+        Wizard,
         Behavior,
         Validator,
         ValidationError,
@@ -102,7 +103,7 @@ def getBusinessActionValidator(action_cls):
     return BusinessActionValidator
 
 
-class BusinessAction(Behavior, LockableElement, Persistent):
+class BusinessAction(Wizard, LockableElement, Persistent):
     implements(ILocation, IBusinessAction)
 
     node_definition = NotImplemented
@@ -137,7 +138,7 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         if action_uid is not None:
             source_action = get_obj(int(action_uid))
 
-        if source_action is not None and (source_action._class is cls) and source_action.validate(context, request):
+        if source_action is not None and (source_action._class_ is cls) and source_action.validate(context, request):
             return source_action
 
         instances = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
@@ -175,10 +176,6 @@ class BusinessAction(Behavior, LockableElement, Persistent):
     def actions(self):
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
-
-    @property
-    def _class(self):
-        return self.__class__
 
     @property
     def process(self):
@@ -333,16 +330,12 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         self.lock(request)
         self.workitem.lock(request)
 
-    def start(self, context, request, appstruct, **kw):
-        if kw is not None and ACTIONSTEPID in kw and hasattr(self, kw[ACTIONSTEPID]):
-            step = getattr(self, kw[ACTIONSTEPID])
-            return step(context, request, appstruct, **kw)
-        else:
-            return True
-
     def _consume_decision(self):
         if isinstance(self.workitem, UserDecision):
             self.workitem.consume()    
+
+    def start(self, context, request, appstruct, **kw):#execution
+        return True
 
     def execute(self, context, request, appstruct, **kw):
         self._consume_decision()
@@ -368,6 +361,28 @@ class BusinessAction(Behavior, LockableElement, Persistent):
         self.workitem.node.finish_behavior(self.workitem)
 
 
+
+class StartStep(Behavior, Persistent):
+
+    def __init__(self, **kwargs):
+        super(StartStep, self).__init__(**kwargs)
+
+    def execute(self, context, request, appstruct, **kw):
+        BusinessAction.execute(self.wizard, context, request, appstruct, **kw)
+        self.start(context, request, appstruct, **kw)
+        self.after_execution(context, request, **kw)
+
+class EndStep(Behavior, Persistent):
+
+    def __init__(self, **kwargs):
+        super(EndStep, self).__init__(**kwargs)
+
+    def execute(self, context, request, appstruct, **kw):
+        self.start(context, request, appstruct, **kw)
+        self.after_execution(context, request, **kw)
+        self.wizard.isexecuted = True
+        if self.wizard.sub_process is None:
+            self.wizard.finish_execution(context, request, **kw)
 
 class ElementaryAction(BusinessAction):
 
@@ -517,7 +532,7 @@ class ActionInstance(BusinessAction):
         self.behavior_id = self.principalaction.node_id+'_'+str(id)
         
     @property
-    def _class(self):
+    def _class_(self):
         return self.principalaction.__class__
 
     @staticmethod

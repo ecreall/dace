@@ -15,9 +15,9 @@ from substanced.util import renamer
 
 from pontus.schema import Schema
 from dace.objectofcollaboration.application import Application
-
+from dace.processinstance.core import Wizard, Behavior
 from pontus.core import VisualisableElement, VisualisableElementSchema
-from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput
+from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput, StartStep, EndStep
 from dace.objectofcollaboration.tests.example.objects import IObjectA
 
 
@@ -237,7 +237,40 @@ class ActionZ(ElementaryAction):
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
 
+
+def conditionT(context, request):
+    return True
+
+class Step1(StartStep):
+    behavior_id = 'step1'
+    title = 'Etape 1 (A) '
+    description = 'L\'etape 1 de l\'action Y'
+
+    def start(self, context, request, appstruct, **kw):
+        request.steps.append('step1')  
+        return False
+
+class Step2(Behavior):
+    behavior_id = 'step2'
+    title = 'Etape 2 (A) '
+    description = 'L\'etape 2 de l\'action Y'
+
+    def start(self, context, request, appstruct, **kw):
+        request.steps.append('step2')  
+        return False
+
+class Step3(EndStep):
+    behavior_id = 'step3'
+    title = 'Etape 3 (A) '
+    description = 'L\'etape 3 de l\'action Y'
+
+    def start(self, context, request, appstruct, **kw):
+        request.steps.append('step3')  
+        return True
+
 class ActionYSteps(ElementaryAction):
+    steps = {'s1':Step1 , 's2':Step2 , 's3': Step3}
+    transitions = (('s1', 's2', conditionT),('s2', 's3', conditionT))
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -250,17 +283,6 @@ class ActionYSteps(ElementaryAction):
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
 
-    def step1(self, context, request, appstruct, **kw):
-        request.steps.append('step1')  
-        return False
-
-    def step2(self, context, request, appstruct, **kw):
-        request.steps.append('step2') 
-        return False
-
-    def step3(self, context, request, appstruct, **kw):
-        request.steps.append('step3')  
-        return True
 
 class ActionSP(ElementaryAction):
     #identification et classification

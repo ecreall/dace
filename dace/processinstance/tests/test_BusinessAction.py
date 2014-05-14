@@ -560,7 +560,17 @@ class TestsBusinessAction(FunctionalTests):
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
         wi.start_test_empty()
-        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step1'}) #execute step1
+        self.assertEqual(len(action_y.stepinstances),3)
+        steps = dict(action_y.stepinstances)
+        self.assertIn('s1', steps)
+        self.assertIn('s2', steps)
+        self.assertIn('s3', steps)
+
+        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        self.assertEqual(len(actions_y_validated_admin), 1)
+
+        s1 = steps['s1']
+        s1.execute(objecta, self.request, None) #execute step1
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 0)
@@ -573,7 +583,8 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 0)
         
         self.request.user = self.users['admin']
-        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step2'}) #execute step2
+        s2 = steps['s2']
+        s2.execute(objecta, self.request, None) #execute step2
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 0)
@@ -586,7 +597,8 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 0)
 
         self.request.user = self.users['admin']
-        action_y.execute(objecta, self.request, None, **{ACTIONSTEPID:'step3'}) #execute step2
+        s3 = steps['s3']
+        s3.execute(objecta, self.request, None) #execute step2
         self.assertIs(action_y.workitem, wi)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 1)

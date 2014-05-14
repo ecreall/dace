@@ -1,3 +1,5 @@
+from persistent import Persistent
+from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
@@ -292,7 +294,29 @@ class Validator(object):
         return True
 
 
-class Behavior(object):
+class Step(object):
+
+    def __init__(self, **kwargs):
+        super(Step, self).__init__()
+        self.wizard = None
+        if 'wizard' in kwargs:
+            self.wizard = kwargs['wizard']
+
+        self.step_id = ''
+        if 'step_id' in kwargs:
+            self.step_id = kwargs['step_id']
+
+        self._outgoing = PersistentList()
+        self._incoming = PersistentList()
+
+    def add_outgoing(self, transition):
+        self._outgoing.append(transition)
+
+    def add_incoming(self, transition):
+        self._incoming.append(transition)
+
+
+class Behavior(Step):
 
     title = NotImplemented
     description = NotImplemented
@@ -300,14 +324,28 @@ class Behavior(object):
 
     def __init__(self, **kwargs):
         super(Behavior, self).__init__(**kwargs)
+        if 'behavior_id' in kwargs:
+            self.behavior_id = kwargs['behavior_id']
 
     @classmethod
     def get_instance(cls, context, request, **kw):
-        return cls() #raise ValidationError if no action
+        instance = None
+        if 'wizard' in kw and kw['wizard'] is not None:
+            wizard = kw['wizard']
+            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).iteritems()])
+            instance = _stepinstances[cls.behavior_id]
+        else:
+            instance = cls()
+                    
+        return instance #raise ValidationError if no action
 
     @classmethod
     def get_validator(cls, **kw):
         return Validator #defaultvalidator
+
+    @property
+    def _class_(self):
+        return self.__class__
 
     def validate(self, context, request, **kw):
         return True #action instance validation
@@ -315,17 +353,55 @@ class Behavior(object):
     def before_execution(self, context, request, **kw):
         pass# pragma: no cover
 
-    def start(self, context, request, appstruct, **kw):
-        pass# pragma: no cover
+    def start(self, context, request, appstruct, **kw):#execution
+        pass
 
-    def execute(self, context, request, appstruct, **kw):
-        pass# pragma: no cover
+    def execute(self, context, request, appstruct, **kw): #execution policy
+        is_finished = self.start(context, request, appstruct, **kw)
+        if is_finished:
+            self.after_execution(context, request, **kw)
 
     def after_execution(self, context, request, **kw):
         pass# pragma: no cover
 
     def redirect(self, context, request, **kw):
         pass# pragma: no cover
+
+
+class Transition(Persistent):
+
+    def __init__(self, source, target, id, condition=(lambda x, y:True)):
+        self.wizard = source.wizard
+        self.source = source
+        self.target = target
+        self.source.add_outgoing(self)
+        self.target.add_incoming(self)
+        self.condition = condition
+        self.id = id
+
+    def validate(self, context, request, **args):
+        return self.condition(context, request, **args)
+
+
+class Wizard(Behavior):
+    steps = {}
+    transitions = ()
+
+    def __init__(self, **kwargs):
+        super(Wizard, self).__init__(**kwargs)
+        self.transitionsinstances = PersistentList()
+        self.stepinstances = PersistentList()
+        for key, step in self.steps.iteritems():
+            stepinstance = step(step_id=key, wizard=self)
+            self.stepinstances.append((stepinstance.step_id, stepinstance))
+  
+        _stepinstances = dict(self.stepinstances)
+        for transition in self.transitions:
+            sourceinstance = _stepinstances[transition[0]]
+            targetinstance = _stepinstances[transition[1]]
+            transitionid = transition[0]+'->'+transition[1]
+            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, transition[2])            
+            self.transitionsinstances.append((transitionid, transitioninstance))
 
 
 class EventHandler(FlowNode):
