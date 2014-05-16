@@ -21,18 +21,6 @@ from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinalit
 from dace.objectofcollaboration.tests.example.objects import IObjectA
 
 
-@content(
-    'dace_root',
-    )
-class TestApplication(Application):
-    name = renamer()
-
-    def __init__(self, **kwargs):
-        super(TestApplication, self).__init__(**kwargs)
-        if not self.title:
-            self.title = 'TestApplication'
-
-
 def relation_validationA(process, context):
     return True
 
@@ -149,7 +137,7 @@ class ActionYD(DataInput):
 
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
-        item.is_executed = True  
+        item.is_executed = True
         return True
 
 
@@ -171,7 +159,7 @@ class ActionYDp(DataInput):
 
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
-        item.is_executed = True  
+        item.is_executed = True
         return True
 
 def loppdata(context, request, process, appstruct):
@@ -194,7 +182,7 @@ class ActionYLD(LoopActionDataInput):
 
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
-        item.is_executed = True  
+        item.is_executed = True
         return True
 
 def loppcondition(context, request, process, appstruct):
@@ -221,7 +209,7 @@ class ActionYLC(LoopActionCardinality):
     state_validation = state_validationA
 
     def start(self, context, request, appstruct, **kw):
-        request.ylc = request.ylc+1  
+        request.ylc = request.ylc+1
         return True
 
 class ActionZ(ElementaryAction):
@@ -247,7 +235,7 @@ class Step1(StartStep):
     description = 'L\'etape 1 de l\'action Y'
 
     def start(self, context, request, appstruct, **kw):
-        request.steps.append('step1')  
+        request.steps.append('step1')
         return False
 
 class Step2(Behavior):
@@ -256,7 +244,7 @@ class Step2(Behavior):
     description = 'L\'etape 2 de l\'action Y'
 
     def start(self, context, request, appstruct, **kw):
-        request.steps.append('step2')  
+        request.steps.append('step2')
         return False
 
 class Step3(EndStep):
@@ -265,7 +253,7 @@ class Step3(EndStep):
     description = 'L\'etape 3 de l\'action Y'
 
     def start(self, context, request, appstruct, **kw):
-        request.steps.append('step3')  
+        request.steps.append('step3')
         return True
 
 class ActionYSteps(ElementaryAction):
@@ -315,5 +303,5 @@ class ActionSPMI(DataInput):
 
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
-        item.is_executed = True  
+        item.is_executed = True
         return True
