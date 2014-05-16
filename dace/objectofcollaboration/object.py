@@ -12,19 +12,20 @@ from dace.relations import connect, disconnect, find_relations
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
 COMPOSITE_UNIQUE = 'cu'
 
+marker = object()
 
 def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
-    key = propertyref+'_valuekey'
+    key = propertyref + '_valuekey'
 
-    def _get(self,):
+    def _get(self):
         myproperty = self.__class__.properties[propertyref]
-        if not hasattr(self, key):
+        if getattr(self, key, marker) is marker:
             myproperty['init'](self)
 
-        keyvalue = self.__dict__[key]
-        if keyvalue is not None and keyvalue in self:
-            return self[keyvalue]
+        keyvalue = getattr(self, key, None)
+        if keyvalue is not None:
+            return self.get(keyvalue, None)
 
         return None
 
@@ -37,7 +38,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
         if not hasattr(self, key):
             myproperty['init'](self)
 
-        keyvalue = self.__dict__[key]
+        keyvalue = getattr(self, key, None)
         currentvalue = myproperty['get'](self)
         if keyvalue is not None and currentvalue == value:
             return
@@ -49,10 +50,10 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
             setattr(self, key, None)
             return
 
-        value_name= value.__name__
-        if getattr(value,'__property__', None) is not None:
+        value_name = value.__name__
+        if getattr(value, '__property__', None) is not None:
             value.__parent__.__class__.properties[value.__property__]['del'](value.__parent__, value)
-        elif hasattr(value,'__parent__') and value.__parent__ is not None :
+        elif getattr(value, '__parent__', None) is not None:
             value.__parent__.remove(value_name)
 
         self.add(value_name, value)
@@ -63,30 +64,30 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _del(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        if not hasattr(self, key):
+        if getattr(self, key, marker) is marker:
             myproperty['init'](self)
 
-        keyvalue = self.__dict__[key]
-        if keyvalue is not None and self.__contains__(keyvalue) and self[keyvalue] == value:
+        keyvalue = getattr(self, key, None)
+        if keyvalue is not None and self.get(keyvalue, marker) == value:
             if initiator and opposite is not None and opposite in value.__class__.properties:
                 value.__class__.properties[opposite]['del'](value, self, False)
 
             self.remove(keyvalue)
 
     def init(self):
-        if not hasattr(self, key):
+        if getattr(self, key, marker) is marker:
             setattr(self, key, None)
 
-    return {'add':_add,
-            'get':_get,
-            'set':_set,
-            'del':_del,
+    return {'add': _add,
+            'get': _get,
+            'set': _set,
+            'del': _del,
             'init': init,
-            'data':{'name':propertyref,
-                    'opposite': opposite,
-                    'isunique': isunique,
-                    'type':COMPOSITE_UNIQUE
-                   }
+            'data': {'name': propertyref,
+                     'opposite': opposite,
+                     'isunique': isunique,
+                     'type': COMPOSITE_UNIQUE
+                    }
            }
 
 
@@ -465,22 +466,22 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
            }
 
 
-__properties__ = { COMPOSITE_UNIQUE: CompositeUniqueProperty,
-                   SHARED_UNIQUE: SharedUniqueProperty,
-                   COMPOSITE_MULTIPLE: CompositeMultipleProperty,
-                   SHARED_MULTIPLE: SharedMultipleProperty }
+__properties__ = {COMPOSITE_UNIQUE: CompositeUniqueProperty,
+                  SHARED_UNIQUE: SharedUniqueProperty,
+                  COMPOSITE_MULTIPLE: CompositeMultipleProperty,
+                  SHARED_MULTIPLE: SharedMultipleProperty}
 
 
 class Object(Folder):
 
     implements(IObject)
     properties_def = {}
-    dynamic_properties_reloded = False
+    dynamic_properties_reloaded = False
 
     def __new__(cls, *args, **kwargs):
         mro_cls = [c for c in cls.__mro__ if c is not cls and hasattr(c, 'properties_def')]
         for c in mro_cls:
-            cls.properties_def.update(c.properties_def) 
+            cls.properties_def.update(c.properties_def)
 
         if not hasattr(cls, 'properties'):
             cls.properties = {}
@@ -513,7 +514,7 @@ class Object(Folder):
             self._init__property(name, propertydef)
 
     def _init_dynamic_properties_(self):
-        self.dynamic_properties_reloded = True
+        self.dynamic_properties_reloaded = True
         for name, propertydef in self.dynamic_properties_def.iteritems():
             self._init__property(name, propertydef)
 
@@ -539,7 +540,7 @@ class Object(Folder):
 
     def __getitem__(self, name):
         obj = super(Object, self).__getitem__(name)
-        if hasattr(obj, 'dynamic_properties_def') and obj.dynamic_properties_def and not obj.dynamic_properties_reloded:
+        if hasattr(obj, 'dynamic_properties_def') and obj.dynamic_properties_def and not obj.dynamic_properties_reloaded:
             obj._init_dynamic_properties_()
 
         return obj
