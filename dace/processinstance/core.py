@@ -3,17 +3,17 @@ from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
-from zope.component import createObject
 from zope.interface import implements
 import thread
 
 from dace.interfaces import IProcessStarted, IProcessFinished
-from .workitem import DecisionWorkItem, StartWorkItem, WorkItem
 from dace import log
-from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE
+from dace.interfaces import IBehavior
+from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE
 from dace.processdefinition.core import Path
-
 from dace.objectofcollaboration.entity import Entity
+from .workitem import DecisionWorkItem, StartWorkItem, WorkItem
+
 
 class BPMNElement(Entity):
     def __init__(self, definition, **kwargs):
@@ -137,11 +137,11 @@ class MakerFlowNode(FlowNode):
         new_workitems = []
         for wi in workitems.values():
             if not (wi in self.workitems):
-                new_workitems.append(wi)  
-  
+                new_workitems.append(wi)
+
         if not  new_workitems:
             return
-       
+
         for decision_workitem in new_workitems:
             node_to_execute = self.process[decision_workitem.node.__name__]
             if hasattr(node_to_execute, 'prepare_for_execution'):
@@ -203,8 +203,8 @@ class BehavioralFlowNode(MakerFlowNode):
                     self.addtoproperty('workitems', wi)
 
                 return wi
-          
-        return None 
+
+        return None
 
     def prepare(self):
         paths = self.process.global_transaction.find_allsubpaths_for(self, 'Replay')
@@ -266,7 +266,7 @@ class BehavioralFlowNode(MakerFlowNode):
                            # don't cdecision.node.stop()
                            cdecision.__parent__.delproperty('workitems', cdecision)
 
-                    break 
+                    break
 
         if work_item is not None:
             start_transition = work_item.path._get_transitions_source(self)[0]
@@ -317,6 +317,7 @@ class Step(object):
 
 
 class Behavior(Step):
+    implements(IBehavior)
 
     title = NotImplemented
     description = NotImplemented
@@ -336,7 +337,7 @@ class Behavior(Step):
             instance = _stepinstances[cls.behavior_id]
         else:
             instance = cls()
-                    
+
         return instance #raise ValidationError if no action
 
     @classmethod
@@ -399,7 +400,7 @@ class Wizard(Behavior):
         for key, step in self.steps.iteritems():
             stepinstance = step(step_id=key, wizard=self)
             self.stepinstances.append((stepinstance.step_id, stepinstance))
-  
+
         _stepinstances = dict(self.stepinstances)
         for transition in self.transitions:
             sourceinstance = _stepinstances[transition[0]]
@@ -410,14 +411,14 @@ class Wizard(Behavior):
                 condition = transition[3]
             except Exception:
                 condition = default_condition
- 
+
             default = False
             try:
                 default = transition[2]
             except Exception:
                 pass
 
-            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, condition, default)            
+            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, condition, default)
             self.transitionsinstances.append((transitionid, transitioninstance))
 
 
@@ -425,7 +426,7 @@ class EventHandler(FlowNode):
 
     def __init__(self, definition, **kwargs):
         super(EventHandler, self).__init__(definition, **kwargs)
-        self.boundaryEvents = []#PercistentList()
+        self.boundaryEvents = []#PersistentList()
 
     def _init_boundaryEvents(self, definition):
         self.boundaryEvents = [defi.create()

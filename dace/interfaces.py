@@ -6,12 +6,11 @@ from zope.interface import Interface, Attribute
 #from dolmen.authentication import (
 #    IPrincipal, IPasswordProtected, IPrincipalFolder)
 from substanced.interfaces import IPrincipal, IFolder, IRoot
-#from dolmen.file import ImageField 
+#from dolmen.file import ImageField
 #from z3c.schema.email import RFC822MailAddress
 #from zope.i18nmessageid import MessageFactory
 
 #_ = MessageFactory("menhir.contenttype.user")
-
 
 
 class IObject(IFolder):
@@ -121,6 +120,7 @@ class IRuntime(IEntity):
     """Runtime container.
     """
     #contains(IProcess)
+
 
 class IProcessDefinitionContainer(IEntity):
     """Process definition container.
@@ -315,6 +315,25 @@ class IProcessFinished(Interface):
 class IBusinessAction(Interface):
     pass
 
+
 class IApplication(IEntity, IRoot):
     pass
 
+
+class IBehavior(Interface):
+
+    behaviorid = Attribute("Unique identifier")
+    title = Attribute("Title")
+    description = Attribute("Description")
+
+    def get_validator(cls, **kw):
+        """Get validator"""
+
+    def execute(self, context, request, appstruct, **kw):
+        """What the behavior is doing"""
+
+    def before_execution(self, context, request, **kw):
+        """Executed before the behavior execution (e.g. lock the context)"""
+
+    def after_execution(self, context, request, **kw):
+        """Executed after the behavior execution (e.g. unlock the context)"""
