@@ -1,15 +1,17 @@
+import thread
+
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
 from zope.interface import implements
-import thread
 
 from dace.interfaces import IProcessStarted, IProcessFinished
 from dace import log
 from dace.interfaces import IBehavior
-from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE
+from dace.objectofcollaboration.object import (
+        COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE)
 from dace.processdefinition.core import Path
 from dace.objectofcollaboration.entity import Entity
 from .workitem import DecisionWorkItem, StartWorkItem, WorkItem
@@ -121,7 +123,7 @@ class MakerFlowNode(FlowNode):
             if transition.sync or transition.condition(self.process):
                 node = transition.target
                 initial_path = Path([transition])
-                subtransaction = global_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
+                global_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
                     dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__], self)
@@ -214,7 +216,6 @@ class BehavioralFlowNode(MakerFlowNode):
 
         registry = get_current_registry()
         registry.notify(ActivityPrepared(self))
-        factoryname = self.definition.id
         workitem = WorkItem(self)
         workitem.id = 1
         workitem.__name__ = str(1)
@@ -246,7 +247,6 @@ class BehavioralFlowNode(MakerFlowNode):
         self.decide(self.process.global_transaction)
 
     def finish_decisions(self, work_item):
-        registry = get_current_registry()
         first_transition = work_item.path._get_transitions_source(self)
         if work_item is not None :
             work_item.validations.append(self)
@@ -306,8 +306,8 @@ class Step(object):
         if 'step_id' in kwargs:
             self.step_id = kwargs['step_id']
 
-        self._outgoing = PersistentList()
-        self._incoming = PersistentList()
+        self._outgoing = []
+        self._incoming = []
 
     def add_outgoing(self, transition):
         self._outgoing.append(transition)
@@ -435,6 +435,7 @@ class EventHandler(FlowNode):
             be = bedef.create()
             be.id = bedef.id
             be.__name__ = bedef.__name__
+            # FIXME: the implementation is unfinished
             self.process.addtoproperty('nodes', node)
 
 DEFAULTMAPPING_ACTIONS_VIEWS = {}
