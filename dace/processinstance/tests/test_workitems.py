@@ -690,7 +690,7 @@ class TestsWorkItems(FunctionalTests):
 
         workitems['sample.b'].consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def test_start_complex_MultiDecision_workitem_b(self):
         pd = self._process_start_complex_MultiDecision_process()
@@ -734,7 +734,7 @@ class TestsWorkItems(FunctionalTests):
 
         workitems['sample.d'].consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def test_blocked_gateway_because_no_workitems(self):
         pd = self._process_a_g_bc()
@@ -931,7 +931,7 @@ class TestsWorkItems(FunctionalTests):
 
         workitems['sample.b'].start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def  _process_start_complex_Parallel_process_decision(self):
         """
@@ -1082,7 +1082,7 @@ class TestsWorkItems(FunctionalTests):
         decision_ae = workitems['sample.ae']
         decision_ae.consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def  _process_start_complex_Parallel_process_decision_cycle(self):
         """
@@ -1252,7 +1252,7 @@ class TestsWorkItems(FunctionalTests):
         decision_ae = workitems['sample.ae']
         decision_ae.consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def test_Transitions(self):
         pd = self._process_start_refresh_decision()
@@ -1379,7 +1379,7 @@ class TestsWorkItems(FunctionalTests):
 
         workitems['sample.b'].start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
         currenttransaction = proc.global_transaction
         self.assertEqual(len(currenttransaction.sub_transactions), 1)
         #c
@@ -1458,7 +1458,7 @@ class TestGatewayChain(FunctionalTests):
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def test_gateway_chain_end_event_d_b(self):
         pd = self._process()
@@ -1470,7 +1470,7 @@ class TestGatewayChain(FunctionalTests):
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         workitems['sample.b'].consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def test_gateway_chain_end_event_b(self):
         pd = self._process()
@@ -1479,7 +1479,7 @@ class TestGatewayChain(FunctionalTests):
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
     def _process_parallel_join(self):
         """
@@ -1540,7 +1540,7 @@ class TestGatewayChain(FunctionalTests):
 
         workitems['sample.b'].consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
         self.assertFalse(proc._finished)
 
     def test_gateway_chain_parallel_a_b(self):
@@ -1553,7 +1553,7 @@ class TestGatewayChain(FunctionalTests):
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         workitems['sample.b'].consume().start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
         self.assertTrue(proc._finished)
 
     def test_gateway_chain_parallel_b_a(self):
@@ -1566,7 +1566,7 @@ class TestGatewayChain(FunctionalTests):
         self.assertEqual(sorted(workitems.keys()), ['sample.a'])
         workitems['sample.a'].start_test_activity()
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
         self.assertTrue(proc._finished)
 
 
