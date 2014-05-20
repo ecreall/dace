@@ -306,8 +306,8 @@ class Step(object):
         if 'step_id' in kwargs:
             self.step_id = kwargs['step_id']
 
-        self._outgoing = []
-        self._incoming = []
+        self._outgoing = PersistentList()
+        self._incoming = PersistentList()
 
     def add_outgoing(self, transition):
         self._outgoing.append(transition)
