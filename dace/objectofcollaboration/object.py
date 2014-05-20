@@ -561,6 +561,9 @@ class Object(Folder):
         container = self.data
 
         # remove characters that checkName does not allow
+        if name is None:
+            name = ''
+
         name = name.replace('/', '-').lstrip('+@')
 
         if not name:
