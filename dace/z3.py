@@ -84,5 +84,5 @@ class Job(BaseJob):
 
     @rwproperty.setproperty
     def callable(self, value):
-        self._callable_oid = value.im_self.event._p_oid
+        self._callable_oid = value.__self__.event._p_oid
         self._callable_name = value.__name__
