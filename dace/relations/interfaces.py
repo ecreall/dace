@@ -44,4 +44,4 @@ class IRelationValue(Interface):
     to_interfaces_flattened = Attribute(
         "The interfaces of the to object, flattened. "
         "This includes all base interfaces.")
-    tags = Attribute("List of tags (unicode).")
+    tags = Attribute("List of tags")

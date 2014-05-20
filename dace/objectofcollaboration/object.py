@@ -558,53 +558,9 @@ class Object(Folder):
         self.__class__.properties[name]['del'](self, value)
 
     def choose_name(self, name, object):
-        """See zope.container.interfaces.INameChooser
-
-        The name chooser is expected to choose a name without error
-
-        We create and populate a dummy container
-
-        >>> from zope.container.sample import SampleContainer
-        >>> container = SampleContainer()
-        >>> container['foobar.old'] = 'rst doc'
-
-        >>> from zope.container.contained import NameChooser
-
-        the suggested name is converted to unicode:
-
-        >>> NameChooser(container).chooseName(u'foobar', object())
-        u'foobar'
-
-        >>> NameChooser(container).chooseName(b'foobar', object())
-        u'foobar'
-
-        If it already exists, a number is appended but keeps the same extension:
-
-        >>> NameChooser(container).chooseName('foobar.old', object())
-        u'foobar-2.old'
-
-        Bad characters are turned into dashes:
-
-        >>> NameChooser(container).chooseName('foo/foo', object())
-        u'foo-foo'
-
-        If no name is suggested, it is based on the object type:
-
-        >>> NameChooser(container).chooseName('', [])
-        u'list'
-
-        """
-
         container = self.data
 
-        # convert to unicode and remove characters that checkName does not allow
-        if isinstance(name, bytes):
-            name = name.decode()
-        if not isinstance(name, unicode):
-            try:
-                name = unicode(name)
-            except:
-                name = u''
+        # remove characters that checkName does not allow
         name = name.replace('/', '-').lstrip('+@')
 
         if not name:
