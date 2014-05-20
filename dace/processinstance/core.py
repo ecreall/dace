@@ -333,7 +333,7 @@ class Behavior(Step):
         instance = None
         if 'wizard' in kw and kw['wizard'] is not None:
             wizard = kw['wizard']
-            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).iteritems()])
+            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).items()])
             instance = _stepinstances[cls.behavior_id]
         else:
             instance = cls()
@@ -401,7 +401,7 @@ class Wizard(Behavior):
         super(Wizard, self).__init__(**kwargs)
         self.transitionsinstances = PersistentList()
         self.stepinstances = PersistentList()
-        for key, step in self.steps.iteritems():
+        for key, step in self.steps.items():
             stepinstance = step(step_id=key, wizard=self)
             self.stepinstances.append((stepinstance.step_id, stepinstance))
 

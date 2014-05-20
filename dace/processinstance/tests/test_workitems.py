@@ -1011,7 +1011,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_f.consume()
         self.assertEqual(u'sample.f', wi.node.id)
         wi.start_test_activity()
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -1019,20 +1019,20 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
         proc.bool = False
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.d', nodes_workitems)
 
         proc.bool = True
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().iteritems() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
-        
+
 
     def test_start_complex_Parallel_workitem_decision(self):
         pd = self._process_start_complex_Parallel_process_decision()
@@ -1077,7 +1077,7 @@ class TestsWorkItems(FunctionalTests):
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.ae', nodes_workitems)
-        self.assertEqual(len(all_workitems['sample.ae']), 2)# deux executions pour G2: b-->G2 et c-->G2 ====> deux DecisionWorkItem pour Ae 
+        self.assertEqual(len(all_workitems['sample.ae']), 2)# deux executions pour G2: b-->G2 et c-->G2 ====> deux DecisionWorkItem pour Ae
 
         decision_ae = workitems['sample.ae']
         decision_ae.consume().start_test_activity()
@@ -1090,7 +1090,7 @@ class TestsWorkItems(FunctionalTests):
         E: end event
         G0, 1, 2(x): XOR Gateway
         P,0(+): Parallel Gateway
-        A, B, C, D: activities   |----------------------------------------| 
+        A, B, C, D: activities   |----------------------------------------|
                                  |        -----                           |
                                  |     -->| A |------------\              |
                                  |    /   -----             \             |
@@ -1177,7 +1177,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIs(wi_c, workitems['sample.c'])
-        
+
         wi.start_test_activity()
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
@@ -1231,7 +1231,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems) #P->B W (execution precedente)
         self.assertIn(u'sample.d', nodes_workitems) #C DW: Pas B (encore) et C. Les transactions find sur P ne sonst pas terminees.
-                                                    #      C'est le resultat du find sur C 
+                                                    #      C'est le resultat du find sur C
         self.assertEqual(workitems['sample.b'].__parent__.__name__, 'b')
         self.assertEqual(workitems['sample.d'].__parent__.__name__, 'c')
 

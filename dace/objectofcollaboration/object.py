@@ -510,12 +510,12 @@ class Object(Folder):
                 self.__class__.properties[_property]['init'](self)
 
     def __init_proprties__(self):
-        for name, propertydef in self.properties_def.iteritems():
+        for name, propertydef in self.properties_def.items():
             self._init__property(name, propertydef)
 
     def _init_dynamic_properties_(self):
         self.dynamic_properties_reloaded = True
-        for name, propertydef in self.dynamic_properties_def.iteritems():
+        for name, propertydef in self.dynamic_properties_def.items():
             self._init__property(name, propertydef)
 
     def _init__property(self, name, propertydef):
@@ -655,7 +655,7 @@ class Object(Folder):
 
     # TODO: use something like this ?
     # def set_data(self, appstruct, omit=()):
-    #     for name, val in appstruct.iteritems():
+    #     for name, val in appstruct.items():
     #         if name not in omit:
     #             existing_val = getattr(self, name, None)
     #             new_val = appstruct[name]
