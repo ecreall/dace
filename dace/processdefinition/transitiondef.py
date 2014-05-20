@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 
 from dace.interfaces import ITransitionDefinition
 from dace.objectofcollaboration.object import Object, SHARED_UNIQUE
@@ -8,10 +8,10 @@ def always_true(data):
     return True
 
 
+@implementer(ITransitionDefinition)
 class TransitionDefinition(Object):
 
     factory = Transition
-    implements(ITransitionDefinition)
     properties_def = {'target': (SHARED_UNIQUE, 'incoming', False),
                       'source': (SHARED_UNIQUE, 'outgoing', False),
                       'process': (SHARED_UNIQUE, 'transitions', False)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from zope.interface import implements
+from zope.interface import implementer
 from persistent import Persistent
 from persistent.list import PersistentList
 
@@ -20,7 +20,6 @@ from .core import (
 from .lock import LockableElement
 from dace.util import getBusinessAction, getAllBusinessAction, getSite
 from dace.interfaces import (
-    IProcessDefinition,
     IActivity,
     IBusinessAction)
 from dace.objectofcollaboration.entity import ActionCall
@@ -31,8 +30,8 @@ ITEM_INDEX = 'item'
 ACTIONSTEPID = '__actionstepid__'
 
 
+@implementer(IActivity)
 class Activity(BehavioralFlowNode, EventHandler):
-    implements(IActivity)
 
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
@@ -103,8 +102,8 @@ def getBusinessActionValidator(action_cls):
     return BusinessActionValidator
 
 
+@implementer(ILocation, IBusinessAction)
 class BusinessAction(Wizard, LockableElement, Persistent):
-    implements(ILocation, IBusinessAction)
 
     node_definition = NotImplemented
     context = NotImplemented

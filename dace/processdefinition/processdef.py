@@ -1,5 +1,5 @@
 import zope.cachedescriptors.property
-from zope.interface import implements
+from zope.interface import implementer
 from zope.component import createObject
 from zope.component import ComponentLookupError
 
@@ -14,8 +14,8 @@ from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE
 from dace.objectofcollaboration.entity import Entity
 
 
+@implementer(IProcessDefinition)
 class ProcessDefinition(Entity):
-    implements(IProcessDefinition)
 
     properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
                       'transitions': (COMPOSITE_MULTIPLE, 'process', True),

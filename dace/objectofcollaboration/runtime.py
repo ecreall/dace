@@ -1,7 +1,5 @@
-from zope.interface import implements
-from persistent.list import PersistentList
+from zope.interface import implementer
 
-from substanced.folder import Folder
 from substanced.interfaces import IService
 
 from dace.interfaces import IRuntime
@@ -9,8 +7,8 @@ from .entity import Entity
 from .object import COMPOSITE_MULTIPLE
 
 
+@implementer(IRuntime, IService)
 class Runtime(Entity):
-    implements(IRuntime, IService)
 
     properties_def = {'processes': (COMPOSITE_MULTIPLE, None, False)}
 

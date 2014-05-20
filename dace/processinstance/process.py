@@ -1,8 +1,8 @@
-from persistent import Persistent
 from persistent.list import PersistentList
+from zope.interface import implementer
+
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
-from zope.interface import implements
 import transaction
 
 from .activity import SubProcess
@@ -11,10 +11,7 @@ from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
 from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
-from .gateway import ExclusiveGateway
-from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
-from dace.relations import find_relations, connect
-from .transition import Transition
+from dace.interfaces import IProcess, IWorkItem
 from dace.util import find_catalog, find_service
 from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQUE, SHARED_MULTIPLE, SHARED_UNIQUE, Object
 
@@ -590,8 +587,8 @@ class ExecutionContext(Object):
         return root.find_subdata(name, index)
 
 
+@implementer(IProcess)
 class Process(Entity):
-    implements(IProcess)
 
     properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
                       'transitions': (COMPOSITE_MULTIPLE, 'process', True),
@@ -779,4 +776,3 @@ class Process(Entity):
 
     def __repr__(self):# pragma: no cover
         return "Process(%r)" % self.definition.id
-

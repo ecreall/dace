@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 from persistent.list import PersistentList
 import colander
 import datetime
@@ -472,9 +472,9 @@ __properties__ = {COMPOSITE_UNIQUE: CompositeUniqueProperty,
                   SHARED_MULTIPLE: SharedMultipleProperty}
 
 
+@implementer(IObject)
 class Object(Folder):
 
-    implements(IObject)
     properties_def = {}
     dynamic_properties_reloaded = False
 

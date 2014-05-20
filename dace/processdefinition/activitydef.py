@@ -1,13 +1,13 @@
-from zope.interface import implements
+from zope.interface import implementer
 
 from dace.interfaces import IActivityDefinition
 from dace.processinstance.activity import Activity, SubProcess
 from .eventdef import EventHandlerDefinition
 
 
+@implementer(IActivityDefinition)
 class ActivityDefinition(EventHandlerDefinition):
     factory = Activity
-    implements(IActivityDefinition)
 
     def __init__(self, contexts=(), **kwargs):
         super(ActivityDefinition, self).__init__(**kwargs)

@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 
 from dace.interfaces import IObject
 from dace.objectofcollaboration.object import (
@@ -43,23 +43,23 @@ class IObjectC(IObjectB):
     pass
 
 
+@implementer(IObjectA)
 class ObjectA(Entity):
-    implements(IObjectA)
     properties_def = {'composition_m':(COMPOSITE_MULTIPLE, None, False)}
 
     def __init__(self, **kwargs):
         Entity.__init__(self, **kwargs)
 
 
+@implementer(IObjectB)
 class ObjectB(Object):
-    implements(IObjectB)
 
     def __init__(self, **kwargs):
         Object.__init__(self, **kwargs)
 
 
+@implementer(IObjectC)
 class ObjectC(ObjectB):
-    implements(IObjectC)
 
     def __init__(self, **kwargs):
         ObjectB.__init__(self, **kwargs)

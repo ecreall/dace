@@ -5,7 +5,7 @@ from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
-from zope.interface import implements
+from zope.interface import implementer
 
 from dace.interfaces import IProcessStarted, IProcessFinished
 from dace import log
@@ -28,8 +28,8 @@ class BPMNElement(Entity):
             self.description = definition.description
 
 
+@implementer(ILocation)
 class FlowNode(BPMNElement):
-    implements(ILocation)
 
     properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
                       'outgoing': (SHARED_MULTIPLE, 'source', False),
@@ -316,8 +316,8 @@ class Step(object):
         self._incoming.append(transition)
 
 
+@implementer(IBehavior)
 class Behavior(Step):
-    implements(IBehavior)
 
     title = NotImplemented
     description = NotImplemented
@@ -444,8 +444,8 @@ class EventHandler(FlowNode):
 
 DEFAULTMAPPING_ACTIONS_VIEWS = {}
 
+@implementer(IProcessStarted)
 class ProcessStarted:
-    implements(IProcessStarted)
 
     def __init__(self, process):
         self.process = process
@@ -454,8 +454,8 @@ class ProcessStarted:
         return "ProcessStarted(%r)" % self.process
 
 
+@implementer(IProcessFinished)
 class ProcessFinished:
-    implements(IProcessFinished)
 
     def __init__(self, process):
         self.process = process

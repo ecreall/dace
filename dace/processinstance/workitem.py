@@ -1,19 +1,19 @@
 from pyramid.threadlocal import get_current_registry, get_current_request
 from pyramid.interfaces import ILocation
-from zope.interface import implements, implementedBy
+from zope.interface import implementer, implementedBy
 from zope.component.interfaces import IFactory
 
 from dace.util import find_service
 
 from dace.interfaces import (
-    IWorkItem, IProcessDefinition, IStartWorkItem, IDecisionWorkItem)
+    IWorkItem, IStartWorkItem, IDecisionWorkItem)
 from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 from .lock import LockableElement
 
 
 
+@implementer(IFactory)
 class WorkItemFactory(object):
-    implements(IFactory)
     factory = NotImplemented
     title = u''
     description = u''
@@ -56,8 +56,8 @@ class UserDecision(LockableElement):
         pass
 
 
+@implementer(IStartWorkItem)
 class StartWorkItem(UserDecision):
-    implements(IStartWorkItem)
 
     def __init__(self, startable_path, initiator):
         super(StartWorkItem, self).__init__(startable_path, initiator)
@@ -92,7 +92,7 @@ class StartWorkItem(UserDecision):
             self.process = proc
             wi = proc[self.node.__name__]._get_workitem()
             if wi is None:
-                return 
+                return
 
             wi.set_actions(self.actions)
             if self.dont_lock:
@@ -127,7 +127,7 @@ class StartWorkItem(UserDecision):
         Else if a one transition in the chain is sync,
         verify all transitions condition.
         """
-        global_request = get_current_request() 
+        global_request = get_current_request()
         transitions = self.path.transitions
         if not [t for t in transitions if t.sync]:
             return True
@@ -136,14 +136,14 @@ class StartWorkItem(UserDecision):
                 if transition.sync and not transition.condition(self.process):
                     return False
 
-        return True 
+        return True
 
     def __eq__(self, other):
         return UserDecision.__eq__(self, other) and self.node is other.node
 
 
+@implementer(ILocation)
 class BaseWorkItem(LockableElement, Object):
-    implements(ILocation)
 
     properties_def = {'actions': (COMPOSITE_MULTIPLE, None, False)}
     context = None
@@ -199,10 +199,10 @@ class BaseWorkItem(LockableElement, Object):
         return [self.node]
 
 
+@implementer(IWorkItem)
 class WorkItem(BaseWorkItem):
     """This is subclassed in generated code.
     """
-    implements(IWorkItem)
     context = None
 
     def __init__(self, node):
@@ -216,7 +216,7 @@ class WorkItem(BaseWorkItem):
         Else if a one transition in the chain is sync,
         verify all transitions condition.
         """
-        global_request = get_current_request() 
+        global_request = get_current_request()
         return True and not self.is_locked(global_request)
 
     def start_test_activity(self): #for tests
@@ -229,9 +229,8 @@ class WorkItem(BaseWorkItem):
         return isinstance(other, WorkItem) and self.node is other.node
 
 
+@implementer(IDecisionWorkItem)
 class DecisionWorkItem(BaseWorkItem, UserDecision):
-    implements(IDecisionWorkItem)
-
 
     def __init__(self, decision_path, node, initiator):
         BaseWorkItem.__init__(self, node)
@@ -262,7 +261,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         Else if a one transition in the chain is sync,
         verify all transitions condition.
         """
-        global_request = get_current_request() 
+        global_request = get_current_request()
         transitions = self.path.transitions
         if not [t for t in transitions if t.sync]:
             return True and not self.is_locked(global_request)
@@ -272,7 +271,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
                     return False
 
         return True and not self.is_locked(global_request)
-        
+
     def concerned_nodes(self):
         result = set(self.initiators).union(self.path.sources)
         return [n for n in result if not (n in self.validations)]
