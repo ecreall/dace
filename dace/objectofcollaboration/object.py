@@ -164,7 +164,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             if initiator and opposite is not None and opposite in v.__class__.properties:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
-            if self.__contains__(v.__name__):
+            if v.__name__ in self:
                 contents_keys.remove(v.__name__)
                 self.remove(v.__name__)
 
