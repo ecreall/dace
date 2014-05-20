@@ -338,35 +338,39 @@ class Behavior(Step):
         else:
             instance = cls()
 
-        return instance #raise ValidationError if no action
+        return instance  # raise ValidationError if no action
 
     @classmethod
     def get_validator(cls, **kw):
-        return Validator #defaultvalidator
+        return Validator  # defaultvalidator
 
     @property
     def _class_(self):
+        """May be overrided later"""
         return self.__class__
 
     def validate(self, context, request, **kw):
-        return True #action instance validation
+        return True  # action instance validation
 
     def before_execution(self, context, request, **kw):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
-    def start(self, context, request, appstruct, **kw):#execution
+    def start(self, context, request, appstruct, **kw):
+        """Execution"""
         pass
 
-    def execute(self, context, request, appstruct, **kw): #execution policy
+    def execute(self, context, request, appstruct, **kw):
+        """Execution policy"""
         is_finished = self.start(context, request, appstruct, **kw)
         if is_finished:
             self.after_execution(context, request, **kw)
+            self.redirect(context, request, **kw)
 
     def after_execution(self, context, request, **kw):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
     def redirect(self, context, request, **kw):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
 
 def default_condition(context, request):
@@ -426,7 +430,7 @@ class EventHandler(FlowNode):
 
     def __init__(self, definition, **kwargs):
         super(EventHandler, self).__init__(definition, **kwargs)
-        self.boundaryEvents = []#PersistentList()
+        self.boundaryEvents = []  # PersistentList()
 
     def _init_boundaryEvents(self, definition):
         self.boundaryEvents = [defi.create()
