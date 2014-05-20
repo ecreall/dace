@@ -3,7 +3,7 @@ from zope.interface import implementer
 from persistent import Persistent
 from persistent.list import PersistentList
 
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import get_current_request
 from pyramid.interfaces import ILocation
 
 from substanced.util import get_oid
@@ -57,7 +57,7 @@ class Activity(BehavioralFlowNode, EventHandler):
         self.assigned_to = PersistentList()
         if users is not None:
             self.assigne_to(users)
-           
+
 
 class SubProcess(Activity):
 
@@ -66,7 +66,6 @@ class SubProcess(Activity):
         self.sub_processes = []
 
     def _start_subprocess(self):
-        registry = get_current_registry()
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(self.definition.sub_process_definition.id)
         proc = pd()
@@ -145,7 +144,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             return None
 
         isstart = request.params.get('isstart', None)
-        source_start_action = None
         if isstart is not None:
             for inst in instances:
                 if inst.isstart:
@@ -156,7 +154,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         #    request.params['isstart'] = 'True'
         #else:
         #    request.params['action_uid'] = get_oid(action_instance)
-              
+
         return action_instance
 
     @classmethod
@@ -241,7 +239,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             actionuid = get_oid(self)
             query={'action_uid':actionuid}
         except AttributeError:
-            query={'isstart':'True'} 
+            query={'isstart':'True'}
 
         return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query=query)
 
@@ -305,7 +303,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if not context.__provides__(self.context):
             return False
 
-        if self.relation_validation and not self.relation_validation.im_func(process, context):
+        if self.relation_validation and not self.relation_validation.__func__(process, context):
             return False
 
         _assigned_to = self.assigned_to
@@ -314,13 +312,13 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             if not( request.user in _assigned_to) and not(request.user is admin):
                 return False
 
-        elif self.roles_validation and not self.roles_validation.im_func(process, context):
+        elif self.roles_validation and not self.roles_validation.__func__(process, context):
             return False
 
-        if self.processsecurity_validation and not self.processsecurity_validation.im_func(process, context):
+        if self.processsecurity_validation and not self.processsecurity_validation.__func__(process, context):
             return False
 
-        if self.state_validation and not self.state_validation.im_func(process, context):
+        if self.state_validation and not self.state_validation.__func__(process, context):
             return False
 
         return True
@@ -331,7 +329,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     def _consume_decision(self):
         if isinstance(self.workitem, UserDecision):
-            self.workitem.consume()    
+            self.workitem.consume()
 
     def start(self, context, request, appstruct, **kw):#execution
         return True
@@ -351,7 +349,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     def finish_execution(self, context, request, **kw):
         self.after_execution(context, request, **kw)
-        
+
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)
@@ -403,11 +401,11 @@ class LoopActionCardinality(BusinessAction):
 
     def __init__(self, workitem, **kwargs):
         super(LoopActionCardinality, self).__init__(workitem, **kwargs)
-        self.loopMaximum = self.loopMaximum.im_func(self.process)
+        self.loopMaximum = self.loopMaximum.__func__(self.process)
 
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
-        while self.loopCondition.im_func(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
+        while self.loopCondition.__func__(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
 
@@ -416,7 +414,7 @@ class LoopActionCardinality(BusinessAction):
         while nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
-            if not self.loopCondition.im_func(context, request, self.process, appstruct):
+            if not self.loopCondition.__func__(context, request, self.process, appstruct):
                 break
 
     def execute(self, context, request, appstruct, **kw):
@@ -437,7 +435,7 @@ class LoopActionDataInput(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
         super(LoopActionDataInput, self).execute(context, request, appstruct, **kw)
-        instances = self.loopDataInputRef.im_func(context, request, self.process, appstruct)
+        instances = self.loopDataInputRef.__func__(context, request, self.process, appstruct)
         for item in instances:
             if kw is not None:
                 kw[ITEM_INDEX] = item
@@ -461,7 +459,7 @@ class LimitedCardinality(MultiInstanceAction):
     def __init__(self, workitem, **kwargs):
         super(LimitedCardinality, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
-        self.numberOfInstances = self.loopCardinality.im_func(self.process)
+        self.numberOfInstances = self.loopCardinality.__func__(self.process)
         for instance_num in range(self.numberOfInstances):
             #@TODO solution plus simple
             ActionInstance._init_attributes_(ActionInstance, self)
@@ -502,7 +500,7 @@ class DataInput(MultiInstanceAction):
         super(DataInput, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
-        self.instances = self.loopDataInputRef.im_func(self.process)
+        self.instances = self.loopDataInputRef.__func__(self.process)
         for instance in self.instances:
             if self.dataIsPrincipal:
                 ActionInstanceAsPrincipal._init_attributes_(ActionInstanceAsPrincipal, self)
@@ -529,7 +527,7 @@ class ActionInstance(BusinessAction):
             self.title = self.title+' ('+str(item)+')'
 
         self.behavior_id = self.principalaction.node_id+'_'+str(id)
-        
+
     @property
     def _class_(self):
         return self.principalaction.__class__
