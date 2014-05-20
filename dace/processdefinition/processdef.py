@@ -1,11 +1,7 @@
-from pyramid.events import subscriber
 import zope.cachedescriptors.property
 from zope.interface import implements
 from zope.component import createObject
 from zope.component import ComponentLookupError
-from zope.component.hooks import getSite
-
-from substanced.interfaces import IObjectAdded
 
 from dace.interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition, Transaction
@@ -14,8 +10,9 @@ from dace.processinstance.process import Process
 from .eventdef import StartEventDefinition, EndEventDefinition
 from .gatewaydef import ParallelGatewayDefinition, ExclusiveGatewayDefinition
 from dace.util import find_catalog
-from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE
 from dace.objectofcollaboration.entity import Entity
+
 
 class ProcessDefinition(Entity):
     implements(IProcessDefinition)
@@ -99,13 +96,13 @@ class ProcessDefinition(Entity):
             p_g = ParallelGatewayDefinition()
             if not (empty_start_event in self.nodes):
                 self.defineNodes(emptystart=empty_start_event, startpg=p_g)
-            else: 
+            else:
                 self.defineNodes(startpg=p_g)
-                  
+
             oldtransitions = list(empty_start_event.outgoing)
             for oldtransition in oldtransitions:
-                oldtransition.set_source(p_g) 
-  
+                oldtransition.set_source(p_g)
+
             new_transitions += (TransitionDefinition(empty_start_event.__name__, 'startpg'), )
             for on in orphan_nodes:
                 new_transitions+= (TransitionDefinition('startpg', on.__name__), )
@@ -130,12 +127,12 @@ class ProcessDefinition(Entity):
             e_g = ExclusiveGatewayDefinition()
             if not (empty_end_event in self.nodes):
                 self.defineNodes(emptyend=empty_end_event, endeg=e_g)
-            else: 
+            else:
                 self.defineNodes(endeg=e_g)
 
             oldtransitions = list(empty_end_event.incoming)
             for oldtransition in oldtransitions:
-                oldtransition.set_target(e_g) 
+                oldtransition.set_target(e_g)
 
             new_transitions += (TransitionDefinition('endeg', empty_end_event.__name__), )
             for on in orphan_nodes:
@@ -158,7 +155,7 @@ class ProcessDefinition(Entity):
                     oldtransition.set_source(p_g)
 
                 self.defineTransitions(TransitionDefinition(se.__name__, 'mergepg'))
-            
+
     def _normalize_endevents(self):
         end_events = self._get_end_events()
         for ee in end_events:
@@ -185,7 +182,7 @@ class ProcessDefinition(Entity):
             if isinstance(node, EndEventDefinition):
                 result.append(node)
 
-        return result    
+        return result
 
     def _startTransition(self):
         start_events = self._get_start_events()
@@ -228,7 +225,7 @@ class ProcessDefinition(Entity):
         results = query.execute().all()
         processes = [p for p in results]
         processes.sort()
-        return processes        
+        return processes
 
     @property
     def isInstantiated(self):
