@@ -504,7 +504,7 @@ class Object(Folder):
 
         self.__property__ = None
         for _property in self.properties_def.keys():
-            if kwargs.has_key(_property):
+            if _property in kwargs:
                 self.setproperty(_property, kwargs[_property])
             else:
                 self.__class__.properties[_property]['init'](self)
