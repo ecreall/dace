@@ -652,3 +652,12 @@ class Object(Folder):
                 new_val = appstruct[name]
                 if existing_val != new_val:
                     setattr(self, name, new_val)
+
+    # TODO: use something like this ?
+    # def set_data(self, appstruct, omit=()):
+    #     for name, val in appstruct.iteritems():
+    #         if name not in omit:
+    #             existing_val = getattr(self, name, None)
+    #             new_val = appstruct[name]
+    #             if existing_val != new_val:
+    #                 setattr(self, name, new_val)
