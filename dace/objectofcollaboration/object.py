@@ -644,20 +644,8 @@ class Object(Folder):
         return result
 
     def set_data(self, appstruct):
-        for name, val in appstruct.items():
-            # If a field was added to the form schema afterwards, the object won't have the attribute
-            # and the value will not be set. TODO Check if name is in th content type schema?
-            if hasattr(self, name):
-                existing_val = getattr(self, name, None)
-                new_val = appstruct[name]
-                if existing_val != new_val:
-                    setattr(self, name, new_val)
-
-    # TODO: use something like this ?
-    # def set_data(self, appstruct, omit=()):
-    #     for name, val in appstruct.iteritems():
-    #         if name not in omit:
-    #             existing_val = getattr(self, name, None)
-    #             new_val = appstruct[name]
-    #             if existing_val != new_val:
-    #                 setattr(self, name, new_val)
+        for name, val in appstruct.iteritems():
+            existing_val = getattr(self, name, None)
+            new_val = appstruct[name]
+            if existing_val != new_val:
+                setattr(self, name, new_val)
