@@ -346,7 +346,7 @@ class SignalEvent(EventKind):
         s.bind(get_socket_url())
         # Sleep to allow sockets to connect.
         time.sleep(0.2)
-        s.send(ref)
+        s.send_string(ref)
         s.close()
 
 
