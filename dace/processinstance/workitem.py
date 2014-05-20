@@ -61,7 +61,7 @@ class StartWorkItem(UserDecision):
 
     def __init__(self, startable_path, initiator):
         super(StartWorkItem, self).__init__(startable_path, initiator)
-        self.dtlock = True
+        self.dont_lock = True
         self.node = self.path.targets[0]
         self.process = None
         self.actions = []
@@ -73,7 +73,7 @@ class StartWorkItem(UserDecision):
 
         self.actions.extend(actions)
         for action in self.actions:
-            action.dtlock = True
+            action.dont_lock = True
 
     @property
     def process_id(self):
@@ -95,7 +95,7 @@ class StartWorkItem(UserDecision):
                 return 
 
             wi.set_actions(self.actions)
-            if self.dtlock:
+            if self.dont_lock:
                 self.call(wi)
 
             return wi, proc
@@ -118,7 +118,7 @@ class StartWorkItem(UserDecision):
         return wi, proc
 
     def add_action(self, action):
-        action.dtlock = True
+        action.dont_lock = True
         action.workitem = self
         self.actions.append(action)
 
@@ -188,8 +188,8 @@ class BaseWorkItem(LockableElement, Object):
         self.setproperty('actions', [])
         for action in actions:
             self.add_action(action)
-            if action.dtlock:
-                action.dtlock = False
+            if action.dont_lock:
+                action.dont_lock = False
                 action.call(action)
 
     def validate(self):

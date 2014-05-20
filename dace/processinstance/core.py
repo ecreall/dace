@@ -223,7 +223,7 @@ class BehavioralFlowNode(MakerFlowNode):
         if user_decision is not None:
             actions = user_decision.actions
             workitem.set_actions(actions)
-            if user_decision.dtlock:
+            if user_decision.dont_lock:
                 user_decision.call(workitem)
         else:
             workitem._init_actions()
