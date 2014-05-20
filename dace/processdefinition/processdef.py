@@ -1,7 +1,5 @@
 import zope.cachedescriptors.property
 from zope.interface import implementer
-from zope.component import createObject
-from zope.component import ComponentLookupError
 
 from dace.interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition, Transaction
@@ -34,11 +32,7 @@ class ProcessDefinition(Entity):
             self.id = kwargs['id']
 
     def __call__(self, **kwargs):
-        try:
-            return createObject(self.id,
-                                definition = self, startTransition = self._startTransition, **kwargs)
-        except ComponentLookupError:
-            return Process(self, self._startTransition, **kwargs)
+        return Process(self, self._startTransition, **kwargs)
 
     def _dirty(self):
         try:

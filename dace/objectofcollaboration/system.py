@@ -1,6 +1,5 @@
 import threading
 import transaction
-from zope.component import getUtility
 from zmq.eventloop.ioloop import DelayedCallback
 from substanced.util import find_catalog
 

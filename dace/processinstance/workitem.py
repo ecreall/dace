@@ -1,7 +1,6 @@
 from pyramid.threadlocal import get_current_registry, get_current_request
 from pyramid.interfaces import ILocation
-from zope.interface import implementer, implementedBy
-from zope.component.interfaces import IFactory
+from zope.interface import implementer
 
 from dace.util import find_service
 
@@ -9,20 +8,6 @@ from dace.interfaces import (
     IWorkItem, IStartWorkItem, IDecisionWorkItem)
 from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
 from .lock import LockableElement
-
-
-
-@implementer(IFactory)
-class WorkItemFactory(object):
-    factory = NotImplemented
-    title = u''
-    description = u''
-
-    def getInterfaces(self):
-        return implementedBy(self.factory)
-
-    def __call__(self, *args, **kw):
-        return self.factory(*args, **kw)
 
 
 class UserDecision(LockableElement):
