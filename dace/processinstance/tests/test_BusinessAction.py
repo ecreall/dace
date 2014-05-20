@@ -149,7 +149,11 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(allaction_y_alice), 5)# 2 pour actions_y_validated_alice et 3 pour le StartWorkItem Y (Une nouvelle execution)
         self.assertIn(actions_y_validated_alice[0], allaction_y_alice)
         self.assertIn(actions_y_validated_alice[1], allaction_y_alice)
-        workitems_y_alice = set([a.workitem for a in allaction_y_alice])
+        workitems_y_alice = []
+        for a in allaction_y_alice:
+            if a.workitem not in workitems_y_alice:
+                workitems_y_alice.append(a.workitem)
+
         self.assertEqual(len(workitems_y_alice), 2)
         self.assertIn(workitems['sample.y'], workitems_y_alice)
         workitems_y_alice.remove(workitems['sample.y'])
@@ -170,7 +174,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_x[0].execute(objecta, self.request, None, **{})
 
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
 
     def test_actions_YParallel(self):
