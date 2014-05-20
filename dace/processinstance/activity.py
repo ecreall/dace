@@ -305,7 +305,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if not context.__provides__(self.context):
             return False
 
-        if self.relation_validation and not self.relation_validation.im_func(process, context):
+        if self.relation_validation and not self.relation_validation(process, context):
             return False
 
         _assigned_to = self.assigned_to
@@ -314,13 +314,13 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             if not( request.user in _assigned_to) and not(request.user is admin):
                 return False
 
-        elif self.roles_validation and not self.roles_validation.im_func(process, context):
+        elif self.roles_validation and not self.roles_validation(process, context):
             return False
 
-        if self.processsecurity_validation and not self.processsecurity_validation.im_func(process, context):
+        if self.processsecurity_validation and not self.processsecurity_validation(process, context):
             return False
 
-        if self.state_validation and not self.state_validation.im_func(process, context):
+        if self.state_validation and not self.state_validation(process, context):
             return False
 
         return True
@@ -403,11 +403,11 @@ class LoopActionCardinality(BusinessAction):
 
     def __init__(self, workitem, **kwargs):
         super(LoopActionCardinality, self).__init__(workitem, **kwargs)
-        self.loopMaximum = self.loopMaximum.im_func(self.process)
+        self.loopMaximum = self.loopMaximum(self.process)
 
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
-        while self.loopCondition.im_func(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
+        while self.loopCondition(context, request, self.process, appstruct) and nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
 
@@ -416,7 +416,7 @@ class LoopActionCardinality(BusinessAction):
         while nbloop < self.loopMaximum:
             self.start(context, request, appstruct, **kw)
             nbloop += 1
-            if not self.loopCondition.im_func(context, request, self.process, appstruct):
+            if not self.loopCondition(context, request, self.process, appstruct):
                 break
 
     def execute(self, context, request, appstruct, **kw):
@@ -437,7 +437,7 @@ class LoopActionDataInput(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
         super(LoopActionDataInput, self).execute(context, request, appstruct, **kw)
-        instances = self.loopDataInputRef.im_func(context, request, self.process, appstruct)
+        instances = self.loopDataInputRef(context, request, self.process, appstruct)
         for item in instances:
             if kw is not None:
                 kw[ITEM_INDEX] = item
@@ -461,7 +461,7 @@ class LimitedCardinality(MultiInstanceAction):
     def __init__(self, workitem, **kwargs):
         super(LimitedCardinality, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
-        self.numberOfInstances = self.loopCardinality.im_func(self.process)
+        self.numberOfInstances = self.loopCardinality(self.process)
         for instance_num in range(self.numberOfInstances):
             #@TODO solution plus simple
             ActionInstance._init_attributes_(ActionInstance, self)
@@ -502,7 +502,7 @@ class DataInput(MultiInstanceAction):
         super(DataInput, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
         # loopDataInputRef renvoie une liste d'elements identifiables
-        self.instances = self.loopDataInputRef.im_func(self.process)
+        self.instances = self.loopDataInputRef(self.process)
         for instance in self.instances:
             if self.dataIsPrincipal:
                 ActionInstanceAsPrincipal._init_attributes_(ActionInstanceAsPrincipal, self)
