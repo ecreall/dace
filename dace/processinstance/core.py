@@ -1,4 +1,4 @@
-import thread
+import threading
 
 from persistent import Persistent
 from persistent.list import PersistentList
@@ -509,4 +509,4 @@ class ProcessError(Exception):
 @subscriber(ActivityStarted)
 @subscriber(ActivityFinished)
 def activity_handler(event):# pragma: no cover
-    log.info('%s %s', thread.get_ident(), event)
+    log.info('%s %s', threading.current_thread().ident, event)
