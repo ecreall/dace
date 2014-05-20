@@ -331,7 +331,8 @@ class SignalEvent(EventKind):
                 del callbacks[self.event._p_oid]
 
     def _callback(self, msg):
-        self._msg = msg[0]
+        # convert str (py27) / bytes (py34) to unicode (py27) or str (py34)
+        self._msg = msg[0].decode('utf-8')
         if self.validate():
             wi = self.event._get_workitem()
             if wi is not None:
