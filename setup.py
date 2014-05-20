@@ -12,7 +12,6 @@ requires = [
     'pyzmq',
     'rwproperty',
     'substanced',
-    'zope.annotation',
     'zope.cachedescriptors',
     'zope.processlifetime',
     ]

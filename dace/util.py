@@ -1,20 +1,16 @@
 import venusian
-from zope.annotation.interfaces import IAnnotations, Interface
-from zope.interface import implements, providedBy, implementedBy
+from zope.interface import Interface
+from zope.interface import providedBy, implementedBy
 from pyramid.exceptions import Forbidden
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import get_current_request
 from pyramid.traversal import find_root
 
-from substanced.util import find_objectmap, get_content_type, find_catalog as fcsd, get_oid
+from substanced.util import find_objectmap, find_catalog as fcsd, get_oid
 from substanced.util import find_service as fssd
 from .interfaces import (
         IEntity,
-        IProcessDefinition,
-        IDecisionWorkItem,
         IWorkItem,
-        IObject,
         IBusinessAction)
-from . import log
 
 
 def getSite(resource=None):
@@ -112,7 +108,7 @@ def subobjectsOfKind(root=None, interface=None):
     return [o for o in query.execute().all()]
 
 
-def get_current_process_uid(request): 
+def get_current_process_uid(request):
     action_uid = request.params.get('action_uid', None)
     if action_uid is not None:
         return get_oid(get_obj(int(action_uid)).process)
@@ -184,7 +180,7 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
 
     def_container = find_service('process_definition_container')
     allprocess = [(pd.id, pd) for pd in  def_container.definitions]
-    
+
     # Add start workitem
     for name, pd in allprocess:
         if not pd.isControlled:
@@ -228,7 +224,7 @@ def getWorkItem(process_id, node_id, request, context,
     query =  process_id_index.eq(process_id) & \
             node_id_index.eq(process_id+'.'+node_id) & \
             object_provides_index.any((IWorkItem.__identifier__,))
-    if process_ids: 
+    if process_ids:
         query = query & process_inst_uid_index.any(process_ids)
 
     results = [w for w in query.execute().all()]
