@@ -1,9 +1,9 @@
-from substanced.locking import(
-    lock_resource,
-    unlock_resource,
-    could_lock_resource,
-    LockError,
-    UnlockError)
+from substanced.locking import (lock_resource,
+                                unlock_resource,
+                                could_lock_resource,
+                                LockError,
+                                UnlockError)
+
 
 DEFAUT_DURATION = 3600
 
@@ -15,6 +15,7 @@ def get_lock_operation(request):
 
     return _lock
 
+
 def get_unlock_operation(request):
 
     def _unlock(obj):
@@ -22,25 +23,26 @@ def get_unlock_operation(request):
 
     return _unlock
 
+
 class LockableElement(object):
 
     def __init__(self, **kwargs):
         super(LockableElement, self).__init__(**kwargs)
-        self.dtlock = False
-        self.tocall = []
+        self.dont_lock = False
+        self.callbacks = []
 
     def call(self, obj):
-        for c in self.tocall:
+        for c in self.callbacks:
             c(obj)
 
-        self.tocall = ()
+        self.callbacks = ()
 
     def lock(self, request):
         """Raise AlreadyLocked if the activity was already locked by someone
         else.
         """
-        if self.dtlock:
-            self.tocall.append(get_lock_operation(request))
+        if getattr(self, 'dont_lock', False):
+            self.callbacks.append(get_lock_operation(request))
             return
 
         try:
@@ -52,8 +54,8 @@ class LockableElement(object):
         """Raise AlreadyLocked if the activity was already locked by someone
         else.
         """
-        if self.dtlock:
-            self.tocall.append(get_unlock_operation(request))
+        if getattr(self, 'dont_lock', False):
+            self.callbacks.append(get_unlock_operation(request))
             return
 
         try:
@@ -64,7 +66,7 @@ class LockableElement(object):
     def is_locked(self, request):
         """If the activity was locked by the same user, return False.
         """
-        if self.dtlock:
+        if getattr(self, 'dont_lock', False):
             return False
 
         try:
