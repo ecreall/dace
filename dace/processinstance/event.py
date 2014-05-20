@@ -295,7 +295,7 @@ class SignalEvent(EventKind):
     def prepare_for_execution(self):
         ctx = get_zmq_context()
         s = ctx.socket(zmq.SUB)
-        s.setsockopt(zmq.SUBSCRIBE, '')
+        s.setsockopt_string(zmq.SUBSCRIBE, '')
         s.connect(get_socket_url())
         stream = ZMQStream(s)
         job = Job()
