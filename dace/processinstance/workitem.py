@@ -173,7 +173,7 @@ class BaseWorkItem(LockableElement, Object):
         self.setproperty('actions', [])
         for action in actions:
             self.add_action(action)
-            if action.dont_lock:
+            if getattr(action, 'dont_lock', False):
                 action.dont_lock = False
                 action.call(action)
 
