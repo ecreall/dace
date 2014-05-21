@@ -1,8 +1,8 @@
-from persistent import Persistent
 from persistent.list import PersistentList
+from zope.interface import implementer
+
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
-from zope.interface import implements
 import transaction
 
 from .activity import SubProcess
@@ -11,10 +11,7 @@ from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
 from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
-from .gateway import ExclusiveGateway
-from dace.interfaces import IProcess, IProcessDefinition, IWorkItem
-from dace.relations import find_relations, connect
-from .transition import Transition
+from dace.interfaces import IProcess, IWorkItem
 from dace.util import find_catalog, find_service
 from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQUE, SHARED_MULTIPLE, SHARED_UNIQUE, Object
 
@@ -39,7 +36,7 @@ class ExecutionContext(Object):
     @property
     def involveds(self):
         return self.getproperty('involveds')
-        
+
     @property
     def process(self):
         return self.getproperty('process')
@@ -51,12 +48,12 @@ class ExecutionContext(Object):
             return self.parent.root_execution_context()
 
     def add_sub_execution_context(self, ec):
-        if not(ec in self.sub_execution_contexts): 
+        if not(ec in self.sub_execution_contexts):
             self.sub_execution_contexts.append(ec)
             ec.parent = self
 
     def remove_sub_execution_context(self, ec):
-        if ec in self.sub_execution_contexts: 
+        if ec in self.sub_execution_contexts:
             self.sub_execution_contexts.remove(ec)
             ec.parent = None
 
@@ -85,7 +82,7 @@ class ExecutionContext(Object):
     @property
     def avtive_involveds(self):
         result = {}
-        properties = dict(self.properties_names) 
+        properties = dict(self.properties_names)
         for name in properties.keys():
             relation_result = self.get_involved_collection(name)
             if relation_result:
@@ -110,7 +107,7 @@ class ExecutionContext(Object):
         result = dict(self.avtive_involveds)
         for sec in self.sub_execution_contexts:
             sub_active = sec._sub_active_involveds()
-            for k, v in sub_active.iteritems():
+            for k, v in sub_active.items():
                 if k in result:
                     result[k][1].extend(v[1])
                 else:
@@ -125,7 +122,7 @@ class ExecutionContext(Object):
     @property
     def classified_involveds(self):
         result = {}
-        properties = dict(self.properties_names) 
+        properties = dict(self.properties_names)
         for name in properties.keys():
             index_key = name+'_index'
             if hasattr(self, index_key):
@@ -135,7 +132,7 @@ class ExecutionContext(Object):
                     self._init__property(prop_name, self.dynamic_properties_def[prop_name])
                     result[prop_name] = ('collection', self.getproperty(prop_name), name, i, (i==(index-1)), properties[name])
             else:
-                result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])    
+                result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])
 
         return result
 
@@ -143,7 +140,7 @@ class ExecutionContext(Object):
         result = dict(self.classified_involveds)
         for sec in self.sub_execution_contexts:
             sub_classified = sec._sub_classified_involveds()
-            for k, v in sub_classified.iteritems():
+            for k, v in sub_classified.items():
                 if k in result:
                     result[k][1].extend(v[1])
                 else:
@@ -187,7 +184,7 @@ class ExecutionContext(Object):
         result = self.get_involved_entity(name, index)
         if result is not None:
             return result
-      
+
         result = self.find_involved_entity(name, index)
         if result:
             return result[0]
@@ -226,7 +223,7 @@ class ExecutionContext(Object):
         result = self.get_involved_entities(name)
         if result :
             return result
-      
+
         result = self.find_involved_entities(name)
         return result
 
@@ -266,7 +263,7 @@ class ExecutionContext(Object):
         result = self.get_created_entity(name, index)
         if result is not None:
             return result
-      
+
         result = self.find_created_entity(name, index)
         if result:
             return result[0]
@@ -307,7 +304,7 @@ class ExecutionContext(Object):
         result = self.get_created_entities(name)
         if result :
             return result
-      
+
         result = self.find_created_entities(name)
         return result
 
@@ -367,7 +364,7 @@ class ExecutionContext(Object):
         index_key = name+'_index'
         if not hasattr(self, index_key):
             self.add_data(index_key, 0)
-        
+
         index = self.get_localdata(index_key)+1
         self.add_data(index_key, index)
         name = name+'_'+str(index)
@@ -386,7 +383,7 @@ class ExecutionContext(Object):
         index_key = name+'_index'
         if not hasattr(self, index_key):
             return
-        
+
         index = self.get_localdata(index_key)
         name = name+'_'+str(index)
         for value in values:
@@ -403,7 +400,7 @@ class ExecutionContext(Object):
         result = self.get_involved_collection(name, index)
         if result:
             return result
-      
+
         result = self.find_involved_collection(name, index)
         if result:
             return result[0]
@@ -445,7 +442,7 @@ class ExecutionContext(Object):
         result = self.get_involved_collections(name)
         if result :
             return result
-      
+
         result = self.find_involved_collections(name)
         return result
 
@@ -458,7 +455,7 @@ class ExecutionContext(Object):
         if hasattr(self, index_key):
             for index in range(self.get_localdata(index_key)) :
                 result.append(self.get_involved_collection(name, (index+1)))
-   
+
         return result
 
     def find_subinvolved_collections(self, name=None):
@@ -482,7 +479,7 @@ class ExecutionContext(Object):
         result = self.get_created_collection(name, index)
         if result:
             return result
-      
+
         result = self.find_created_collection(name, index)
         if result:
             return result[0]
@@ -518,7 +515,7 @@ class ExecutionContext(Object):
         result = self.get_created_collections(name)
         if result :
             return result
-       
+
         result = self.find_created_collections(name)
         return result
 
@@ -531,7 +528,7 @@ class ExecutionContext(Object):
         if hasattr(self, index_key):
             for index in range(self.get_localdata(index_key)) :
                 result.append(self.get_created_collection(name, (index+1)))
-   
+
         return result
 
     def find_subcreated_collections(self, name):
@@ -561,15 +558,15 @@ class ExecutionContext(Object):
     def get_data(self, name, index=-1):
         data = self.get_localdata(name, index)
         if data is not None:
-            return data 
+            return data
 
         datas = self.find_data(name, index)
-        return datas[0] 
+        return datas[0]
 
     def get_localdata(self, name, index=-1):
         if hasattr(self, name):
             datas = getattr(self, name)
-            if index == -1 or index < len(datas): 
+            if index == -1 or index < len(datas):
                 return getattr(self, name)[index]
 
         return None
@@ -590,8 +587,8 @@ class ExecutionContext(Object):
         return root.find_subdata(name, index)
 
 
+@implementer(IProcess)
 class Process(Entity):
-    implements(IProcess)
 
     properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
                       'transitions': (COMPOSITE_MULTIPLE, 'process', True),
@@ -779,4 +776,3 @@ class Process(Entity):
 
     def __repr__(self):# pragma: no cover
         return "Process(%r)" % self.definition.id
-

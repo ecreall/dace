@@ -295,7 +295,7 @@ class SignalEvent(EventKind):
     def prepare_for_execution(self):
         ctx = get_zmq_context()
         s = ctx.socket(zmq.SUB)
-        s.setsockopt(zmq.SUBSCRIBE, '')
+        s.setsockopt_string(zmq.SUBSCRIBE, u'')
         s.connect(get_socket_url())
         stream = ZMQStream(s)
         job = Job()
@@ -331,7 +331,8 @@ class SignalEvent(EventKind):
                 del callbacks[self.event._p_oid]
 
     def _callback(self, msg):
-        self._msg = msg[0]
+        # convert str (py27) / bytes (py34) to unicode (py27) or str (py34)
+        self._msg = msg[0].decode('utf-8')
         if self.validate():
             wi = self.event._get_workitem()
             if wi is not None:
@@ -346,7 +347,7 @@ class SignalEvent(EventKind):
         s.bind(get_socket_url())
         # Sleep to allow sockets to connect.
         time.sleep(0.2)
-        s.send(ref)
+        s.send_string(ref)
         s.close()
 
 

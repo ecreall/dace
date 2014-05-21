@@ -1,4 +1,4 @@
-from zope.interface import Interface, Declaration, implements, providedBy
+from zope.interface import Interface, Declaration, implementer, providedBy
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
 from substanced.root import Root
@@ -126,10 +126,10 @@ class DaceIndexes(object):
 
 
 @adapter(context=Interface)
+@implementer(IObjectProvides)
 class SearchableObject(Adapter):
     """Return provided interfaces of the object.
     """
-    implements(IObjectProvides)
 
     def object_provides(self):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
@@ -175,8 +175,8 @@ class SearchableObject(Adapter):
 
 
 @adapter(context=IStartWorkItem)
+@implementer(ISearchableObject)
 class StartWorkItemSearch(Adapter):
-    implements(ISearchableObject)
 
     def process_id(self):
         return self.context.process_id
@@ -203,8 +203,8 @@ class StartWorkItemSearch(Adapter):
 
 
 @adapter(context=IDecisionWorkItem)
+@implementer(ISearchableObject)
 class DecisionWorkItemSearch(Adapter):
-    implements(ISearchableObject)
 
     def process_id(self):
         return self.context.process_id
@@ -231,8 +231,8 @@ class DecisionWorkItemSearch(Adapter):
 
 
 @adapter(context=IWorkItem)
+@implementer(ISearchableObject)
 class WorkItemSearch(Adapter):
-    implements(ISearchableObject)
 
     def process_id(self):
         return self.context.process_id
@@ -259,8 +259,8 @@ class WorkItemSearch(Adapter):
 
 
 @adapter(context=IBusinessAction)
+@implementer(ISearchableObject)
 class BusinessActionSearch(Adapter):
-    implements(ISearchableObject)
 
     def process_id(self):
         return self.context.process_id
@@ -282,8 +282,8 @@ class BusinessActionSearch(Adapter):
 
 
 @adapter(context=IProcess)
+@implementer(ISearchableObject)
 class ProcessSearch(Adapter):
-    implements(ISearchableObject)
 
     def process_id(self):
         return self.context.id

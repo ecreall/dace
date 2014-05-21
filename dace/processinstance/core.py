@@ -1,11 +1,11 @@
-import thread
+import threading
 
 from persistent import Persistent
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
 from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
-from zope.interface import implements
+from zope.interface import implementer
 
 from dace.interfaces import IProcessStarted, IProcessFinished
 from dace import log
@@ -28,8 +28,8 @@ class BPMNElement(Entity):
             self.description = definition.description
 
 
+@implementer(ILocation)
 class FlowNode(BPMNElement):
-    implements(ILocation)
 
     properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
                       'outgoing': (SHARED_MULTIPLE, 'source', False),
@@ -223,7 +223,7 @@ class BehavioralFlowNode(MakerFlowNode):
         if user_decision is not None:
             actions = user_decision.actions
             workitem.set_actions(actions)
-            if user_decision.dont_lock:
+            if getattr(user_decision, 'dont_lock', False):
                 user_decision.call(workitem)
         else:
             workitem._init_actions()
@@ -306,8 +306,8 @@ class Step(object):
         if 'step_id' in kwargs:
             self.step_id = kwargs['step_id']
 
-        self._outgoing = []
-        self._incoming = []
+        self._outgoing = PersistentList()
+        self._incoming = PersistentList()
 
     def add_outgoing(self, transition):
         self._outgoing.append(transition)
@@ -316,8 +316,8 @@ class Step(object):
         self._incoming.append(transition)
 
 
+@implementer(IBehavior)
 class Behavior(Step):
-    implements(IBehavior)
 
     title = NotImplemented
     description = NotImplemented
@@ -333,7 +333,7 @@ class Behavior(Step):
         instance = None
         if 'wizard' in kw and kw['wizard'] is not None:
             wizard = kw['wizard']
-            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).iteritems()])
+            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).items()])
             instance = _stepinstances[cls.behavior_id]
         else:
             instance = cls()
@@ -401,7 +401,7 @@ class Wizard(Behavior):
         super(Wizard, self).__init__(**kwargs)
         self.transitionsinstances = PersistentList()
         self.stepinstances = PersistentList()
-        for key, step in self.steps.iteritems():
+        for key, step in self.steps.items():
             stepinstance = step(step_id=key, wizard=self)
             self.stepinstances.append((stepinstance.step_id, stepinstance))
 
@@ -444,8 +444,8 @@ class EventHandler(FlowNode):
 
 DEFAULTMAPPING_ACTIONS_VIEWS = {}
 
+@implementer(IProcessStarted)
 class ProcessStarted:
-    implements(IProcessStarted)
 
     def __init__(self, process):
         self.process = process
@@ -454,8 +454,8 @@ class ProcessStarted:
         return "ProcessStarted(%r)" % self.process
 
 
+@implementer(IProcessFinished)
 class ProcessFinished:
-    implements(IProcessFinished)
 
     def __init__(self, process):
         self.process = process
@@ -509,4 +509,4 @@ class ProcessError(Exception):
 @subscriber(ActivityStarted)
 @subscriber(ActivityFinished)
 def activity_handler(event):# pragma: no cover
-    log.info('%s %s', thread.get_ident(), event)
+    log.info('%s %s', threading.current_thread().ident, event)

@@ -1,12 +1,9 @@
-from zope.interface import implements
+from zope.interface import implementer
 from persistent.list import PersistentList
-
-from substanced.util import get_oid
 
 from dace.interfaces import IEntity
 from .object import Object, SHARED_UNIQUE, SHARED_MULTIPLE
 from dace.util import getAllBusinessAction
-from dace.relations import find_relations
 
 
 class ActionCall(object):
@@ -27,8 +24,8 @@ class ActionCall(object):
         return self.action.content(self.object)
 
 
+@implementer(IEntity)
 class Entity(Object):
-    implements(IEntity)
 
     properties_def = {'creator': (SHARED_UNIQUE, 'createds', True),
                       'involvers': (SHARED_MULTIPLE, 'involveds', True)}

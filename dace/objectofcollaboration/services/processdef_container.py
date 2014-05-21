@@ -1,21 +1,17 @@
-from pyramid.threadlocal import get_current_request, get_current_registry
-from zope.interface import implements, providedBy, implementedBy
-from persistent.list import PersistentList
-from zope.interface import alsoProvides
+from zope.interface import implementer
 import venusian
 
-from substanced.folder import Folder
 from substanced.interfaces import IService
 
-from dace.interfaces import IProcessDefinitionContainer, IProcessDefinition
+from dace.interfaces import IProcessDefinitionContainer
 from ..entity import Entity
 from ..object import COMPOSITE_MULTIPLE
 
 DEFINITIONS = {}
 
 
+@implementer(IProcessDefinitionContainer, IService)
 class ProcessDefinitionContainer(Entity):
-    implements(IProcessDefinitionContainer, IService)
 
     properties_def = {'definitions': (COMPOSITE_MULTIPLE, None, False)}
 

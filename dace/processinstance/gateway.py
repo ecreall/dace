@@ -138,15 +138,15 @@ class ParallelGateway(Gateway):
         for p in startpaths:
             source_ts = set(p.first)
             for t in source_ts:
-                source_node = t.source 
-                if source_node.__name__ in find_transitions: 
+                source_node = t.source
+                if source_node.__name__ in find_transitions:
                     find_transitions[source_node.__name__].append(t)
                 else:
                     find_transitions[source_node.__name__] = [t]
 
         re_transaction = Transaction(type='Refresh', initiator=self)
         re_transaction.sub_transactions.extend(list([global_transaction]))
-        for key, ts in find_transitions.iteritems():
+        for key, ts in find_transitions.items():
             source_node = self.process[key]
             if hasattr(source_node, 'refresh_decisions'):
                 t.source.refresh_decisions(re_transaction, ts)

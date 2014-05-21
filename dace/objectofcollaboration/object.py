@@ -1,4 +1,4 @@
-from zope.interface import implements
+from zope.interface import implementer
 from persistent.list import PersistentList
 import colander
 import datetime
@@ -164,7 +164,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             if initiator and opposite is not None and opposite in v.__class__.properties:
                 v.__class__.properties[opposite]['del'](v, self, False)
 
-            if self.__contains__(v.__name__):
+            if v.__name__ is not None and v.__name__ in self:
                 contents_keys.remove(v.__name__)
                 self.remove(v.__name__)
 
@@ -472,9 +472,9 @@ __properties__ = {COMPOSITE_UNIQUE: CompositeUniqueProperty,
                   SHARED_MULTIPLE: SharedMultipleProperty}
 
 
+@implementer(IObject)
 class Object(Folder):
 
-    implements(IObject)
     properties_def = {}
     dynamic_properties_reloaded = False
 
@@ -504,18 +504,18 @@ class Object(Folder):
 
         self.__property__ = None
         for _property in self.properties_def.keys():
-            if kwargs.has_key(_property):
+            if _property in kwargs:
                 self.setproperty(_property, kwargs[_property])
             else:
                 self.__class__.properties[_property]['init'](self)
 
     def __init_proprties__(self):
-        for name, propertydef in self.properties_def.iteritems():
+        for name, propertydef in self.properties_def.items():
             self._init__property(name, propertydef)
 
     def _init_dynamic_properties_(self):
         self.dynamic_properties_reloaded = True
-        for name, propertydef in self.dynamic_properties_def.iteritems():
+        for name, propertydef in self.dynamic_properties_def.items():
             self._init__property(name, propertydef)
 
     def _init__property(self, name, propertydef):
@@ -558,53 +558,13 @@ class Object(Folder):
         self.__class__.properties[name]['del'](self, value)
 
     def choose_name(self, name, object):
-        """See zope.container.interfaces.INameChooser
-
-        The name chooser is expected to choose a name without error
-
-        We create and populate a dummy container
-
-        >>> from zope.container.sample import SampleContainer
-        >>> container = SampleContainer()
-        >>> container['foobar.old'] = 'rst doc'
-
-        >>> from zope.container.contained import NameChooser
-
-        the suggested name is converted to unicode:
-
-        >>> NameChooser(container).chooseName(u'foobar', object())
-        u'foobar'
-
-        >>> NameChooser(container).chooseName(b'foobar', object())
-        u'foobar'
-
-        If it already exists, a number is appended but keeps the same extension:
-
-        >>> NameChooser(container).chooseName('foobar.old', object())
-        u'foobar-2.old'
-
-        Bad characters are turned into dashes:
-
-        >>> NameChooser(container).chooseName('foo/foo', object())
-        u'foo-foo'
-
-        If no name is suggested, it is based on the object type:
-
-        >>> NameChooser(container).chooseName('', [])
-        u'list'
-
-        """
-
         container = self.data
 
-        # convert to unicode and remove characters that checkName does not allow
-        if isinstance(name, bytes):
-            name = name.decode()
-        if not isinstance(name, unicode):
-            try:
-                name = unicode(name)
-            except:
-                name = u''
+        # remove characters that checkName does not allow
+        try:
+            name = str(name)
+        except:
+            name = ''
         name = name.replace('/', '-').lstrip('+@')
 
         if not name:
@@ -644,7 +604,7 @@ class Object(Folder):
         return result
 
     def set_data(self, appstruct):
-        for name, val in appstruct.iteritems():
+        for name, val in appstruct.items():
             existing_val = getattr(self, name, None)
             new_val = appstruct[name]
             if existing_val != new_val:

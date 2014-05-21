@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 import time
 import rwproperty
@@ -7,7 +9,6 @@ from ZODB.POSException import ConflictError
 
 from pyramid.threadlocal import (
         get_current_registry, get_current_request, manager)
-from pyramid import testing
 from pyramid.testing import DummyRequest
 from substanced.util import get_oid
 from substanced.interfaces import IUserLocator
@@ -38,14 +39,14 @@ class BaseJob(object):
             self.retry()
         except ConflictError:
             transaction.abort()
-            print "ConflictError, retry in 2s"
+            print("ConflictError, retry in 2s")
             time.sleep(2.0)
             self.retry()
         except Exception:
             transaction.abort()
-            print "transaction abort, so retry aborted"
-            print sys.exc_info()
-            print self.callable
+            print("transaction abort, so retry aborted")
+            print(sys.exc_info())
+            print(self.callable)
             raise
         finally:
             self.tearDown(app)
@@ -83,5 +84,5 @@ class Job(BaseJob):
 
     @rwproperty.setproperty
     def callable(self, value):
-        self._callable_oid = value.im_self.event._p_oid
+        self._callable_oid = value.__self__.event._p_oid
         self._callable_name = value.__name__

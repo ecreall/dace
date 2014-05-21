@@ -1,10 +1,7 @@
-import transaction
-from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
 
-from dace.interfaces import IProcessDefinition, IStartWorkItem
-from dace.catalog.interfaces import ISearchableObject
-from dace.util import  getWorkItem, queryWorkItem, getBusinessAction, getAllBusinessAction
+from dace.interfaces import IProcessDefinition
+from dace.util import  getWorkItem, getBusinessAction
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition, SubProcessDefinition
@@ -13,27 +10,23 @@ from dace.processdefinition.gatewaydef import (
 from dace.processdefinition.transitiondef import TransitionDefinition
 from dace.processdefinition.eventdef import (
     StartEventDefinition,
-    EndEventDefinition,
-    IntermediateCatchEventDefinition,
-    ConditionalEventDefinition,
-    TimerEventDefinition)
+    EndEventDefinition)
 
 from dace.processinstance.tests.example.process import (
-    ActionX, 
-    ActionY, 
-    ActionZ, 
-    ActionYP, 
-    ActionYPI, 
-    ActionYI, 
-    ActionYD, 
-    ActionYDp, 
-    ActionYLC, 
-    ActionYLD, 
+    ActionX,
+    ActionY,
+    ActionZ,
+    ActionYP,
+    ActionYPI,
+    ActionYI,
+    ActionYD,
+    ActionYDp,
+    ActionYLC,
+    ActionYLD,
     ActionYSteps,
     ActionSP,
     ActionSPMI)
 from dace.processinstance.workitem import StartWorkItem
-from ..activity import ACTIONSTEPID
 from dace.objectofcollaboration.tests.example.objects import ObjectA
 from dace.testing import FunctionalTests
 
@@ -156,7 +149,11 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(allaction_y_alice), 5)# 2 pour actions_y_validated_alice et 3 pour le StartWorkItem Y (Une nouvelle execution)
         self.assertIn(actions_y_validated_alice[0], allaction_y_alice)
         self.assertIn(actions_y_validated_alice[1], allaction_y_alice)
-        workitems_y_alice = set([a.workitem for a in allaction_y_alice])
+        workitems_y_alice = []
+        for a in allaction_y_alice:
+            if a.workitem not in workitems_y_alice:
+                workitems_y_alice.append(a.workitem)
+
         self.assertEqual(len(workitems_y_alice), 2)
         self.assertIn(workitems['sample.y'], workitems_y_alice)
         workitems_y_alice.remove(workitems['sample.y'])
@@ -177,7 +174,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_x[0].execute(objecta, self.request, None, **{})
 
         workitems = proc.getWorkItems()
-        self.assertEqual(workitems.keys(), [])
+        self.assertEqual(len(workitems), 0)
 
 
     def test_actions_YParallel(self):
@@ -267,7 +264,7 @@ class TestsBusinessAction(FunctionalTests):
         self.request.user = self.users['alice']# user == 'alice'
         actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
         self.assertEqual(len(actions_y_validated_alice), 1)# ActionYPI is parallel (action instance is never locked)
-        
+
         for x in range(10):
             action_y.before_execution(objecta, self.request)
             action_y.execute(objecta, self.request, None, **{})
@@ -314,7 +311,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionYPI is Sequential (action instance and workitem are locked)
 
-        self.request.user = self.users['admin']        
+        self.request.user = self.users['admin']
         for x in range(10):
             action_y.before_execution(objecta, self.request)
             action_y.execute(objecta, self.request, None, **{})
@@ -352,7 +349,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('y', actions_id)
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
-        self.assertEqual(len(actions_y), 2) # 1 instance pour objecta et une autre pour objectb 
+        self.assertEqual(len(actions_y), 2) # 1 instance pour objecta et une autre pour objectb
 
         actions_y_a = [a for a in actions_y if a.item is objecta]
         self.assertEqual(len(actions_y_a), 1)
@@ -381,7 +378,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def test_actions_YSequentialDp(self):
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal) 
+        y._init_contexts([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal)
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
@@ -412,9 +409,9 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('y', actions_id)
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
-        self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb 
+        self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb
         action_a = actions_y[0]
- 
+
         call_actions = objectb.actions
         self.assertEqual(len(call_actions), 3)
         actions_id = [a.action.node_id for a in call_actions]
@@ -422,7 +419,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('y', actions_id)
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
-        self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb 
+        self.assertEqual(len(actions_y), 1) # 1 instance pour objecta et une autre pour objectb
 
         action_a.before_execution(objecta, self.request)
         action_a.execute(objecta, self.request, None, **{})
@@ -457,7 +454,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         self.assertEqual(len(actions_y), 1) # LoopCardinality
-       
+
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
@@ -466,7 +463,7 @@ class TestsBusinessAction(FunctionalTests):
         self.request.ylc = 0
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
-     
+
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
@@ -485,7 +482,7 @@ class TestsBusinessAction(FunctionalTests):
         y._init_contexts([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
-     
+
     def test_actions_YLD(self):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYLD])
@@ -516,7 +513,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('z', actions_id)
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         self.assertEqual(len(actions_y), 1) # LoopCardinality
-       
+
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
         wi, proc = action_y.workitem.consume()
@@ -524,7 +521,7 @@ class TestsBusinessAction(FunctionalTests):
         self.request.bool = True
         action_y.execute(objectc, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
-     
+
         workitems = proc.getWorkItems()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
@@ -581,7 +578,7 @@ class TestsBusinessAction(FunctionalTests):
         self.request.user = self.users['alice']# user == 'alice'
         actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
         self.assertEqual(len(actions_y_validated_alice), 0)
-        
+
         self.request.user = self.users['admin']
         s2 = steps['s2']
         s2.execute(objecta, self.request, None) #execute step2
@@ -663,7 +660,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
         #bob
-        self.request.user = self.users['bob']     
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), False)
 
         #alice
@@ -672,34 +669,34 @@ class TestsBusinessAction(FunctionalTests):
 
         node_x.assigne_to(self.users['bob'])
         #bob
-        self.request.user = self.users['bob']  
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         node_x.unassigne(self.users['bob'])
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['bob']  
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), False)
-        self.request.user = self.users['admin']  
+        self.request.user = self.users['admin']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         node_x.unassigne(self.users['alice'])
-        self.request.user = self.users['bob']  
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
         action_x.set_assignment(self.users['bob'])
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), False)
-        self.request.user = self.users['bob']  
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['admin']  
+        self.request.user = self.users['admin']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         action_x.unassigne(self.users['bob'])
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['bob']  
+        self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['admin']  
+        self.request.user = self.users['admin']
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
 
