@@ -241,7 +241,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         except AttributeError:
             query={'isstart':'True'}
 
-        return get_current_request().mgmt_path(obj, '@@'+self.view_name,  query=query)
+        return get_current_request().resource_url(obj, '@@'+self.view_name,  query=query)
 
     def content(self, obj):
         content = u''

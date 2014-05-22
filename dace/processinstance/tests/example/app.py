@@ -26,7 +26,7 @@ class StartALink(object):
 #        if wi is None:
 #            return u""
         return u"""<a href="%s">%s</a>""" % (
-                self.request.mgmt_path(self.context, '@@starta'),
+                self.request.resource_url(self.context, '@@starta'),
                 u"Start A")
 
 
@@ -39,7 +39,7 @@ class StartBLink(object):
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
         return u"""<a href="%s">%s</a>""" % (
-                self.request.mgmt_path(self.context, '@@startb', query={'p_uid': p_uid}),
+                self.request.resource_url(self.context, '@@startb', query={'p_uid': p_uid}),
                 u"Start B")
 
 
@@ -51,7 +51,7 @@ class StartCLink(object):
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
         return u"""<a href="%s">%s</a>""" % (
-                self.request.mgmt_path(self.context, '@@startc', {'p_uid': p_uid}),
+                self.request.resource_url(self.context, '@@startc', {'p_uid': p_uid}),
                 u"Start C")
 
 
@@ -64,7 +64,7 @@ class StartDLink(object):
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
         return u"""<a href="%s">%s</a>""" % (
-                self.request.mgmt_path(self.context, '@@startd', {'p_uid': p_uid}),
+                self.request.resource_url(self.context, '@@startd', {'p_uid': p_uid}),
                 u"Start D")
 
 
@@ -72,25 +72,25 @@ class StartB(object):
     def render(self):
         wi = getWorkItem('sample', 'b', self.request)
         wi.start()
-        return HTTPFound(self.request.mgmt_path(self.context,'@@index'))
+        return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartC(object):
     def render(self):
         wi = getWorkItem('sample', 'c', self.request)
         wi.start(['azerty', 'qwerty'])
-        return HTTPFound(self.request.mgmt_path(self.context,'@@index'))
+        return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartD(object):
     def render(self):
         wi = getWorkItem('sample', 'd', self.request)
         wi.start()
-        return HTTPFound(self.request.mgmt_path(self.context,'@@index'))
+        return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartA(object):
     def render(self):
         wi = getWorkItem('sample', 'a', self.request)
         wi.start()
-        return HTTPFound(self.request.mgmt_path(self.context,'@@index'))
+        return HTTPFound(self.request.resource_url(self.context,'@@index'))
