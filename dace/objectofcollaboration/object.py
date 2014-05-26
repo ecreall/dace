@@ -478,6 +478,9 @@ class Object(Folder):
     properties_def = {}
     dynamic_properties_reloaded = False
 
+    title = ''
+    description = ''
+
     def __new__(cls, *args, **kwargs):
         mro_cls = [c for c in cls.__mro__ if c is not cls and hasattr(c, 'properties_def')]
         for c in mro_cls:
@@ -494,11 +497,9 @@ class Object(Folder):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
         self.created_at = datetime.datetime.today()
-        self.title = ''
         if 'title' in kwargs:
             self.title = kwargs['title']
 
-        self.description = ''
         if 'description' in kwargs:
             self.description = kwargs['description']
 
