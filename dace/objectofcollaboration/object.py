@@ -606,7 +606,8 @@ class Object(Folder):
 
     def set_data(self, appstruct):
         for name, val in appstruct.items():
-            existing_val = getattr(self, name, None)
-            new_val = appstruct[name]
-            if existing_val != new_val:
-                setattr(self, name, new_val)
+            if name != '_csrf_token_':
+                existing_val = getattr(self, name, None)
+                new_val = appstruct[name]
+                if existing_val != new_val:
+                    setattr(self, name, new_val)
