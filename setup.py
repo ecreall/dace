@@ -13,7 +13,6 @@ requires = [
     'rwproperty',
     'substanced',
     'tornado',
-    'zope.cachedescriptors',
     'zope.processlifetime',
     ]
 

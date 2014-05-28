@@ -1,4 +1,4 @@
-import zope.cachedescriptors.property
+from pyramid.decorator import reify
 from zope.interface import implementer
 
 from dace.interfaces import IProcessDefinition, IProcess
@@ -178,6 +178,7 @@ class ProcessDefinition(Entity):
 
         return result
 
+    @reify
     def _startTransition(self):
         start_events = self._get_start_events()
         if len(start_events) != 1:
@@ -187,8 +188,6 @@ class ProcessDefinition(Entity):
                     )
 
         return start_events[0].outgoing[0]
-
-    _startTransition = zope.cachedescriptors.property.Lazy(_startTransition)
 
     def start_process(self, node_name=None):
         if self.isUnique and self.started_processes:
