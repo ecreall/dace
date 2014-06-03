@@ -1,10 +1,13 @@
+import datetime
 from zope.interface import implementer
 from persistent.list import PersistentList
 import colander
-import datetime
+from pyramid.compat import is_nonstr_iter
+from pyramid.threadlocal import get_current_registry
 
 from substanced.folder import Folder
 from substanced.util import get_oid
+from substanced.event import ObjectModified
 
 from dace.interfaces import IObject
 from dace.relations import connect, disconnect, find_relations
@@ -12,7 +15,7 @@ from dace.relations import connect, disconnect, find_relations
 # TODO a optimiser il faut, aussi, ajouter les relations de referensement
 COMPOSITE_UNIQUE = 'cu'
 
-marker = object()
+_marker = object()
 
 def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
@@ -20,7 +23,7 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _get(self):
         myproperty = self.__class__.properties[propertyref]
-        if getattr(self, key, marker) is marker:
+        if getattr(self, key, _marker) is _marker:
             myproperty['init'](self)
 
         keyvalue = getattr(self, key, None)
@@ -64,18 +67,18 @@ def CompositeUniqueProperty(propertyref, opposite=None, isunique=False):
 
     def _del(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        if getattr(self, key, marker) is marker:
+        if getattr(self, key, _marker) is _marker:
             myproperty['init'](self)
 
         keyvalue = getattr(self, key, None)
-        if keyvalue is not None and self.get(keyvalue, marker) == value:
+        if keyvalue is not None and self.get(keyvalue, _marker) == value:
             if initiator and opposite is not None and opposite in value.__class__.properties:
                 value.__class__.properties[opposite]['del'](value, self, False)
 
             self.remove(keyvalue)
 
     def init(self):
-        if getattr(self, key, marker) is marker:
+        if getattr(self, key, _marker) is _marker:
             setattr(self, key, None)
 
     return {'add': _add,
@@ -604,10 +607,22 @@ class Object(Folder):
             result[name] = val
         return result
 
-    def set_data(self, appstruct):
+    def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):
+        if not is_nonstr_iter(omit):
+            omit = (omit,)
+
+        changed = False
         for name, val in appstruct.items():
-            if name not in ('_csrf_token_', '__objectoid__'):
-                existing_val = getattr(self, name, None)
+            if name not in omit:
+                existing_val = getattr(self, name, _marker)
                 new_val = appstruct[name]
                 if existing_val != new_val:
+                    # avoid setting an attribute on the object if it's the same
+                    # value as the existing value to avoid database bloat
                     setattr(self, name, new_val)
+                    changed = True
+
+        if changed:
+            event = ObjectModified(self)
+            registry = get_current_registry()
+            registry.subscribers((event, self), None)
