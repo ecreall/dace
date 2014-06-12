@@ -364,7 +364,7 @@ class Behavior(Step):
         is_finished = self.start(context, request, appstruct, **kw)
         if is_finished:
             self.after_execution(context, request, **kw)
-            self.redirect(context, request, **kw)
+            return self.redirect(context, request, **kw)
 
     def after_execution(self, context, request, **kw):
         pass  # pragma: no cover
