@@ -381,6 +381,8 @@ class EndStep(Behavior, Persistent):
         if self.wizard.sub_process is None:
             self.wizard.finish_execution(context, request, **kw)
 
+        return self.redirect(context, request, **kw)
+
 class ElementaryAction(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
@@ -390,6 +392,8 @@ class ElementaryAction(BusinessAction):
             self.isexecuted = True
             if self.sub_process is None:
                 self.finish_execution(context, request, **kw)
+ 
+            return self.redirect(context, request, **kw)
 
 
 # Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
@@ -428,6 +432,8 @@ class LoopActionCardinality(BusinessAction):
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
 
+        return self.redirect(context, request, **kw)
+
 
 class LoopActionDataInput(BusinessAction):
 
@@ -446,6 +452,8 @@ class LoopActionDataInput(BusinessAction):
         self.isexecuted = True
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
+
+        return self.redirect(context, request, **kw)
 
 
 class MultiInstanceAction(BusinessAction):
@@ -489,6 +497,8 @@ class InfiniteCardinality(MultiInstanceAction):
         self.start(context, request, appstruct, **kw)
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
+
+        return self.redirect(context, request, **kw)
 
 
 class DataInput(MultiInstanceAction):
@@ -589,6 +599,8 @@ class ActionInstance(BusinessAction):
             self.isexecuted = True
             if self.sub_process is None:
                 self.finish_execution(context, request, **kw)
+    
+            return self.principalaction.redirect(context, request, **kw)
 
     def finish_execution(self, context, request, **kw):
         self.principalaction.instances.remove(self.item)
@@ -605,6 +617,6 @@ class ActionInstanceAsPrincipal(ActionInstance):
             kw[ITEM_INDEX] = self.item
         else:
             kw = {ITEM_INDEX: self.item}
-        super(ActionInstanceAsPrincipal, self).execute(context, request, appstruct, **kw)
+        return super(ActionInstanceAsPrincipal, self).execute(context, request, appstruct, **kw)
 
 # il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
