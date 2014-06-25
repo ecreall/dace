@@ -45,7 +45,7 @@ class IObjectC(IObjectB):
 
 @implementer(IObjectA)
 class ObjectA(Entity):
-    properties_def = {'composition_m':(COMPOSITE_MULTIPLE, None, False)}
+    properties_def = {'composition_mu':(COMPOSITE_MULTIPLE, None, False)}
 
     def __init__(self, **kwargs):
         Entity.__init__(self, **kwargs)

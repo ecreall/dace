@@ -605,6 +605,7 @@ class Object(Folder):
             name = child.name
             val = getattr(self, name, colander.null)
             result[name] = val
+
         return result
 
     def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):
