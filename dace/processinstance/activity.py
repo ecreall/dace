@@ -291,35 +291,38 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     def validate(self, context, request, **kw):
         if self.isexecuted:
-            return False
+            raise ValidationError(msg='Action is executed')
 
-        if self.is_locked(request) or not self.workitem.validate():
-            return False
+        if self.is_locked(request):
+            raise ValidationError(msg='Action is locked')
+
+        if not self.workitem.validate():
+            raise ValidationError(msg='Workitem is not valid')
 
         process = self.process
         if 'process' in kw:
             process = kw['process']
 
         if not context.__provides__(self.context):
-            return False
+            raise ValidationError(msg='Context is not valid')
 
         if self.relation_validation and not self.relation_validation.__func__(process, context):
-            return False
+            raise ValidationError(msg='Context is not valid')
 
         _assigned_to = self.assigned_to
         if _assigned_to:
             admin = getSite()['principals']['users']['admin']
             if not( request.user in _assigned_to) and not(request.user is admin):
-                return False
+                raise ValidationError(msg='Action is assigned to an other user')
 
         elif self.roles_validation and not self.roles_validation.__func__(process, context):
-            return False
+            raise ValidationError(msg='Role is not valid')
 
         if self.processsecurity_validation and not self.processsecurity_validation.__func__(process, context):
-            return False
+            raise ValidationError(msg='Security is violeted')
 
         if self.state_validation and not self.state_validation.__func__(process, context):
-            return False
+            raise ValidationError(msg='Context state is not valid')
 
         return True
 
@@ -610,7 +613,12 @@ class ActionInstance(BusinessAction):
 class ActionInstanceAsPrincipal(ActionInstance):
 
     def validate(self, context, request, **kw):
-        return (context is self.item) and super(ActionInstanceAsPrincipal, self).validate(context, request, **kw)
+        if not (context is self.item):
+            raise ValidationError(msg='Context not valid')
+        try:
+            return super(ActionInstanceAsPrincipal, self).validate(context, request, **kw)
+        except ValidationError as e:
+            raise e
 
     def execute(self, context, request, appstruct, **kw):
         if kw is not None:

@@ -286,6 +286,23 @@ class ValidationError(Exception):
     type = 'danger'
     template='templates/message.pt'
 
+    def __init__(self, **kwargs):
+        super(ValidationError, self).__init__()
+        if 'msg' in kwargs:
+            self.principalmessage = kwargs['msg']
+
+        if 'causes' in kwargs:
+            self.causes = kwargs['causes']
+
+        if 'solutions' in kwargs:
+            self.solutions = kwargs['solutions']
+
+        if 'type' in kwargs:
+            self.type = kwargs['type']
+
+        if 'template' in kwargs:
+            self.template = kwargs['template']
+
 
 class Validator(object):
 

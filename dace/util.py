@@ -132,8 +132,11 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     results = [w for w in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            if action.validate(context, request):
+            try: 
+                action.validate(context, request)
                 allactions.append(action)
+            except Exception:
+                continue
 
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
@@ -143,8 +146,11 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
         if s_wi is not None:
             swisactions = s_wi.actions
             for action in swisactions:
-                if action.validate(context, request) :
+                try: 
+                    action.validate(context, request)
                     allactions.append(action)
+                except Exception:
+                    continue
 
     if allactions:
         return allactions
@@ -175,8 +181,11 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     results = [a for a in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            if action.validate(context, request):
+            try: 
+                action.validate(context, request)
                 allactions.append(action)
+            except Exception:
+                continue
 
     def_container = find_service('process_definition_container')
     allprocess = [(pd.id, pd) for pd in  def_container.definitions]
@@ -189,8 +198,12 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
                 for key in wis.keys():
                     swisactions = wis[key].actions
                     for action in swisactions:
-                        if ((isautomatic and action.isautomatic) or not isautomatic) and action.validate(context, request) :
-                            allactions.append(action)
+                        if ((isautomatic and action.isautomatic) or not isautomatic):
+                            try:
+                                action.validate(context, request)
+                                allactions.append(action)
+                            except Exception:
+                                continue
 
     return allactions
 

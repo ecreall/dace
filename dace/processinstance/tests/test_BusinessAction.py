@@ -129,19 +129,40 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y), 4)# +1 pour l'action principale (3 pour les instances)
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 2)# +1 pour l'action principale (1 pour les instances)
-        actions_y_validated =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated), 2)
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionY is sequential
 
         self.request.user = self.users['admin']
         action_y.after_execution(objecta, self.request) # unlock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 2)
 
         # get sample.y business action for alice
@@ -209,21 +230,40 @@ class TestsBusinessAction(FunctionalTests):
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 1)
         self.assertIn(action_y, actions_y_executed)
+        actions_y_validated = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated.append(a)
+            except Exception:
+                continue
 
-
-        actions_y_validated =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
         self.assertEqual(len(actions_y_validated), 2)
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 1)# ActionYP is parallel (1 action instance locked by admin)
 
         self.request.user = self.users['admin']
         action_y.after_execution(objecta, self.request) # unlock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 2)
 
     def test_actions_YParallelI(self):
@@ -256,20 +296,41 @@ class TestsBusinessAction(FunctionalTests):
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
-        actions_y_validated =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated), 1)
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 1)# ActionYPI is parallel (action instance is never locked)
 
         for x in range(10):
             action_y.before_execution(objecta, self.request)
             action_y.execute(objecta, self.request, None, **{})
 
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 1)
 
     def test_actions_YSequentialI(self):
@@ -302,13 +363,27 @@ class TestsBusinessAction(FunctionalTests):
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
-        actions_y_validated =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated), 1)
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionYPI is Sequential (action instance and workitem are locked)
 
         self.request.user = self.users['admin']
@@ -316,7 +391,14 @@ class TestsBusinessAction(FunctionalTests):
             action_y.before_execution(objecta, self.request)
             action_y.execute(objecta, self.request, None, **{})
 
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 1)
 
 
@@ -367,13 +449,27 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(objectb.is_executed, False)
         self.assertIs(action_a.workitem, wi)
 
-        actions_y_validated =  [a for a in actions_y if a.validate(objectc, self.request, **{})]
+        actions_y_validated = []
+        for a in actions_y:
+            try:
+                a.validate(objectc, self.request, **{})
+                actions_y_validated.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated), 1)
         self.assertIn(action_b, actions_y_validated)
 
         action_b.before_execution(objectc, self.request)# user == 'admin', lock action
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionYD is Sequential (action instance and workitem are locked)
 
     def test_actions_YSequentialDp(self):
@@ -563,7 +659,14 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('s2', steps)
         self.assertIn('s3', steps)
 
-        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_admin = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_admin.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_admin), 1)
 
         s1 = steps['s1']
@@ -573,10 +676,24 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_executed), 0)
         self.assertIn('step1',self.request.steps)
 
-        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_admin = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_admin.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_admin), 1)
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)
 
         self.request.user = self.users['admin']
@@ -587,10 +704,24 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_executed), 0)
         self.assertIn('step2',self.request.steps)
 
-        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_admin = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_admin.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_admin), 1)
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)
 
         self.request.user = self.users['admin']
@@ -601,10 +732,24 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_executed), 1)
         self.assertIn('step3',self.request.steps)
 
-        actions_y_validated_admin =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_admin = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_admin.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_admin), 0)
         self.request.user = self.users['alice']# user == 'alice'
-        actions_y_validated_alice =  [a for a in actions_y if a.validate(objecta, self.request, **{})]
+        actions_y_validated_alice = []
+        for a in actions_y:
+            try:
+                a.validate(objecta, self.request, **{})
+                actions_y_validated_alice.append(a)
+            except Exception:
+                continue
+
         self.assertEqual(len(actions_y_validated_alice), 0)
 
 
@@ -661,7 +806,8 @@ class TestsBusinessAction(FunctionalTests):
 
         #bob
         self.request.user = self.users['bob']
-        self.assertEqual(action_x.validate(objecta, self.request), False)
+        with self.assertRaises(Exception):
+            action_x.validate(objecta, self.request)
 
         #alice
         self.request.user = self.users['alice']
@@ -677,7 +823,8 @@ class TestsBusinessAction(FunctionalTests):
         self.request.user = self.users['alice']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         self.request.user = self.users['bob']
-        self.assertEqual(action_x.validate(objecta, self.request), False)
+        with self.assertRaises(Exception):
+            action_x.validate(objecta, self.request)
         self.request.user = self.users['admin']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         node_x.unassigne(self.users['alice'])
@@ -686,7 +833,8 @@ class TestsBusinessAction(FunctionalTests):
 
         action_x.set_assignment(self.users['bob'])
         self.request.user = self.users['alice']
-        self.assertEqual(action_x.validate(objecta, self.request), False)
+        with self.assertRaises(Exception):
+            action_x.validate(objecta, self.request)
         self.request.user = self.users['bob']
         self.assertEqual(action_x.validate(objecta, self.request), True)
         self.request.user = self.users['admin']
@@ -811,7 +959,8 @@ class TestsSubProcess(FunctionalTests):
         workitems_keys = workitems.keys()
         wi_sp = workitems['sample.sp']
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objecta, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objecta, self.request)
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sa', workitems_keys)
 
@@ -820,7 +969,8 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objecta, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objecta, self.request)
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sb', workitems_keys)
         self.assertIn('sub_process.sc', workitems_keys)
@@ -880,7 +1030,9 @@ class TestsSubProcess(FunctionalTests):
         workitems_keys = workitems.keys()
         wi_sp = workitems['sample.sp']
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objectc, self.request)
+
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sa', workitems_keys)
 
@@ -889,7 +1041,8 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objectc, self.request)
         self.assertIn('sample.y', workitems_keys)
         self.assertIn('sub_process.sb', workitems_keys)
         self.assertIn('sub_process.sc', workitems_keys)
@@ -930,7 +1083,8 @@ class TestsSubProcess(FunctionalTests):
         workitems_keys = workitems.keys()
         wi_sp = workitems['sample.sp']
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objectc, self.request)
         self.assertIn('sub_process.sa', workitems_keys)
 
         wi_sa.consume().start_test_activity()
@@ -938,7 +1092,8 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(len(workitems), 3)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
-        self.assertEqual(wi_sp.actions[0].validate(objectc, self.request), False)
+        with self.assertRaises(Exception):
+            wi_sp.actions[0].validate(objectc, self.request)
         self.assertIn('sub_process.sb', workitems_keys)
         self.assertIn('sub_process.sc', workitems_keys)
 
