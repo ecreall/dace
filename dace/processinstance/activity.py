@@ -311,7 +311,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
         _assigned_to = self.assigned_to
         if _assigned_to:
-            admin = getSite()['principals']['users']['admin']
+            admin = getSite()['principals']['users']['admin']# replace: getAdmin() ?
             if not( request.user in _assigned_to) and not(request.user is admin):
                 raise ValidationError(msg='Action is assigned to an other user')
 
@@ -352,7 +352,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     def finish_execution(self, context, request, **kw):
         self.after_execution(context, request, **kw)
-
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)

@@ -279,15 +279,16 @@ class BehavioralFlowNode(MakerFlowNode):
                         source_transaction.remove_subtransaction(p.transaction)
 
 
-class ValidationError(Exception):
-    principalmessage = u""
-    causes = []
-    solutions = []
-    type = 'danger'
-    template='templates/message.pt'
+class Error(Exception):
+
+    principalmessage = NotImplemented
+    causes = NotImplemented
+    solutions = NotImplemented
+    type = NotImplemented
+    template= NotImplemented
 
     def __init__(self, **kwargs):
-        super(ValidationError, self).__init__()
+        super(Error, self).__init__()
         if 'msg' in kwargs:
             self.principalmessage = kwargs['msg']
 
@@ -302,6 +303,14 @@ class ValidationError(Exception):
 
         if 'template' in kwargs:
             self.template = kwargs['template']
+
+
+class ValidationError(Error):
+    principalmessage = u""
+    causes = []
+    solutions = []
+    type = 'danger'
+    template='templates/message.pt'
 
 
 class Validator(object):
