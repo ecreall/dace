@@ -4,6 +4,7 @@ from substanced.util import get_oid
 
 from dace.relations import connect, disconnect, find_relations
 from dace.util import getSite
+from .role import roles_id, Anonymous
 
 try:
     basestring
@@ -20,7 +21,7 @@ def get_roles(user=None, obj=None):
         user = get_current()
 
     if user is None:
-        return ['Anonymous']
+        return [Anonymous.name]
 
     if obj is None:
         obj = getSite()
@@ -51,14 +52,15 @@ def grant_roles(user=None, roles=()):
             normalized_roles.append(role)
 
     for role in normalized_roles:
-        obj = role[1]
-        opts = {}
-        opts[u'relation_id'] = role[0]
-        opts[u'reftype'] = 'Role'
-        if not has_any_roles(user, (role,)):
-            connect(user, obj, **opts)
-            if not(obj is root):
-                connect(user, root, **opts)
+        if role[0] in roles_id:
+            obj = role[1]
+            opts = {}
+            opts[u'relation_id'] = role[0]
+            opts[u'reftype'] = 'Role'
+            if not has_any_roles(user, (role,)):
+                connect(user, obj, **opts)
+                if not(obj is root):
+                    connect(user, root, **opts)
 
 
 def revoke_roles(user=None, roles=()):
@@ -94,23 +96,42 @@ def revoke_roles(user=None, roles=()):
             disconnect(relation)
    
 
+def _get_flatened_superiors(role_id):
+    role = roles_id[role_id]
+    direct_superiors = role.superiors
+    superiors = list(direct_superiors)
+    for sup in direct_superiors:
+        superiors.extend(_get_flatened_superiors(sup.name))
+    
+    return superiors
+
+
+def _get_allsuperiors(role_id):
+    superiors = _get_flatened_superiors(role_id)
+    root = getSite()
+    normalized_superiors = [(r.name, root) for r in superiors]
+    return normalized_superiors
+
+
 def has_any_roles(user=None, roles=()):
     if not roles:
         return True
 
     normalized_roles = []
     for role in roles:
-        if isinstance(role, basestring):
+        if isinstance(role, basestring) and role in roles_id:
             normalized_roles.append((role, getSite()))
-        else:
+            normalized_roles.extend(_get_allsuperiors(role))
+        elif role[0] in roles_id:
             normalized_roles.append(role)
+            normalized_roles.extend(_get_allsuperiors(role[0]))
 
     if user is None:
         user = get_current()
 
     if user is None:
-        roles_id = [r[0] for r in normalized_roles]
-        if 'Anonymous' in roles_id:
+        rolesid = [r[0] for r in normalized_roles]
+        if Anonymous.name in rolesid:
             return True
 
         return False
@@ -145,12 +166,7 @@ def has_all_roles(user=None, roles=()):
         return False
 
     for role in normalized_roles:
-        opts = {u'source_id': get_oid(user),
-                u'target_id': get_oid(role[1])} 
-        opts[u'relation_id'] = role[0]
-        opts[u'reftype'] = 'Role'
-        role_relations = [r for r in find_relations(role[1], opts).all()]
-        if not role_relations:
+        if not has_any_roles(user=user, roles=(role, )):
             return False
             
     return True
@@ -191,3 +207,4 @@ def get_objects_with_role(user=None, role=None):
         objects.remove(root)
 
     return objects
+

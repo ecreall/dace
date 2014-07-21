@@ -7,9 +7,8 @@ from dace.objectofcollaboration.object import (
                 COMPOSITE_MULTIPLE,
                 SHARED_MULTIPLE,
                 Object)
-
 from dace.objectofcollaboration.entity import Entity
-
+from dace.objectofcollaboration.principal.role import Collaborator, Role, Administrator, role
 
 class Object1(Object):
     properties_def = {'composition_u':(COMPOSITE_UNIQUE, 'schared2_u', False),
@@ -63,3 +62,10 @@ class ObjectC(ObjectB):
 
     def __init__(self, **kwargs):
         ObjectB.__init__(self, **kwargs)
+
+
+
+@role(name='Developer', superiors=[Administrator], lowers=[Collaborator])
+class Developer(Role):
+    pass
+

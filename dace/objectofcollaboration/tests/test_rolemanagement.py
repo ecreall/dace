@@ -57,6 +57,24 @@ class TestRoleManagment(FunctionalTests):
         revoke_roles(roles=('Collaborator', ))
         self.assertEqual(len(get_roles()), 0)
 
+        #Alice
+        self.request.user = self.users['alice']
+        roles = get_roles()
+        self.assertEqual(len(roles), 0)
+        grant_roles(roles=('Admin',))
+        roles = get_roles()
+        self.assertEqual(len(roles), 1)
+        self.assertIn('Admin',roles)
+        self.assertTrue(has_any_roles(roles=('Collaborator', )))
+
+        revoke_roles(roles=('Admin', ))
+        self.assertFalse(has_any_roles(roles=('Collaborator', )))
+        grant_roles(roles=('Developer',))
+        roles = get_roles()
+        self.assertEqual(len(roles), 1)
+        self.assertIn('Developer',roles)
+        self.assertTrue(has_any_roles(roles=('Collaborator', )))
+ 
         #Anonymous
         self.request.user = None
         roles = get_roles()
