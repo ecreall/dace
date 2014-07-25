@@ -137,7 +137,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
     def _set(self, value, initiator=True):
 
         myproperty = self.__class__.properties[propertyref]
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         oldvalues = myproperty['get'](self)
@@ -160,7 +160,7 @@ def CompositeMultipleProperty(propertyref, opposite=None, isunique=False):
             myproperty['init'](self)
 
         contents_keys = self.__dict__[keys]
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         for v in value:
@@ -279,7 +279,7 @@ def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
 
     def _set(self, value, initiator=True):
         myproperty = self.__class__.properties[propertyref]
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         oldvalues = myproperty['get'](self)
@@ -297,7 +297,7 @@ def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
                 myproperty['add'](self, v)
 
     def _del(self, value, initiator=True):
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         for v in value:
@@ -420,7 +420,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         if not hasattr(self, key):
             myproperty['init'](self)
 
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         oldvalues = myproperty['get'](self)
@@ -442,7 +442,7 @@ def SharedMultipleProperty(propertyref, opposite=None, isunique=False):
         if not hasattr(self, key):
             myproperty['init'](self)
 
-        if not isinstance(value, (list, tuple)):
+        if not isinstance(value, (list, tuple, set)):
             value = [value]
 
         for v in value:
