@@ -169,7 +169,7 @@ class StartEvent(Catching):
             if wi is not None:
                 super(StartEvent, self).start(transaction)
                 self.process.start()
-                self.finish_behavior(wi)
+                #self.finish_behavior(wi)
                 self.execution_finished = True
             else:
                 self.stop()
