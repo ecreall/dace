@@ -5,7 +5,7 @@ from substanced.interfaces import IService
 
 from dace.interfaces import IProcessDefinitionContainer
 from ..entity import Entity
-from ..object import COMPOSITE_MULTIPLE
+from dace.descriptors import CompositeMultipleProperty
 
 DEFINITIONS = {}
 
@@ -13,17 +13,13 @@ DEFINITIONS = {}
 @implementer(IProcessDefinitionContainer, IService)
 class ProcessDefinitionContainer(Entity):
 
-    properties_def = {'definitions': (COMPOSITE_MULTIPLE, None, False)}
+    definitions = CompositeMultipleProperty('definitions', None, False)
 
     def __init__(self, **kwargs):
         super(ProcessDefinitionContainer, self).__init__(**kwargs)
 
     def getdefinitions(self):
         return self.processes
-
-    @property
-    def definitions(self):
-        return self.getproperty('definitions')
 
     def add_definition(self, definition):
         definition.__name__ = definition.id

@@ -1,33 +1,28 @@
 from zope.interface import implementer
 
 from dace.interfaces import IObject
-from dace.objectofcollaboration.object import (
-                COMPOSITE_UNIQUE, 
-                SHARED_UNIQUE,
-                COMPOSITE_MULTIPLE,
-                SHARED_MULTIPLE,
-                Object)
+from dace.objectofcollaboration.object import Object
+from dace.descriptors import (
+                CompositeUniqueProperty,
+                SharedUniqueProperty,
+                CompositeMultipleProperty,
+                SharedMultipleProperty)
 from dace.objectofcollaboration.entity import Entity
 from dace.objectofcollaboration.principal.role import Collaborator, Role, Administrator, role
 
-class Object1(Object):
-    properties_def = {'composition_u':(COMPOSITE_UNIQUE, 'schared2_u', False),
-                      'composition_m':(COMPOSITE_MULTIPLE, 'schared21_u', False),
-                      'schared_u':(SHARED_UNIQUE, 'schared22_u', False),
-                      'schared_m':(SHARED_MULTIPLE, 'schared23_u', False)}
 
-    def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
+class Object1(Object):
+    composition_u = CompositeUniqueProperty('composition_u', 'shared2_u', False)
+    composition_m = CompositeMultipleProperty('composition_m', 'shared21_u', False)
+    shared_u = SharedUniqueProperty('shared_u', 'shared22_u', False)
+    shared_m = SharedMultipleProperty('shared_m', 'shared23_u', False)
 
 
 class Object2(Object):
-    properties_def = {'schared2_u':(SHARED_UNIQUE, 'composition_u', False),
-                      'schared21_u':(SHARED_UNIQUE, 'composition_m', False),
-                      'schared22_u':(SHARED_UNIQUE, 'schared_u', False),
-                      'schared23_u':(SHARED_UNIQUE, 'schared_m', False)}
-
-    def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
+    shared2_u = SharedUniqueProperty('shared2_u', 'composition_u', False)
+    shared21_u = SharedUniqueProperty('shared21_u', 'composition_m', False)
+    shared22_u = SharedUniqueProperty('shared22_u', 'shared_u', False)
+    shared23_u = SharedUniqueProperty('shared23_u', 'shared_m', False)
 
 
 class IObjectA(IObject):
@@ -44,28 +39,19 @@ class IObjectC(IObjectB):
 
 @implementer(IObjectA)
 class ObjectA(Entity):
-    properties_def = {'composition_mu':(COMPOSITE_MULTIPLE, None, False)}
-
-    def __init__(self, **kwargs):
-        Entity.__init__(self, **kwargs)
+    composition_mu = CompositeMultipleProperty('composition_mu', None, False)
 
 
 @implementer(IObjectB)
 class ObjectB(Object):
-
-    def __init__(self, **kwargs):
-        Object.__init__(self, **kwargs)
+    pass
 
 
 @implementer(IObjectC)
 class ObjectC(ObjectB):
-
-    def __init__(self, **kwargs):
-        ObjectB.__init__(self, **kwargs)
-
+    pass
 
 
 @role(name='Developer', superiors=[Administrator], lowers=[Collaborator])
 class Developer(Role):
     pass
-

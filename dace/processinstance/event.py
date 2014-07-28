@@ -205,7 +205,7 @@ class EndEvent(Throwing):
             self.process.attachedTo.finish_execution(None, request)
 
         if self.process.definition.isVolatile:
-            self.process.__parent__.__class__.properties[self.process.__property__]['del'](self.process.__parent__, self.process)
+            getattr(self.process.__parent__.__class__, self.process.__property__).remove(self.process.__parent__, self.process)
 
 
 class EventKind(object):

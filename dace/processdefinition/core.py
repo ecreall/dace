@@ -1,9 +1,8 @@
 from persistent import Persistent
 from zope.interface import Attribute
 
-from dace.objectofcollaboration.object import SHARED_MULTIPLE, SHARED_UNIQUE
+from dace.descriptors import SharedUniqueProperty, SharedMultipleProperty
 from dace.objectofcollaboration.entity import Entity
-
 
 
 class BPMNElementDefinition(Entity):
@@ -14,10 +13,9 @@ class BPMNElementDefinition(Entity):
 
 class FlowNodeDefinition(BPMNElementDefinition):
 
-    properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
-                      'outgoing': (SHARED_MULTIPLE, 'source', False),
-                      'process': (SHARED_UNIQUE, 'nodes', False)
-                      }
+    incoming = SharedMultipleProperty('incoming', 'target', False)
+    outgoing = SharedMultipleProperty('outgoing', 'source', False)
+    process = SharedUniqueProperty('process', 'nodes', False)
 
     #relation s_u opposite s_m avec les transitions
     #relation s_u opposite c_m avec les Processdef
@@ -32,18 +30,6 @@ class FlowNodeDefinition(BPMNElementDefinition):
         self.groups = []
         if 'groups' in kwargs:
             self.groups = kwargs['groups']
-
-    @property
-    def incoming(self):
-        return self.getproperty('incoming')
-
-    @property
-    def outgoing(self):
-        return self.getproperty('outgoing')
-
-    @property
-    def process(self):
-        return self.getproperty('process')
 
     def find_startable_paths(self, source_path, source):
         decision_path = source_path.clone()
@@ -94,7 +80,7 @@ class Transaction(Persistent):
         sub_paths = []
         for subtransaction in self.sub_transactions:
             sub_paths.extend(subtransaction.find_allsubpaths_for(node, type))
- 
+
         if unique:
             sub_paths = [p for p in sub_paths if not p.equal(path)]
 
@@ -230,10 +216,10 @@ class Path(Persistent):
                     if  self.contains_transition(inc):
                         is_source = False
                         break
-               
+
                 if is_source:
                     source_transitions.append(t)
-                    
+
             return source_transitions
 
         return []
@@ -248,10 +234,10 @@ class Path(Persistent):
                     if  self.contains_transition(inc):
                         is_target = False
                         break
-               
+
                 if is_target:
                     target_transitions.append(t)
-                    
+
             return target_transitions
 
         return []

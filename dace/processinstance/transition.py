@@ -1,11 +1,11 @@
-from dace.objectofcollaboration.object import Object, SHARED_UNIQUE
+from dace.descriptors import SharedUniqueProperty
+from dace.objectofcollaboration.object import Object
 
 class Transition(Object):
 
-    properties_def = {'target': (SHARED_UNIQUE, 'incoming', False),
-                      'source': (SHARED_UNIQUE, 'outgoing', False),
-                      'process': (SHARED_UNIQUE, 'transitions', False)
-                      }
+    target = SharedUniqueProperty('target', 'incoming', False)
+    source = SharedUniqueProperty('source', 'outgoing', False)
+    process = SharedUniqueProperty('process', 'transitions', False)
 
     def __init__(self, definition):
         super(Transition, self).__init__()
@@ -27,22 +27,8 @@ class Transition(Object):
     def sync(self):
         return self.definition.sync
 
-    @property
-    def process(self):
-        return self.getproperty('process')
-    
-    @property
-    def target(self):
-        return self.getproperty('target')
-
-    @property
-    def source(self):
-        return self.getproperty('source')
-
-
     def equal(self, transition):
         return self.source is transition.source and self.target is transition.target
-
 
     def __repr__(self):# pragma: no cover
         return "Transition(%r, %r)" % (self.source, self.target)

@@ -10,8 +10,9 @@ from zope.interface import implementer
 from dace.interfaces import IProcessStarted, IProcessFinished
 from dace import log
 from dace.interfaces import IBehavior
-from dace.objectofcollaboration.object import (
-        COMPOSITE_MULTIPLE, SHARED_MULTIPLE, SHARED_UNIQUE)
+from dace.descriptors import (
+        CompositeMultipleProperty,
+        SharedUniqueProperty, SharedMultipleProperty)
 from dace.processdefinition.core import Path
 from dace.objectofcollaboration.entity import Entity
 from .workitem import DecisionWorkItem, StartWorkItem, WorkItem
@@ -31,31 +32,13 @@ class BPMNElement(Entity):
 @implementer(ILocation)
 class FlowNode(BPMNElement):
 
-    properties_def = {'incoming': (SHARED_MULTIPLE, 'target', False),
-                      'outgoing': (SHARED_MULTIPLE, 'source', False),
-                      'workitems': (COMPOSITE_MULTIPLE, None, False),
-                      'process': (SHARED_UNIQUE, 'nodes', False),
-                      }
+    incoming = SharedMultipleProperty('incoming', 'target', False)
+    outgoing = SharedMultipleProperty('outgoing', 'source', False)
+    workitems = CompositeMultipleProperty('workitems', None, False)
+    process = SharedUniqueProperty('process', 'nodes', False)
 
     def __init__(self, definition, **kwargs):
         super(FlowNode,self).__init__( definition, **kwargs)
-
-
-    @property
-    def workitems(self):
-        return self.getproperty('workitems')
-
-    @property
-    def incoming(self):
-        return self.getproperty('incoming')
-
-    @property
-    def outgoing(self):
-        return self.getproperty('outgoing')
-
-    @property
-    def process(self):
-        return self.getproperty('process')
 
     def prepare(self):
         registry = get_current_registry()

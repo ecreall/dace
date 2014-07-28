@@ -394,7 +394,7 @@ class ElementaryAction(BusinessAction):
             self.isexecuted = True
             if self.sub_process is None:
                 self.finish_execution(context, request, **kw)
- 
+
             return self.redirect(context, request, **kw)
 
 
@@ -601,7 +601,7 @@ class ActionInstance(BusinessAction):
             self.isexecuted = True
             if self.sub_process is None:
                 self.finish_execution(context, request, **kw)
-    
+
             return self.principalaction.redirect(context, request, **kw)
 
     def finish_execution(self, context, request, **kw):

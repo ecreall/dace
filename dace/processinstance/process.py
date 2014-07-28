@@ -13,33 +13,24 @@ from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
 from dace.interfaces import IProcess, IWorkItem
 from dace.util import find_catalog, find_service
-from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE, COMPOSITE_UNIQUE, SHARED_MULTIPLE, SHARED_UNIQUE, Object
+from dace.objectofcollaboration.object import Object
+from dace.descriptors import (
+        SHARED_MULTIPLE,
+        CompositeMultipleProperty, CompositeUniqueProperty,
+        SharedUniqueProperty, SharedMultipleProperty)
 
 
 class ExecutionContext(Object):
 
-    properties_def = {'createds': (SHARED_MULTIPLE, 'creator', False),
-                      'involveds': (SHARED_MULTIPLE, 'involvers', False),
-                      'process': (SHARED_UNIQUE, 'execution_context', True),
-                      }
+    createds = SharedMultipleProperty('createds', 'creator', False)
+    involveds = SharedMultipleProperty('involveds', 'involvers', False)
+    process = SharedUniqueProperty('process', 'execution_context', True)
 
     def __init__(self):
         super(ExecutionContext, self).__init__()
         self.parent = None
         self.sub_execution_contexts = PersistentList()
         self.properties_names = PersistentList()
-
-    @property
-    def createds(self):
-        return self.getproperty('createds')
-
-    @property
-    def involveds(self):
-        return self.getproperty('involveds')
-
-    @property
-    def process(self):
-        return self.getproperty('process')
 
     def root_execution_context(self):
         if self.parent is None:
@@ -129,7 +120,7 @@ class ExecutionContext(Object):
                 index = self.get_localdata(index_key)+1
                 for i in range(index)[1:]:
                     prop_name = name+'_'+str(i)
-                    self._init__property(prop_name, self.dynamic_properties_def[prop_name])
+                    self._init_property(prop_name, self.dynamic_properties_def[prop_name])
                     result[prop_name] = ('collection', self.getproperty(prop_name), name, i, (i==(index-1)), properties[name])
             else:
                 result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])
@@ -156,12 +147,12 @@ class ExecutionContext(Object):
     def add_involved_entity(self, name, value, type='involved'):
         self.addtoproperty('involveds', value)
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
         else:
             self.properties_names.append((name, type))
             self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
 
     def remove_entity(self, name, value):
@@ -172,7 +163,7 @@ class ExecutionContext(Object):
             self.delproperty('createds', value)
 
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             self.delproperty(name, value)
 
     def add_created_entity(self, name, value):
@@ -191,7 +182,7 @@ class ExecutionContext(Object):
 
     def get_involved_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             result = self.getproperty(name)
             if result and index < len(result):
                 return result[index]
@@ -232,7 +223,7 @@ class ExecutionContext(Object):
             return list(self.involveds)
 
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             result = self.getproperty(name)
             return result
 
@@ -272,7 +263,7 @@ class ExecutionContext(Object):
 
     def get_created_entity(self, name, index=-1):
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             result = [e for e in self.getproperty(name) if e in self.createds]
             if result:
                 return result[index]
@@ -313,7 +304,7 @@ class ExecutionContext(Object):
             return list(self.createds)
 
         if name in self.dynamic_properties_def:
-            self._init__property(name, self.dynamic_properties_def[name])
+            self._init_property(name, self.dynamic_properties_def[name])
             result = [e for e in self.getproperty(name) if e in self.createds]
             return result
 
@@ -371,12 +362,12 @@ class ExecutionContext(Object):
         for value in values:
             self.addtoproperty('involveds', value)
             if name in self.dynamic_properties_def:
-                self._init__property(name, self.dynamic_properties_def[name])
+                self._init_property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
             else:
                 self.properties_names.append((prop_name, type))
                 self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
-                self._init__property(name, self.dynamic_properties_def[name])
+                self._init_property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
 
     def remove_collection(self, name, values):
@@ -418,7 +409,7 @@ class ExecutionContext(Object):
             return []
 
         name = name+'_'+str(index)
-        self._init__property(name, self.dynamic_properties_def[name])
+        self._init_property(name, self.dynamic_properties_def[name])
         result = self.getproperty(name)
         return result
 
@@ -590,10 +581,9 @@ class ExecutionContext(Object):
 @implementer(IProcess)
 class Process(Entity):
 
-    properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
-                      'transitions': (COMPOSITE_MULTIPLE, 'process', True),
-                      'execution_context': (COMPOSITE_UNIQUE, 'process', True),
-                      }
+    nodes = CompositeMultipleProperty('nodes', 'process', True)
+    transitions = CompositeMultipleProperty('transitions', 'process', True)
+    execution_context = CompositeUniqueProperty('execution_context', 'process', True)
 
     _started = False
     _finished = False
@@ -627,23 +617,6 @@ class Process(Entity):
             transition.__name__ = transitiondef.__name__
             self.addtoproperty('transitions', transition)
             transition._init_ends(self, transitiondef)
-
-    @property
-    def nodes(self):
-        return self.getproperty('nodes')
-
-    @property
-    def transitions(self):
-        return self.getproperty('transitions')
-
-    @property
-    def execution_context(self):
-        #if self.isSubProcess:
-        #    return self.attachedTo.process.execution_context
-        #else:
-        #    return self.getproperty('execution_context')
-        return self.getproperty('execution_context')
-
 
     def definition(self):
         def_container = find_service('process_definition_container')

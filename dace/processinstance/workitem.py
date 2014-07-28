@@ -1,4 +1,4 @@
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import get_current_request
 from pyramid.interfaces import ILocation
 from zope.interface import implementer
 
@@ -6,7 +6,8 @@ from dace.util import find_service
 
 from dace.interfaces import (
     IWorkItem, IStartWorkItem, IDecisionWorkItem)
-from dace.objectofcollaboration.object import Object, COMPOSITE_MULTIPLE
+from dace.objectofcollaboration.object import Object
+from dace.descriptors import CompositeMultipleProperty
 from .lock import LockableElement
 
 
@@ -69,7 +70,6 @@ class StartWorkItem(UserDecision):
         return self.node.id
 
     def consume(self):
-        registry = get_current_registry()
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(self.process_id)
         if pd.isUnique and pd.isInstantiated:
@@ -112,7 +112,6 @@ class StartWorkItem(UserDecision):
         Else if a one transition in the chain is sync,
         verify all transitions condition.
         """
-        global_request = get_current_request()
         transitions = self.path.transitions
         if not [t for t in transitions if t.sync]:
             return True
@@ -130,7 +129,7 @@ class StartWorkItem(UserDecision):
 @implementer(ILocation)
 class BaseWorkItem(LockableElement, Object):
 
-    properties_def = {'actions': (COMPOSITE_MULTIPLE, None, False)}
+    actions = CompositeMultipleProperty('actions')
     context = None
 
     def __init__(self, node):
@@ -144,10 +143,6 @@ class BaseWorkItem(LockableElement, Object):
             action = a(self)
             action.__name__ = action.behavior_id
             self.addtoproperty('actions', action)
-
-    @property
-    def actions(self):
-        return self.getproperty('actions')
 
     @property
     def process_id(self):

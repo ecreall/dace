@@ -2,7 +2,8 @@ from zope.interface import implementer
 from persistent.list import PersistentList
 
 from dace.interfaces import IEntity
-from .object import Object, SHARED_UNIQUE, SHARED_MULTIPLE
+from .object import Object
+from dace.descriptors import SharedUniqueProperty, SharedMultipleProperty
 from dace.util import getAllBusinessAction
 
 
@@ -24,11 +25,32 @@ class ActionCall(object):
         return self.action.content(self.object)
 
 
+class ProcessSharedUniqueProperty(SharedUniqueProperty):
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+
+        res = super(ProcessSharedUniqueProperty, self).__get__(obj, objtype)
+        if res is not None:
+            return res.process
+
+        return None
+
+
+class ProcessSharedMultipleProperty(SharedMultipleProperty):
+    def __get__(self, obj, objtype=None):
+        if obj is None:
+            return self
+
+        res = super(ProcessSharedMultipleProperty, self).__get__(obj, objtype)
+        return [e.process for e in res]
+
+
 @implementer(IEntity)
 class Entity(Object):
 
-    properties_def = {'creator': (SHARED_UNIQUE, 'createds', True),
-                      'involvers': (SHARED_MULTIPLE, 'involveds', True)}
+    creator = ProcessSharedUniqueProperty('creator', 'createds', True)
+    involvers = ProcessSharedMultipleProperty('involvers', 'involveds', True)
 
     def __init__(self, **kwargs):
         super(Entity, self).__init__(**kwargs)
@@ -42,18 +64,6 @@ class Entity(Object):
         self.state = PersistentList()
         for s in state:
             self.state.append(s)
-
-    @property
-    def creator(self):
-        ec_creator = self.getproperty('creator')
-        if ec_creator is not None: 
-            return ec_creator.process
-
-        return None
-
-    @property
-    def involvers(self):
-        return [e.process for e in self.getproperty('involvers')]
 
     @property
     def actions(self):

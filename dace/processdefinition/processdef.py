@@ -7,17 +7,16 @@ from .transitiondef import TransitionDefinition
 from dace.processinstance.process import Process
 from .eventdef import StartEventDefinition, EndEventDefinition
 from .gatewaydef import ParallelGatewayDefinition, ExclusiveGatewayDefinition
+from dace.descriptors import CompositeMultipleProperty
 from dace.util import find_catalog
-from dace.objectofcollaboration.object import COMPOSITE_MULTIPLE
 from dace.objectofcollaboration.entity import Entity
 
 
 @implementer(IProcessDefinition)
 class ProcessDefinition(Entity):
 
-    properties_def = {'nodes': (COMPOSITE_MULTIPLE, 'process', True),
-                      'transitions': (COMPOSITE_MULTIPLE, 'process', True),
-                      }
+    nodes = CompositeMultipleProperty('nodes', 'process', True)
+    transitions = CompositeMultipleProperty('transitions', 'process', True)
     TransitionDefinitionFactory = TransitionDefinition
     isControlled = False
     isSubProcess = False
@@ -39,14 +38,6 @@ class ProcessDefinition(Entity):
             del self._startTransition
         except AttributeError:
             pass
-
-    @property
-    def nodes(self):
-        return self.getproperty('nodes')
-
-    @property
-    def transitions(self):
-        return self.getproperty('transitions')
 
     def __repr__(self):# pragma: no cover
         return "ProcessDefinition(%r)" % self.id

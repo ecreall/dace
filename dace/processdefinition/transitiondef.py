@@ -1,7 +1,8 @@
 from zope.interface import implementer
 
 from dace.interfaces import ITransitionDefinition
-from dace.objectofcollaboration.object import Object, SHARED_UNIQUE
+from dace.descriptors import SharedUniqueProperty
+from dace.objectofcollaboration.object import Object
 from dace.processinstance.transition import Transition
 
 def always_true(data):
@@ -12,10 +13,9 @@ def always_true(data):
 class TransitionDefinition(Object):
 
     factory = Transition
-    properties_def = {'target': (SHARED_UNIQUE, 'incoming', False),
-                      'source': (SHARED_UNIQUE, 'outgoing', False),
-                      'process': (SHARED_UNIQUE, 'transitions', False)
-                      }
+    target = SharedUniqueProperty('target', 'incoming', False)
+    source = SharedUniqueProperty('source', 'outgoing', False)
+    process = SharedUniqueProperty('process', 'transitions', False)
 
     def __init__(self, source_id, target_id, condition=always_true, sync=False, **kwargs):
         super(TransitionDefinition, self).__init__(**kwargs)
@@ -28,25 +28,13 @@ class TransitionDefinition(Object):
     def _init_ends(self, process=None):
         if process is None:
             process = self.process
- 
+
         if process is not None:
             self.setproperty('source', process[self.source_id])
             self.setproperty('target', process[self.target_id])
 
     def create(self):
         return self.factory(self)
-
-    @property
-    def target(self):
-        return self.getproperty('target')
-
-    @property
-    def source(self):
-        return self.getproperty('source')
-
-    @property
-    def process(self):
-        return self.getproperty('process')
 
     def set_target(self, newtarget):
         self.target_id = newtarget.__name__
