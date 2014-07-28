@@ -326,7 +326,11 @@ class SignalEvent(EventKind):
     def stop(self):
         if self.event._p_oid in callbacks:
             # Stop ZMQStream
-            callbacks[self.event._p_oid].close()
+            stream = callbacks[self.event._p_oid]
+            def stop_stream_callback(stream):
+                stream.stop()
+            io_loop = IOLoop.instance()
+            io_loop.add_callback(stop_stream_callback, stream)
             with callbacks_lock:
                 del callbacks[self.event._p_oid]
 

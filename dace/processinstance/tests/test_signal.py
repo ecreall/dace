@@ -160,7 +160,8 @@ class TestsSignal(FunctionalTests):
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
         # simulate application shutdown
         self.assertEqual(len(event_callbacks), 1)
-        proc.getWorkItems()['sample.sc'].node.eventKind.stop()
+        e = proc.getWorkItems()['sample.sc'].node.eventKind
+        e.stop()
         self.assertEqual(len(event_callbacks), 0)
 
         # simulate application startup
