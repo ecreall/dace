@@ -252,7 +252,7 @@ class Path(Persistent):
         cloned = Path(self.transitions, self.transaction)
         return cloned
 
-    def is_segement(self, path):
+    def is_segment(self, path):
         for transition in path.transitions:
             eqs = self.contains_transition(transition)
             if not eqs:

@@ -46,7 +46,7 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
             if not cdecision in all_stoped_wis and cdecision is not work_item:
                all_stoped_wis.append(cdecision)
                cdecision.validations.append(self)
-               if cdecision.is_finished or not cdecision.path.is_segement(work_item.path):
+               if cdecision.is_finished or not cdecision.path.is_segment(work_item.path):
                    cdecision.node.stop()
                    cdecision.__parent__.delproperty('workitems', cdecision)
 

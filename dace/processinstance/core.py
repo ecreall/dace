@@ -150,7 +150,7 @@ class MakerFlowNode(FlowNode):
     def replay_path(self, decision, transaction):
         allconcernedkitems = self.get_allconcernedworkitems()
         for wi in allconcernedkitems:
-            if decision.path.is_segement(wi.path):
+            if decision.path.is_segment(wi.path):
                 decision = wi
                 break
 
@@ -245,7 +245,7 @@ class BehavioralFlowNode(MakerFlowNode):
                     if not (cdecision in all_stoped_wis) and cdecision is not work_item:
                        all_stoped_wis.append(cdecision)
                        cdecision.validations.append(self)
-                       if cdecision.is_finished or not cdecision.path.is_segement(work_item.path):
+                       if cdecision.is_finished or not cdecision.path.is_segment(work_item.path):
                            # don't cdecision.node.stop()
                            cdecision.__parent__.delproperty('workitems', cdecision)
 
