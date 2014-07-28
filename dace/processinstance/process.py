@@ -71,7 +71,7 @@ class ExecutionContext(Object):
         return root._sub_createds()
 
     @property
-    def avtive_involveds(self):
+    def active_involveds(self):
         result = {}
         properties = dict(self.properties_names)
         for name in properties.keys():
@@ -95,7 +95,7 @@ class ExecutionContext(Object):
         return result
 
     def _sub_active_involveds(self):
-        result = dict(self.avtive_involveds)
+        result = dict(self.active_involveds)
         for sec in self.sub_execution_contexts:
             sub_active = sec._sub_active_involveds()
             for k, v in sub_active.items():
