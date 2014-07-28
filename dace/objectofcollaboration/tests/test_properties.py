@@ -4,28 +4,6 @@ from .example.objects import Object1, Object2
 
 class TestProperties(FunctionalTests):
 
-
-    def _del_objects(self):
-        try:
-            self.app.remove('object1')
-        except :
-            pass
-
-        try:
-            self.app.remove('object2')
-        except :
-            pass
-
-        try:
-            self.app.remove('object3')
-        except :
-            pass
-
-        try:
-            self.app.remove('object4')
-        except :
-            pass
-
     def _create_objects_cu_su(self):
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
@@ -74,7 +52,6 @@ class TestProperties(FunctionalTests):
 
         self.assertIs(object2.getproperty('shared2_u'), None)
         self.assertIs(object2.__parent__, None)
-        self._del_objects()
 
     def _create_objects_cm_su(self):
         self.app['object1'] = Object1()
@@ -115,7 +92,6 @@ class TestProperties(FunctionalTests):
 
         self.assertTrue(isinstance(object2.getproperty('shared21_u'), Object1))
         self.assertIs(object2.getproperty('shared21_u'), object4)
-        self._del_objects()
 
 
     def _create_objects_su_su(self):
@@ -127,7 +103,6 @@ class TestProperties(FunctionalTests):
         object2 = self.app['object2']
         object3 = self.app['object3']
         return object1, object2, object3
-
 
     def test_shared_unique_opposite_shared_unique(self):
         object1, object2, object3 = self._create_objects_su_su()
@@ -141,8 +116,6 @@ class TestProperties(FunctionalTests):
         self.assertIs(object1.getproperty('shared_u'), object3)
         self.assertIs(object3.getproperty('shared22_u'), object1)
         self.assertIs(object2.getproperty('shared22_u'), None)
-        self._del_objects()
-
 
     def _create_objects_sm_su(self):
         self.app['object1'] = Object1()
@@ -184,4 +157,3 @@ class TestProperties(FunctionalTests):
 
         self.assertTrue(isinstance(object2.getproperty('shared23_u'), Object1))
         self.assertIs(object2.getproperty('shared23_u'), object4)
-        self._del_objects()
