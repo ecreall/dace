@@ -23,6 +23,7 @@ from dace.interfaces import (
     IActivity,
     IBusinessAction)
 from dace.objectofcollaboration.entity import ActionCall
+from dace.objectofcollaboration.principal.util import get_current
 from .workitem import UserDecision, StartWorkItem
 
 
@@ -312,7 +313,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         _assigned_to = self.assigned_to
         if _assigned_to:
             admin = getSite()['principals']['users']['admin']# replace: getAdmin() ?
-            if not( request.user in _assigned_to) and not(request.user is admin):
+            if not( get_current(request) in _assigned_to) and not(get_current(request) is admin):
                 raise ValidationError(msg='Action is assigned to an other user')
 
         elif self.roles_validation and not self.roles_validation.__func__(process, context):
@@ -357,7 +358,8 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         self.unlock(request)
         self.workitem.unlock(request)
         # TODO self.workitem is a real workitem?
-        self.workitem.node.finish_behavior(self.workitem)
+        if self.isexecuted:
+            self.workitem.node.finish_behavior(self.workitem)
 
 
 

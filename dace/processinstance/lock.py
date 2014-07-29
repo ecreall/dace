@@ -4,6 +4,7 @@ from substanced.locking import (lock_resource,
                                 LockError,
                                 UnlockError)
 
+from dace.objectofcollaboration.principal.util import get_current, Anonymous
 
 DEFAUT_DURATION = 3600
 
@@ -22,6 +23,14 @@ def get_unlock_operation(request):
         obj.unlock(request)
 
     return _unlock
+
+
+def get_useroruseroid(request):
+    user = get_current(request)
+    if isinstance(user, Anonymous):
+        user = user.oid 
+
+    return user 
 
 
 class LockableElement(object):
@@ -46,7 +55,11 @@ class LockableElement(object):
             return
 
         try:
-            lock_resource(self, request.user, DEFAUT_DURATION)
+            user = get_current(request)
+            if isinstance(user, Anonymous):
+                 return
+
+            lock_resource(self, user, DEFAUT_DURATION)
         except LockError:
             return
 
@@ -59,7 +72,11 @@ class LockableElement(object):
             return
 
         try:
-            unlock_resource(self, request.user)
+            user = get_current(request)
+            if isinstance(user, Anonymous):
+                 return
+
+            unlock_resource(self, user)
         except UnlockError:
             return
 
@@ -70,6 +87,10 @@ class LockableElement(object):
             return False
 
         try:
-            return not could_lock_resource(self, request.user)
+            user = get_current(request)
+            if isinstance(user, Anonymous):
+                 return False
+
+            return not could_lock_resource(self, user)
         except LockError:
             return True

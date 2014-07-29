@@ -44,6 +44,8 @@ class FunctionalTests(unittest.TestCase):
         self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
         self.app['principals'].add_user('bob', password='bob', email='alice@example.com')
         request.user = self.users['admin']
+        import dace.objectofcollaboration.principal.util
+        dace.objectofcollaboration.principal.util.get_current_test = True
         self.def_container = self.app['process_definition_container']
 
     def tearDown(self):

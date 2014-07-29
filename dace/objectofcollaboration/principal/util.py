@@ -1,35 +1,77 @@
+import datetime
+import random
+
 from pyramid.threadlocal import get_current_request
 
-from substanced.util import get_oid
+from substanced.util import get_oid, find_service
+from substanced.sdi import user as sduser
+import substanced.sdi
 
 from dace.relations import connect, disconnect, find_relations
 from dace.util import getSite
-from .role import roles_id, Anonymous
+from .role import roles_id, Anonymous as RoleAnonymous
 
 try:
     basestring
 except NameError:
     basestring = str
 
-def get_current():
-    request = get_current_request()
-    return request.user
+
+class Anonymous(object):
+    __name__ = 'Anonymous'
+    locale = 'fr'
+
+
+def anonymous_oid_generator():
+    date_tuple = datetime.datetime.timetuple(datetime.datetime.today())
+    descriminator = random.choice(range(100))
+    oid = int(''.join([str(element) for element in date_tuple if element>=0]))
+    return oid+descriminator
+
+get_current_test = False
+
+def get_current(request=None):
+    if request is None:
+        request = get_current_request()
+
+    result = sduser(request)
+    if get_current_test:
+        result = request.user
+
+    if result is None:
+        if 'dace_user' in request.session and request.session['dace_user']:
+            result = request.session['dace_user']
+        else: 
+            result = Anonymous()
+            result.oid = anonymous_oid_generator()
+            request.session['dace_user'] = result
+
+    return result
+
+
+#substanced.sdi.user = get_current
 
 
 def get_roles(user=None, obj=None):
     if user is None:
         user = get_current()
 
-    if user is None:
-        return [Anonymous.name]
+    if isinstance(user, Anonymous): 
+        return [RoleAnonymous.name] #TODO use cookies to find roles
 
     if obj is None:
         obj = getSite()
 
-    opts = {u'source_id': get_oid(user),#Anonyme ?
+    opts = {u'source_id': get_oid(user),
             u'target_id': get_oid(obj)} 
     opts[u'reftype'] = 'Role'
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
+    root = getSite()
+    principals = find_service(root, 'principals')
+    sd_admin = principals['users']['admin']
+    if sd_admin is user and not ('Admin' in roles):
+        roles.append('Admin')
+ 
     return roles
 
 
@@ -40,7 +82,7 @@ def grant_roles(user=None, roles=()):
     if user is None:
         user = get_current()
 
-    if user is None:
+    if isinstance(user, Anonymous):
         return 
 
     normalized_roles = []
@@ -57,7 +99,7 @@ def grant_roles(user=None, roles=()):
             opts = {}
             opts[u'relation_id'] = role[0]
             opts[u'reftype'] = 'Role'
-            if not has_any_roles(user, (role,)):
+            if not has_any_roles(user, (role,), True):
                 connect(user, obj, **opts)
                 if not(obj is root):
                     connect(user, root, **opts)
@@ -70,8 +112,8 @@ def revoke_roles(user=None, roles=()):
     if user is None:
         user = get_current()
 
-    if user is None:
-        return 
+    if isinstance(user, Anonymous):
+        return #TODO use cookies to revoke roles
 
     normalized_roles = []
     root = getSite()
@@ -83,7 +125,7 @@ def revoke_roles(user=None, roles=()):
 
     for role in normalized_roles:
         obj = role[1]
-        opts = {u'source_id': get_oid(user),#Anonyme ?
+        opts = {u'source_id': get_oid(user),
                 u'target_id': get_oid(obj)} 
         opts[u'relation_id'] = role[0]
         opts[u'reftype'] = 'Role'
@@ -113,31 +155,40 @@ def _get_allsuperiors(role_id):
     return normalized_superiors
 
 
-def has_any_roles(user=None, roles=()):
+def has_any_roles(user=None, roles=(), ignore_superiors=False):
     if not roles:
         return True
 
     normalized_roles = []
+    root = getSite()
     for role in roles:
         if isinstance(role, basestring) and role in roles_id:
-            normalized_roles.append((role, getSite()))
-            normalized_roles.extend(_get_allsuperiors(role))
+            normalized_roles.append((role, root))
+            if not ignore_superiors:
+                normalized_roles.extend(_get_allsuperiors(role))
         elif role[0] in roles_id:
             normalized_roles.append(role)
-            normalized_roles.extend(_get_allsuperiors(role[0]))
+            if not ignore_superiors:
+                normalized_roles.extend(_get_allsuperiors(role[0]))
 
     if user is None:
         user = get_current()
 
-    if user is None:
-        rolesid = [r[0] for r in normalized_roles]
-        if Anonymous.name in rolesid:
+    if isinstance(user, Anonymous):
+        rolesid = [r[0] for r in normalized_roles] #TODO use cookies to find roles
+        if RoleAnonymous.name in rolesid:
             return True
 
         return False
+
+    principals = find_service(root, 'principals')
+    sd_admin = principals['users']['admin']
+    all_roles = [r[0] for r in  normalized_roles]
+    if sd_admin is user and 'Admin' in all_roles:
+        return True
     
     for role in normalized_roles:
-        opts = {u'source_id': get_oid(user),#Anonyme ?
+        opts = {u'source_id': get_oid(user),
                 u'target_id': get_oid(role[1])} 
         opts[u'relation_id'] = role[0]
         opts[u'reftype'] = 'Role'
@@ -148,7 +199,7 @@ def has_any_roles(user=None, roles=()):
     return False
 
 
-def has_all_roles(user=None, roles=()):
+def has_all_roles(user=None, roles=(), ignore_superiors=False):
     if not roles:
         return True
 
@@ -162,11 +213,11 @@ def has_all_roles(user=None, roles=()):
     if user is None:
         user = get_current()
 
-    if user is None: #TODO Anonymous
-        return False
+    if isinstance(user, Anonymous): 
+        return False #TODO use cookies to find roles
 
     for role in normalized_roles:
-        if not has_any_roles(user=user, roles=(role, )):
+        if not has_any_roles(user, (role, ), ignore_superiors):
             return False
             
     return True
@@ -194,8 +245,8 @@ def get_objects_with_role(user=None, role=None):
     if user is None:
         user = get_current()
 
-    if user is None: #TODO Anonymous
-        return False
+    if isinstance(user, Anonymous): 
+        return False #TODO use cookies to find objects
 
     root = getSite()
     opts = {u'source_id': get_oid(user)} 

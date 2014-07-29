@@ -30,13 +30,21 @@ from dace.processinstance.workitem import StartWorkItem
 from dace.objectofcollaboration.tests.example.objects import ObjectA
 from dace.testing import FunctionalTests
 
-
 class TestsBusinessAction(FunctionalTests):
 
     def tearDown(self):
         registry = get_current_registry()
         registry.unregisterUtility(provided=IProcessDefinition)
         super(TestsBusinessAction, self).tearDown()
+
+    def logAdmin(self):
+        self.request.user = self.users['admin']
+
+    def logAlice(self):
+        self.request.user = self.users['alice']
+
+    def logBob(self):
+        self.request.user = self.users['bob']
 
     def _process_valid_actions(self):
         """
@@ -88,6 +96,7 @@ class TestsBusinessAction(FunctionalTests):
         return y, pd
 
     def test_actions(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
@@ -141,7 +150,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()#user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -149,12 +158,12 @@ class TestsBusinessAction(FunctionalTests):
                 actions_y_validated_alice.append(a)
             except Exception:
                 continue
-
+        
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionY is sequential
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         action_y.after_execution(objecta, self.request) # unlock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -182,7 +191,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(isinstance(start_wi_y_alice, StartWorkItem), True)
         self.assertEqual(len([a for a in allaction_y_alice if a.workitem is start_wi_y_alice]), 3)
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         for action in actions_y_validated:
             action.before_execution(objecta, self.request)
             action.execute(objecta, self.request, None, **{})
@@ -199,6 +208,7 @@ class TestsBusinessAction(FunctionalTests):
 
 
     def test_actions_YParallel(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYP])
         self.def_container.add_definition(pd)
@@ -242,7 +252,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -253,9 +263,9 @@ class TestsBusinessAction(FunctionalTests):
 
         self.assertEqual(len(actions_y_validated_alice), 1)# ActionYP is parallel (1 action instance locked by admin)
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         action_y.after_execution(objecta, self.request) # unlock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -267,6 +277,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 2)
 
     def test_actions_YParallelI(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYPI])
         self.def_container.add_definition(pd)
@@ -308,7 +319,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -334,6 +345,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 1)
 
     def test_actions_YSequentialI(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYI])
         self.def_container.add_definition(pd)
@@ -375,7 +387,7 @@ class TestsBusinessAction(FunctionalTests):
 
         action_y = actions_y_validated[0]
         action_y.before_execution(objecta, self.request)# user == 'admin', lock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -386,7 +398,7 @@ class TestsBusinessAction(FunctionalTests):
 
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionYPI is Sequential (action instance and workitem are locked)
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         for x in range(10):
             action_y.before_execution(objecta, self.request)
             action_y.execute(objecta, self.request, None, **{})
@@ -403,6 +415,7 @@ class TestsBusinessAction(FunctionalTests):
 
 
     def test_actions_YSequentialD(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYD]) # multi instance (pour chaque instance nous avons un objet)
         self.def_container.add_definition(pd)
@@ -461,7 +474,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn(action_b, actions_y_validated)
 
         action_b.before_execution(objectc, self.request)# user == 'admin', lock action
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -473,6 +486,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 0)# ActionYD is Sequential (action instance and workitem are locked)
 
     def test_actions_YSequentialDp(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal)
         self.def_container.add_definition(pd)
@@ -532,6 +546,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertIn('sample.x', nodes_workitems)
 
     def _test_actions_YLC(self, pd, y):
+        self.logAdmin()
         start_wi = pd.start_process('x')
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
@@ -567,12 +582,14 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(self.request.ylc, 10)
 
     def test_actions_YLC_TestAfter(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
 
     def test_actions_YLC_TestBefore(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         ActionYLC.testBefore = True
         y._init_contexts([ActionYLC])
@@ -580,6 +597,7 @@ class TestsBusinessAction(FunctionalTests):
         self._test_actions_YLC(pd, y)
 
     def test_actions_YLD(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYLD])
         self.def_container.add_definition(pd)
@@ -626,6 +644,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(objectb.is_executed, True)
 
     def test_actions_steps(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYSteps])
         self.def_container.add_definition(pd)
@@ -685,7 +704,7 @@ class TestsBusinessAction(FunctionalTests):
                 continue
 
         self.assertEqual(len(actions_y_validated_admin), 1)
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -696,7 +715,7 @@ class TestsBusinessAction(FunctionalTests):
 
         self.assertEqual(len(actions_y_validated_alice), 0)
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         s2 = steps['s2']
         s2.execute(objecta, self.request, None) #execute step2
         self.assertIs(action_y.workitem, wi)
@@ -713,7 +732,7 @@ class TestsBusinessAction(FunctionalTests):
                 continue
 
         self.assertEqual(len(actions_y_validated_admin), 1)
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -724,7 +743,7 @@ class TestsBusinessAction(FunctionalTests):
 
         self.assertEqual(len(actions_y_validated_alice), 0)
 
-        self.request.user = self.users['admin']
+        self.logAdmin()
         s3 = steps['s3']
         s3.execute(objecta, self.request, None) #execute step2
         self.assertIs(action_y.workitem, wi)
@@ -741,7 +760,7 @@ class TestsBusinessAction(FunctionalTests):
                 continue
 
         self.assertEqual(len(actions_y_validated_admin), 0)
-        self.request.user = self.users['alice']# user == 'alice'
+        self.logAlice()# user == 'alice'
         actions_y_validated_alice = []
         for a in actions_y:
             try:
@@ -754,6 +773,7 @@ class TestsBusinessAction(FunctionalTests):
 
 
     def test_actions_validator(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
@@ -776,6 +796,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_all_y), len(actions_y)-1) # -1 for action_y
 
     def test_actions_assignement(self):
+        self.logAdmin()
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
@@ -805,50 +826,51 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
         #bob
-        self.request.user = self.users['bob']
+        self.logBob()
         with self.assertRaises(Exception):
             action_x.validate(objecta, self.request)
 
         #alice
-        self.request.user = self.users['alice']
+        self.logAlice()
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
         node_x.assigne_to(self.users['bob'])
         #bob
-        self.request.user = self.users['bob']
+        self.logBob()
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['alice']
+        self.logAlice()
         self.assertEqual(action_x.validate(objecta, self.request), True)
         node_x.unassigne(self.users['bob'])
-        self.request.user = self.users['alice']
+        self.logAlice()
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['bob']
+        self.logBob()
         with self.assertRaises(Exception):
             action_x.validate(objecta, self.request)
-        self.request.user = self.users['admin']
+        self.logAdmin()
         self.assertEqual(action_x.validate(objecta, self.request), True)
         node_x.unassigne(self.users['alice'])
-        self.request.user = self.users['bob']
+        self.logBob()
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
         action_x.set_assignment(self.users['bob'])
-        self.request.user = self.users['alice']
+        self.logAlice()
         with self.assertRaises(Exception):
             action_x.validate(objecta, self.request)
-        self.request.user = self.users['bob']
+        self.logBob()
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['admin']
+        self.logAdmin()
         self.assertEqual(action_x.validate(objecta, self.request), True)
         action_x.unassigne(self.users['bob'])
-        self.request.user = self.users['alice']
+        self.logAlice()
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['bob']
+        self.logBob()
         self.assertEqual(action_x.validate(objecta, self.request), True)
-        self.request.user = self.users['admin']
+        self.logAdmin()
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
 
 class TestsSubProcess(FunctionalTests):
+
 
     def tearDown(self):
         registry = get_current_registry()
