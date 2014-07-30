@@ -115,7 +115,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     roles_validation = NotImplemented
     processsecurity_validation = NotImplemented
     state_validation = NotImplemented
-
+    access_controled = False #style information 
 
     def __init__(self, workitem, **kwargs):
         super(BusinessAction, self).__init__(**kwargs)
