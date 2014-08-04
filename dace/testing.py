@@ -59,6 +59,10 @@ class FunctionalTests(unittest.TestCase):
         with event.callbacks_lock:
             event.callbacks = {}
 
+        from dace.objectofcollaboration.system import CRAWLERS
+        for crawler in CRAWLERS:
+            crawler.stop()
+
         import shutil
         testing.tearDown()
         self.db.close()

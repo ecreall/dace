@@ -1,19 +1,27 @@
 import threading
 import transaction
-from zmq.eventloop.ioloop import DelayedCallback
-from substanced.util import find_catalog
+
+from pyramid.testing import DummyRequest
+from pyramid.threadlocal import (
+        get_current_registry, get_current_request, manager)
+from substanced.interfaces import IUserLocator
+from substanced.principal import DefaultUserLocator
+from substanced.util import get_oid
 
 from dace.interfaces import IEntity, IBusinessAction
-#TODO: from .z3 import BaseJob, Participation
+from dace.processinstance.event import DelayedCallback
+from dace.util import find_catalog
+from dace.z3 import BaseJob
 from dace import log
 
-last_transaction_by_app = threading.local()
+last_transaction_by_machine = threading.local()
+CRAWLERS = []
 
 
 def _call_action(action):
     transaction.begin()
     try:
-        action.action.__parent__.start()
+        action.action.__parent__.execute()
         log.info("Execute action %s", action)
         transaction.commit()
     except Exception as e:
@@ -22,23 +30,18 @@ def _call_action(action):
 
 
 def _get_cache_key():
-    site_id = getSite().__name__
-    interaction = queryInteraction()
-    participants = tuple(
-                participation.principal.id for participation in
-                interaction.participations)
-    return '_'.join((site_id, ) + participants)
+    request = get_current_request()
+    return str(get_oid(request.user))
 
 
 def run():
-    # TODO root
     catalog = find_catalog('dace')
     global last_transaction
     cache_key = _get_cache_key()
-    last_transaction = getattr(last_transaction_by_app, cache_key, None)
+    last_transaction = getattr(last_transaction_by_machine, cache_key, None)
     last_tid = catalog._p_jar.db().lastTransaction()
     if last_transaction != last_tid:
-        setattr(last_transaction_by_app, cache_key, last_tid)
+        setattr(last_transaction_by_machine, cache_key, last_tid)
         transaction.begin()
     #            query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
     #            results = list(catalog.apply(query))
@@ -49,12 +52,18 @@ def run():
         log.info("objects to check: %s", len(results))
 
         for content in results:
+            continue  # TODO remove this line
+            # TODO FIXME content.actions does a write in ZODB, wtf.
             for action in content.actions:
+                if getattr(action.action, '__parent__', None) is None:
+                    # action.action.workitem is a StartWorkitem
+                    continue
+
                 # DecisionWorkItem may have been removed
                 # action.action.__parent__ is the workitem
                 # if decision workitem was removed, so the actions
-                if getattr(action.action.__parent__, '_v_removed', False):
-                    continue
+#                if getattr(action.action.__parent__, '_v_removed', False):
+#                    continue
 
                 _call_action(action)
         log.info("objects to check: done")
@@ -66,20 +75,22 @@ def run_crawler():
     job.callable = run
     dc = DelayedCallback(job, 2000)
     dc.start()
+    CRAWLERS.append(dc)
 
 
 def start_crawler(app, login="system"):
     """Start loop."""
     # set site and interaction that will be memorized in job
-    old_site = getSite()
-    endInteraction()
+    request = DummyRequest()
+    request.root = app
+    registry = get_current_registry()
+    manager.push({'registry': registry, 'request': request})
+    locator = registry.queryMultiAdapter((app, request),
+                                              IUserLocator)
+    if locator is None:
+        locator = DefaultUserLocator(app, request)
 
-    setSite(app)
-    auth = getUtility(IAuthentication)
-    newInteraction(
-        *(Participation(auth.getPrincipal(principal_id)) for
-          principal_id in [login]))
+    user = locator.get_user_by_login(login)
+    request.user = user
     run_crawler()
-
-    restoreInteraction()
-    setSite(old_site)
+    manager.pop()

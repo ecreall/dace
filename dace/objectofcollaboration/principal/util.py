@@ -45,7 +45,7 @@ def get_current(request=None):
             result = request.session['dace_user']
         else:
             result = Anonymous()
-            result.oid = anonymous_oid_generator()
+            result.__oid__ = anonymous_oid_generator()
             request.session['dace_user'] = result
 
     return result
@@ -77,7 +77,7 @@ def get_roles(user=None, obj=None):
     return roles
 
 
-def grant_roles(user=None, roles=()):
+def grant_roles(user=None, roles=(), root=None):
     if not roles:
         return
 
@@ -88,7 +88,9 @@ def grant_roles(user=None, roles=()):
         return
 
     normalized_roles = []
-    root = getSite()
+    if root is None:
+        root = getSite()
+
     for role in roles:
         if isinstance(role, basestring):
             normalized_roles.append((role, root))
@@ -101,7 +103,7 @@ def grant_roles(user=None, roles=()):
             opts = {}
             opts[u'relation_id'] = role[0]
             opts[u'reftype'] = 'Role'
-            if not has_any_roles(user, (role,), True):
+            if not has_any_roles(user, (role,), True, root=root):
                 connect(user, obj, **opts)
                 if not(obj is root):
                     connect(user, root, **opts)
@@ -157,12 +159,14 @@ def _get_allsuperiors(role_id):
     return normalized_superiors
 
 
-def has_any_roles(user=None, roles=(), ignore_superiors=False):
+def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
     if not roles:
         return True
 
     normalized_roles = []
-    root = getSite()
+    if root is None:
+        root = getSite()
+
     for role in roles:
         if isinstance(role, basestring) and role in roles_id:
             normalized_roles.append((role, root))

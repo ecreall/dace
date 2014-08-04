@@ -11,15 +11,16 @@ from zope.processlifetime import IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime
-from dace.objectofcollaboration.services.processdef_container import ProcessDefinitionContainer
 
 from substanced.event import RootAdded
 from substanced.util import find_service
 
 from .interfaces import IWorkItem
 from .processinstance.event import IntermediateCatchEvent
+from .objectofcollaboration.principal import Machine
+from .objectofcollaboration.principal.util import grant_roles
 from .objectofcollaboration.system import start_crawler
-from .objectofcollaboration.services.processdef_container import DEFINITIONS
+
 
 class ConsumeTasks(threading.Thread):
 
@@ -76,8 +77,15 @@ def start_intermediate_events(event):
             log.info("Calling %s.eventKind.prepare_for_execution()", node)
     # commit to execute after commit hooks
     transaction.commit()
-#    start_crawler(app_root)
+    start_crawler(app_root)
     app_root._p_jar.close()
+
+
+def add_system_machine(root):
+    system = Machine('system')
+    root['principals']['users']['system'] = system
+#    grant_roles(system, ('System',), root=root)
+#    TODO: grant_roles shouldn't use old relations library or the tests needs to be fixed
 
 
 @subscriber(RootAdded)
@@ -86,6 +94,7 @@ def add_catalogs(event):
     catalogs = find_service(root, 'catalogs')
     catalogs.add_catalog('dace')
     root['runtime'] = Runtime(title='Runtime')
+    add_system_machine(root)
 
 
 @subscriber(IApplicationCreated)
@@ -94,7 +103,6 @@ def application_created(event):
     """
     registry = event.app.registry
     db = registry._zodb_databases['']
-#    app = db.open().root().get('app_root')
     # Create app_root if it doesn't exist yet.
     request = DummyRequest()
     from substanced.db import root_factory

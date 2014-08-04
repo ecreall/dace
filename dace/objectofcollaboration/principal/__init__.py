@@ -10,6 +10,4 @@ class User(OriginUser, Entity):
 
 
 class Machine(User):
-
-    def __init__(self, password=None, email=None, tzname=None, locale=None, **kwargs):
-        super(Machine, self).__init__(password, email, tzname, locale, kwargs)
+    pass
