@@ -58,7 +58,8 @@ class process_definition(object):
                 def_container.add_definition(component)
                 import transaction
                 transaction.commit()
-            except Exception :
+                def_container._p_jar.close()
+            except Exception:  # if app_root doesn't exist
                 DEFINITIONS[component.id] = component
 
         venusian.attach(wrapped, callback)

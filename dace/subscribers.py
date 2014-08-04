@@ -77,6 +77,7 @@ def start_intermediate_events(event):
     # commit to execute after commit hooks
     transaction.commit()
 #    start_crawler(app_root)
+    app_root._p_jar.close()
 
 
 @subscriber(RootAdded)
