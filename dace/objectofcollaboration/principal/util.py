@@ -25,10 +25,12 @@ class Anonymous(object):
 def anonymous_oid_generator():
     date_tuple = datetime.datetime.timetuple(datetime.datetime.today())
     descriminator = random.choice(range(100))
-    oid = int(''.join([str(element) for element in date_tuple if element>=0]))
+    oid = int(''.join([str(element) for element in date_tuple if element >= 0]))
     return oid+descriminator
 
+
 get_current_test = False
+
 
 def get_current(request=None):
     if request is None:
@@ -41,7 +43,7 @@ def get_current(request=None):
     if result is None:
         if 'dace_user' in request.session and request.session['dace_user']:
             result = request.session['dace_user']
-        else: 
+        else:
             result = Anonymous()
             result.oid = anonymous_oid_generator()
             request.session['dace_user'] = result
@@ -56,14 +58,14 @@ def get_roles(user=None, obj=None):
     if user is None:
         user = get_current()
 
-    if isinstance(user, Anonymous): 
+    if isinstance(user, Anonymous):
         return [RoleAnonymous.name] #TODO use cookies to find roles
 
     if obj is None:
         obj = getSite()
 
     opts = {u'source_id': get_oid(user),
-            u'target_id': get_oid(obj)} 
+            u'target_id': get_oid(obj)}
     opts[u'reftype'] = 'Role'
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
     root = getSite()
@@ -71,7 +73,7 @@ def get_roles(user=None, obj=None):
     sd_admin = principals['users']['admin']
     if sd_admin is user and not ('Admin' in roles):
         roles.append('Admin')
- 
+
     return roles
 
 
@@ -83,7 +85,7 @@ def grant_roles(user=None, roles=()):
         user = get_current()
 
     if isinstance(user, Anonymous):
-        return 
+        return
 
     normalized_roles = []
     root = getSite()
@@ -126,17 +128,17 @@ def revoke_roles(user=None, roles=()):
     for role in normalized_roles:
         obj = role[1]
         opts = {u'source_id': get_oid(user),
-                u'target_id': get_oid(obj)} 
+                u'target_id': get_oid(obj)}
         opts[u'relation_id'] = role[0]
         opts[u'reftype'] = 'Role'
         relations = [r for r in find_relations(obj, opts).all()]
         if not(obj is root):
-            opts[u'target_id'] = get_oid(root) 
+            opts[u'target_id'] = get_oid(root)
             relations.extend([r for r in find_relations(obj, opts).all()])
 
         for relation in relations:
             disconnect(relation)
-   
+
 
 def _get_flatened_superiors(role_id):
     role = roles_id[role_id]
@@ -144,7 +146,7 @@ def _get_flatened_superiors(role_id):
     superiors = list(direct_superiors)
     for sup in direct_superiors:
         superiors.extend(_get_flatened_superiors(sup.name))
-    
+
     return superiors
 
 
@@ -186,16 +188,16 @@ def has_any_roles(user=None, roles=(), ignore_superiors=False):
     all_roles = [r[0] for r in  normalized_roles]
     if sd_admin is user and 'Admin' in all_roles:
         return True
-    
+
     for role in normalized_roles:
         opts = {u'source_id': get_oid(user),
-                u'target_id': get_oid(role[1])} 
+                u'target_id': get_oid(role[1])}
         opts[u'relation_id'] = role[0]
         opts[u'reftype'] = 'Role'
         role_relations = [r for r in find_relations(role[1], opts).all()]
         if role_relations:
             return True
-            
+
     return False
 
 
@@ -213,13 +215,13 @@ def has_all_roles(user=None, roles=(), ignore_superiors=False):
     if user is None:
         user = get_current()
 
-    if isinstance(user, Anonymous): 
+    if isinstance(user, Anonymous):
         return False #TODO use cookies to find roles
 
     for role in normalized_roles:
         if not has_any_roles(user, (role, ), ignore_superiors):
             return False
-            
+
     return True
 
 
@@ -231,7 +233,7 @@ def get_users_with_role(role=None):
     if isinstance(role, basestring):
         normalized_role = (role, getSite())
 
-    opts = {u'target_id': get_oid(normalized_role[1])} 
+    opts = {u'target_id': get_oid(normalized_role[1])}
     opts[u'relation_id'] = normalized_role[0]
     opts[u'reftype'] = 'Role'
     users = [r.source for r in find_relations(normalized_role[1], opts).all()]
@@ -245,11 +247,11 @@ def get_objects_with_role(user=None, role=None):
     if user is None:
         user = get_current()
 
-    if isinstance(user, Anonymous): 
+    if isinstance(user, Anonymous):
         return False #TODO use cookies to find objects
 
     root = getSite()
-    opts = {u'source_id': get_oid(user)} 
+    opts = {u'source_id': get_oid(user)}
     opts[u'relation_id'] = role
     opts[u'reftype'] = 'Role'
     objects = [r.target for r in find_relations(root, opts).all()]
@@ -258,4 +260,3 @@ def get_objects_with_role(user=None, role=None):
         objects.remove(root)
 
     return objects
-
