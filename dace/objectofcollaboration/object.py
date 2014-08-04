@@ -171,6 +171,9 @@ class Object(Folder):
 
     def __setstate__(self, state):
         super(Object, self).__setstate__(state)
+        if not hasattr(self, 'dynamic_properties_def'):
+            return
+
         for name, propertydef in self.dynamic_properties_def.items():
             self._init_property(name, propertydef)
 
