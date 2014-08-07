@@ -1149,6 +1149,15 @@ class TestsWorkItems(FunctionalTests):
     def test_start_complex_Parallel_workitem_decision_cycle(self):
         pd = self._process_start_complex_Parallel_process_decision_cycle()
         self.def_container.add_definition(pd)
+        self._test_start_complex_Parallel_workitem_decision_cycle(pd)
+
+    #def test_boocle_dace(self): # Moyenne de 58 ms par action
+    #    pd = self._process_start_complex_Parallel_process_decision_cycle()
+    #    self.def_container.add_definition(pd)
+    #    for x in range(1000):
+    #        self._test_start_complex_Parallel_workitem_decision_cycle(pd)
+
+    def _test_start_complex_Parallel_workitem_decision_cycle(self, pd):
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 1)
         self.assertIn('f', start_wis)

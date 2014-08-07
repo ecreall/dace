@@ -8,6 +8,7 @@ from substanced.catalog import (
     Keyword,
     indexview,
     indexview_defaults,
+    Text
     )
 from dace.util import Adapter, adapter
 from dace.interfaces import (
@@ -27,6 +28,30 @@ class DaceCatalogViews(object):
             return default
 
         return adapter.object_provides()
+
+    @indexview()
+    def object_title(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.object_title()
+
+    @indexview()
+    def object_states(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.object_states()
+
+    @indexview()
+    def object_description(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.object_description()
 
     @indexview()
     def object_type(self, default):
@@ -114,6 +139,9 @@ class DaceIndexes(object):
 
     object_provides = Keyword()
     object_type = Field()
+    object_title = Text()
+    object_states = Keyword()
+    object_description = Text()
     container_oid = Field()
     containers_oids = Keyword()
     oid = Field()
@@ -133,6 +161,15 @@ class SearchableObject(Adapter):
 
     def object_provides(self):
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
+
+    def object_title(self):
+        return getattr(self.context, 'title', '')
+
+    def object_description(self):
+        return getattr(self.context, 'description', '')
+
+    def object_states(self):
+        return [s.lower() for s in list(getattr(self.context, 'state', []))]
 
     def object_type(self):
         if providedBy(self.context).declared:

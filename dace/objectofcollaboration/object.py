@@ -137,6 +137,7 @@ class Object(Folder):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
         self.created_at = datetime.datetime.today()
+        self.modified_at = datetime.datetime.today()
         if 'title' in kwargs:
             self.title = kwargs['title']
 

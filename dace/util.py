@@ -318,3 +318,42 @@ class utility(object):
 
         venusian.attach(wrapped, callback)
         return wrapped
+
+
+import zope.copy
+_marker = object()
+
+def copy(obj):
+    """Return a copy of obj without composition relations
+
+    Example of a container:
+        (Pdb) pp orig.__dict__
+{'_BTreeContainer__len': <BTrees.Length.Length object at 0x7f3f0c04d410>,
+ '_SampleContainer__data': <BTrees.OOBTree.OOBTree object at 0x7f3f0c04b4d0>,
+ '__name__': u'vuescontainer',
+ '__parent__': <monapplication.content.monapplication_applicationfile.MonApplication_ApplicationFile object at 0x598cc08>,
+ '_order': ['vue2', 'vue1'],
+ '_vues': ['vue2', 'vue1'],
+ 'state': [],
+ 'title': u'Vuescontainer'}
+
+_BTreeContainer__len, _SampleContainer__data, _order are attributes of a container.
+_vues is used for a composition relation.
+We only want to copy state and title. Be careful to create a new list instance for state.
+    """
+    new = obj.__class__()                                                                    
+    # wake up object to have obj.__dict__ populated
+    obj._p_activate()
+    for key, value in obj.__dict__.items():
+        if key.startswith('_') or key=='data':
+            continue
+
+        new_value = zope.copy.copy(value)
+        setattr(new, key, new_value)
+
+    return new
+
+
+def deepcopy(obj):
+    new = zope.copy.clone(obj)
+    return new
