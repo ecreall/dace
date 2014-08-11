@@ -20,7 +20,7 @@ CRAWLERS = []
 def _call_action(action):
     transaction.begin()
     try:
-        action.action.__parent__.execute()
+        action.action.__parent__.execute()  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
         log.info("Execute action %s", action)
         transaction.commit()
     except Exception as e:
@@ -53,7 +53,7 @@ def run():
         log.info("new zodb transactions, objects to check: %s", len(results))
 
         for content in results:
-            continue  # TODO remove this line
+            continue  # TODO remove this line and fix _call_action
             for action in content.actions:
                 if getattr(action.action, '__parent__', None) is None:
                     # action.action.workitem is a StartWorkitem
@@ -66,6 +66,7 @@ def run():
 #                    continue
 
                 _call_action(action)
+        log.info("checked")
         #log.info("objects to check: done")
     run_crawler()
 
