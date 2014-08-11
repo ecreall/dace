@@ -1271,16 +1271,16 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn('a', start_wis)
         self.assertIn('ea', start_wis)
 
-        currenttransaction = pd.global_transaction
-        self.assertEqual(len(currenttransaction.sub_transactions), 1)
-        find_transaction = currenttransaction.sub_transactions[0]
-        self.assertEqual(find_transaction.type, 'Find')
-        sources = find_transaction.path.sources
-        targets = find_transaction.path.targets
-        self.assertEqual(len(sources), 1)
-        self.assertEqual(len(targets), 1)
-        self.assertEqual(sources[0].id, 'sample.s')
-        self.assertEqual(targets[0].id, 'sample.p')
+        #currenttransaction = pd.global_transaction
+        #self.assertEqual(len(currenttransaction.sub_transactions), 1)
+        #find_transaction = currenttransaction.sub_transactions[0]
+        #self.assertEqual(find_transaction.type, 'Find')
+        #sources = find_transaction.path.sources
+        #targets = find_transaction.path.targets
+        #self.assertEqual(len(sources), 1)
+        #self.assertEqual(len(targets), 1)
+        #self.assertEqual(sources[0].id, 'sample.s')
+        #self.assertEqual(targets[0].id, 'sample.p')
 
         start_ea = start_wis['ea']
         wi, proc = start_ea.consume()

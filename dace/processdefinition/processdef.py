@@ -187,11 +187,11 @@ class ProcessDefinition(Entity):
 
             return []
         #une transaction globale pour chaque demande
-        self.global_transaction = Transaction()
+        global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
         # une trandsaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = self.global_transaction.start_subtransaction(type='Find', initiator=self)
+        sub_transaction = global_transaction.start_subtransaction(type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         start_workitems = dict([(wi.node.__name__, wi) for wi in start_workitems])
         if node_name is None:
@@ -218,7 +218,7 @@ class ProcessDefinition(Entity):
             return created
 
         created = False
-        if self.started_processes:
+        if  self.started_processes:
             created = True
 
         setattr(self, '_isIntanciated_', created)
