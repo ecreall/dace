@@ -204,7 +204,6 @@ class ProcessDefinition(Entity):
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
-        # TODO: process_id should be indexed for IProcess
         query = object_provides_index.any((IProcess.__identifier__,)) & processid_index.eq(self.id)
         results = query.execute().all()
         processes = [p for p in results]
