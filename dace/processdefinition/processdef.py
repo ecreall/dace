@@ -210,16 +210,3 @@ class ProcessDefinition(Entity):
         processes = [p for p in results]
         processes.sort()
         return processes
-
-    @property
-    def isInstantiated(self):
-        created = getattr(self, '_isIntanciated_', None)
-        if created is not None:
-            return created
-
-        created = False
-        if  self.started_processes:
-            created = True
-
-        setattr(self, '_isIntanciated_', created)
-        return created

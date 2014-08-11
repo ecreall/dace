@@ -72,8 +72,9 @@ class StartWorkItem(UserDecision):
     def consume(self):
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(self.process_id)
-        if pd.isUnique and pd.isInstantiated:
-            proc = pd.started_processes[0]
+        started_processes = pd.started_processes
+        if pd.isUnique and started_processes:
+            proc = started_processes[0]
             self.process = proc
             wi = proc[self.node.__name__]._get_workitem()
             if wi is None:
