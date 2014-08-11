@@ -84,8 +84,7 @@ def start_intermediate_events(event):
 def add_system_machine(root):
     system = Machine('system')
     root['principals']['users']['system'] = system
-#    grant_roles(system, ('System',), root=root)
-#    TODO: grant_roles shouldn't use old relations library or the tests needs to be fixed
+    grant_roles(system, ('System',), root=root)
 
 
 @subscriber(RootAdded)

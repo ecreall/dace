@@ -52,33 +52,39 @@ class TestRelationsCatalog(FunctionalTests):
         self.assertEqual(len(list(results)), 0)
 
     def test_disconnect_relation(self):
+        before = len(get_relations_container(self.app))
         source, target, relation = self._create_relation()
-        self.assertEqual(len(get_relations_container(source)), 1)
+        self.assertEqual(len(get_relations_container(source)), before + 1)
         results = find_relations(source, {'target_id': get_oid(target)})
 
+        before = len(get_relations_container(self.app))
         disconnect(relation)
-        self.assertEqual(len(get_relations_container(source)), 0)
+        self.assertEqual(len(get_relations_container(source)), before - 1)
         results = find_relations(source, {'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 0)
 
     def test_remove_source(self):
+        before = len(get_relations_container(self.app))
         source, target, relation = self._create_relation()
-        self.assertEqual(len(get_relations_container(source)), 1)
+        self.assertEqual(len(get_relations_container(source)), before + 1)
         results = find_relations(source, {'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 1)
 
+        before = len(get_relations_container(self.app))
         del source.__parent__[source.__name__]
-        self.assertEqual(len(get_relations_container(target)), 0)
+        self.assertEqual(len(get_relations_container(target)), before - 1)
         results = find_relations(target, {'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 0)
 
     def test_remove_target(self):
+        before = len(get_relations_container(self.app))
         source, target, relation = self._create_relation()
-        self.assertEqual(len(get_relations_container(source)), 1)
+        self.assertEqual(len(get_relations_container(source)), before + 1)
         results = find_relations(source, {'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 1)
 
+        before = len(get_relations_container(self.app))
         del target.__parent__[target.__name__]
-        self.assertEqual(len(get_relations_container(source)), 0)
+        self.assertEqual(len(get_relations_container(source)), before - 1)
         results = find_relations(source, {'target_id': get_oid(target)})
         self.assertEqual(len(list(results)), 0)
