@@ -31,7 +31,8 @@ def _call_action(action):
 
 def _get_cache_key():
     request = get_current_request()
-    return str(get_oid(request.user))
+    from dace.objectofcollaboration.principal.util import get_current
+    return str(get_oid(get_current()))#request.user))
 
 
 def run():
@@ -49,7 +50,7 @@ def run():
     #            continue
         query = catalog['object_provides'].any((IEntity.__identifier__,))
         results = list(query.execute().all())
-        log.info("objects to check: %s", len(results))
+        #log.info("objects to check: %s", len(results))
 
         for content in results:
             continue  # TODO remove this line
@@ -66,7 +67,7 @@ def run():
 #                    continue
 
                 _call_action(action)
-        log.info("objects to check: done")
+        #log.info("objects to check: done")
     run_crawler()
 
 

@@ -108,6 +108,24 @@ def subobjectsOfKind(root=None, interface=None):
     return [o for o in query.execute().all()]
 
 
+def find_entities(interfaces=None, states=None, all_states_relation=False):
+    if interfaces is None:
+        interfaces = [IEntity]
+
+    dace_catalog = find_catalog('dace')
+    states_index = dace_catalog['object_states']
+    object_provides_index = dace_catalog['object_provides']
+    query = object_provides_index.any([i.__identifier__ for i in interfaces])
+    if states is not None:
+        if all_states_relation:  
+            query = query & states_index.all(states)
+        else :
+            query = query & states_index.any(states)
+
+    entities = query.execute().all()
+    return entities
+
+
 def get_current_process_uid(request):
     action_uid = request.params.get('action_uid', None)
     if action_uid is not None:

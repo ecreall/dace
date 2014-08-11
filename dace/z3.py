@@ -24,7 +24,8 @@ class BaseJob(object):
         request = get_current_request()
         self.site_id = 'app_root'
         self.database_name = request.root._p_jar.db().database_name
-        self.userid = get_oid(request.user)
+        from dace.objectofcollaboration.principal.util import get_current
+        self.userid = get_oid(request.user)#(get_current())
         self.registry = get_current_registry()
 
     def retry(self):
