@@ -1,4 +1,3 @@
-import threading
 import transaction
 
 from pyramid.testing import DummyRequest
@@ -14,7 +13,7 @@ from dace.util import find_catalog
 from dace.z3 import BaseJob
 from dace import log
 
-last_transaction_by_machine = threading.local()
+last_transaction_by_machine = {}
 CRAWLERS = []
 
 
@@ -31,18 +30,19 @@ def _call_action(action):
 
 def _get_cache_key():
     request = get_current_request()
-    from dace.objectofcollaboration.principal.util import get_current
-    return str(get_oid(get_current()))#request.user))
+    return str(get_oid(request.user))
+#    from dace.objectofcollaboration.principal.util import get_current
+#    return str(get_oid(get_current()))#request.user))
 
 
 def run():
     catalog = find_catalog('dace')
     global last_transaction
     cache_key = _get_cache_key()
-    last_transaction = getattr(last_transaction_by_machine, cache_key, None)
+    last_transaction = last_transaction_by_machine.setdefault(cache_key, '')
     last_tid = catalog._p_jar.db().lastTransaction()
     if last_transaction != last_tid:
-        setattr(last_transaction_by_machine, cache_key, last_tid)
+        last_transaction_by_machine[cache_key] = last_tid
         transaction.begin()
     #            query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
     #            results = list(catalog.apply(query))
@@ -50,11 +50,10 @@ def run():
     #            continue
         query = catalog['object_provides'].any((IEntity.__identifier__,))
         results = list(query.execute().all())
-        #log.info("objects to check: %s", len(results))
+        log.info("new zodb transactions, objects to check: %s", len(results))
 
         for content in results:
             continue  # TODO remove this line
-            # TODO FIXME content.actions does a write in ZODB, wtf.
             for action in content.actions:
                 if getattr(action.action, '__parent__', None) is None:
                     # action.action.workitem is a StartWorkitem
