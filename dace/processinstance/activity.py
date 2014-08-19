@@ -307,22 +307,23 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if not context.__provides__(self.context):
             raise ValidationError(msg='Context is not valid')
 
-        if self.relation_validation and not self.relation_validation.__func__(process, context):
+        if not (self.relation_validation is NotImplemented) and not self.relation_validation.__func__(process, context):
             raise ValidationError(msg='Context is not valid')
 
         _assigned_to = self.assigned_to
         if _assigned_to:
             admin = getSite()['principals']['users']['admin']# replace: getAdmin() ?
-            if not( get_current(request) in _assigned_to) and not(get_current(request) is admin):
+            current_user = get_current(request)
+            if not( current_user in _assigned_to) and not(current_user is admin):
                 raise ValidationError(msg='Action is assigned to an other user')
 
-        elif self.roles_validation and not self.roles_validation.__func__(process, context):
+        elif not(self.roles_validation is NotImplemented) and not self.roles_validation.__func__(process, context):
             raise ValidationError(msg='Role is not valid')
 
-        if self.processsecurity_validation and not self.processsecurity_validation.__func__(process, context):
+        if not(self.processsecurity_validation is NotImplemented) and not self.processsecurity_validation.__func__(process, context):
             raise ValidationError(msg='Security is violeted')
 
-        if self.state_validation and not self.state_validation.__func__(process, context):
+        if not(self.state_validation is NotImplemented) and not self.state_validation.__func__(process, context):
             raise ValidationError(msg='Context state is not valid')
 
         return True
@@ -465,6 +466,15 @@ class MultiInstanceAction(BusinessAction):
     isSequential = False
 
 
+    def is_locked(self, request):
+        if not self.isSequential:
+            return False
+
+        return super(MultiInstanceAction, self).is_locked(request)
+
+
+
+
 class LimitedCardinality(MultiInstanceAction):
 
 
@@ -557,6 +567,12 @@ class ActionInstance(BusinessAction):
         cls.roles_validation =  principalaction.roles_validation
         cls.processsecurity_validation = principalaction.processsecurity_validation
         cls.state_validation =  principalaction.state_validation
+
+    def is_locked(self, request):
+        if not self.principalaction.isSequential:
+            return False
+
+        return super(ActionInstance, self).is_locked(request)
 
     @property
     def action_view(self):

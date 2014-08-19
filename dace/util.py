@@ -134,6 +134,15 @@ def get_current_process_uid(request):
     return None
 
 
+def add_acces_action(action):
+    root = getSite()
+    #tuple([d.__identifier__ for d in action.context.__provides__.__iro__]
+    if action.context in root.acces_actions:
+        root.acces_actions[action.context][action.node_id] = action
+    else:
+        root.acces_actions[action.context] = {action.node_id:action}
+
+
 def getBusinessAction(process_id, node_id, behavior_id, request, context):
     allactions = []
     dace_catalog = find_catalog('dace')
