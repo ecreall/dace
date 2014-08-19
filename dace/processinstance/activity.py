@@ -568,11 +568,6 @@ class ActionInstance(BusinessAction):
         cls.processsecurity_validation = principalaction.processsecurity_validation
         cls.state_validation =  principalaction.state_validation
 
-    def is_locked(self, request):
-        if not self.principalaction.isSequential:
-            return False
-
-        return super(ActionInstance, self).is_locked(request)
 
     @property
     def action_view(self):
