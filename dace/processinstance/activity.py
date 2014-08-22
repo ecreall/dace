@@ -568,7 +568,6 @@ class ActionInstance(BusinessAction):
         cls.processsecurity_validation = principalaction.processsecurity_validation
         cls.state_validation =  principalaction.state_validation
 
-
     @property
     def action_view(self):
         if self.principalaction.__class__ in DEFAULTMAPPING_ACTIONS_VIEWS:

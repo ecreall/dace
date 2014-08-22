@@ -2,7 +2,7 @@ from pyramid.threadlocal import get_current_request
 from pyramid.interfaces import ILocation
 from zope.interface import implementer
 
-from dace.util import find_service, add_acces_action
+from dace.util import find_service
 
 from dace.interfaces import (
     IWorkItem, IStartWorkItem, IDecisionWorkItem)
@@ -142,9 +142,6 @@ class BaseWorkItem(LockableElement, Object):
     def _init_actions(self):
         for a in self.node.definition.contexts:
             action = a(self)
-            if action.isautomatic:
-                add_acces_action(action)
-
             action.__name__ = action.behavior_id
             self.addtoproperty('actions', action)
 
@@ -167,8 +164,6 @@ class BaseWorkItem(LockableElement, Object):
         action.__name__ = action.behavior_id
         action.workitem = self
         self.addtoproperty('actions', action)
-        if action.isautomatic:
-            add_acces_action(action)
 
     def set_actions(self, actions):
         self.setproperty('actions', [])
