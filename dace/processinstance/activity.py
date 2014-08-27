@@ -66,14 +66,16 @@ class SubProcess(Activity):
         super(SubProcess, self).__init__(definition)
         self.sub_processes = []
 
+
     def _start_subprocess(self):
         def_container = find_service('process_definition_container')
-        pd = def_container.get_definition(self.definition.sub_process_definition.id)
+        pd = def_container.get_definition(getattr(self.definition.sub_process_definition, 'id', self.definition.sub_process_definition))
         proc = pd()
         proc.__name__ = proc.id
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
         proc.defineGraph(pd)
+        self.definition._init_subprocess(self.process, proc)
         proc.execute()
         self.sub_processes.append(proc)
         # unindex wi, but dont delete it

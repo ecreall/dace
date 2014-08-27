@@ -17,11 +17,12 @@ last_transaction_by_machine = {}
 CRAWLERS = []
 
 
-def _call_action(action):
+def _call_action(action, context):
     transaction.begin()
+    request = get_current_request()
     try:
-        action.action.__parent__.execute()  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
-        log.info("Execute action %s", action)
+        action.action.execute(context, request, {})  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
+        log.info("Execute action %s", action.title)
         transaction.commit()
     except Exception as e:
         transaction.abort()
@@ -65,7 +66,7 @@ def run():
 #                if getattr(action.action.__parent__, '_v_removed', False):
 #                    continue
 
-                _call_action(action)
+                _call_action(action, content)
         log.info("checked")
         #log.info("objects to check: done")
     run_crawler()

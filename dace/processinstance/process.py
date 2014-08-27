@@ -599,6 +599,10 @@ class Process(Entity):
 
         if not self.description:
             self.description = definition.description
+
+        execution_context = ExecutionContext()
+        execution_context.__name__ = 'execution_context'
+        self.setproperty('execution_context', execution_context)
         # do a commit so all events have a _p_oid
         # mail delivery doesn't support savepoint
         transaction.commit()
@@ -714,9 +718,6 @@ class Process(Entity):
         if self._started:
             raise TypeError("Already started")
 
-        execution_context = ExecutionContext()
-        execution_context.__name__ = 'execution_context'
-        self.setproperty('execution_context', execution_context)
         self._started = True
         setattr(self.definition, '_isIntanciated_', True)
         registry = get_current_registry()

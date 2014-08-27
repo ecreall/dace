@@ -91,7 +91,6 @@ class ParallelGateway(Gateway):
             source_nodes = set([t.source for t in p._get_transitions_target(self)])
             validated_nodes = validated_nodes.union(source_nodes)
         # pour le mode replay End
-
         validated = True
         for n in incoming_nodes:
             if not (n in  validated_nodes):
