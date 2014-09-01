@@ -1,13 +1,9 @@
 import transaction
 
-from pyramid.testing import DummyRequest
-from pyramid.threadlocal import (
-        get_current_registry, get_current_request, manager)
-from substanced.interfaces import IUserLocator
-from substanced.principal import DefaultUserLocator
+from pyramid.threadlocal import get_current_request
 from substanced.util import get_oid
 
-from dace.interfaces import IEntity, IBusinessAction
+from dace.interfaces import IEntity
 from dace.processinstance.event import DelayedCallback
 from dace.util import find_catalog
 from dace.z3 import BaseJob
@@ -72,26 +68,9 @@ def run():
 
 
 def run_crawler():
+    """Start loop."""
     job = BaseJob()
     job.callable = run
     dc = DelayedCallback(job, 2000)
     dc.start()
     CRAWLERS.append(dc)
-
-
-def start_crawler(app, login="system"):
-    """Start loop."""
-    # set site and interaction that will be memorized in job
-    request = DummyRequest()
-    request.root = app
-    registry = get_current_registry()
-    manager.push({'registry': registry, 'request': request})
-    locator = registry.queryMultiAdapter((app, request),
-                                              IUserLocator)
-    if locator is None:
-        locator = DefaultUserLocator(app, request)
-
-    user = locator.get_user_by_login(login)
-    request.user = user
-    run_crawler()
-    manager.pop()

@@ -19,7 +19,8 @@ from .interfaces import IWorkItem
 from .processinstance.event import IntermediateCatchEvent
 from .objectofcollaboration.principal import Machine
 from .objectofcollaboration.principal.util import grant_roles
-from .objectofcollaboration.system import start_crawler
+from .objectofcollaboration.system import run_crawler
+from .util import execute_callback, find_catalog
 
 
 class ConsumeTasks(threading.Thread):
@@ -62,12 +63,8 @@ def sigint_handler(*args):
 signal.signal(signal.SIGINT, sigint_handler)
 
 
-@subscriber(IDatabaseOpenedWithRoot)
-def start_intermediate_events(event):
-    db = event.database
-    app_root = db.open().root()['app_root']
-    from substanced.util import find_catalog
-    catalog = find_catalog(app_root, 'dace')
+def start_intermediate_events_callback():
+    catalog = find_catalog('dace')
     query = catalog['object_provides'].any((IWorkItem.__identifier__,))
     results = query.execute().all()
     for wi in results:
@@ -77,7 +74,14 @@ def start_intermediate_events(event):
             log.info("Calling %s.eventKind.prepare_for_execution()", node)
     # commit to execute after commit hooks
     transaction.commit()
-    start_crawler(app_root)
+
+
+@subscriber(IDatabaseOpenedWithRoot)
+def start_intermediate_events(event):
+    db = event.database
+    app_root = db.open().root()['app_root']
+    execute_callback(app_root, start_intermediate_events_callback, 'system')
+    execute_callback(app_root, run_crawler, 'system')
     app_root._p_jar.close()
 
 

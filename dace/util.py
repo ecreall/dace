@@ -2,8 +2,12 @@ import venusian
 from zope.interface import Interface
 from zope.interface import providedBy, implementedBy
 from pyramid.exceptions import Forbidden
-from pyramid.threadlocal import get_current_request
 from pyramid.traversal import find_root
+from pyramid.testing import DummyRequest
+from pyramid.threadlocal import (
+        get_current_registry, get_current_request, manager)
+from substanced.interfaces import IUserLocator
+from substanced.principal import DefaultUserLocator
 
 from substanced.util import find_objectmap, find_catalog as fcsd, get_oid
 from substanced.util import find_service as fssd
@@ -375,3 +379,20 @@ We only want to copy state and title. Be careful to create a new list instance f
 def deepcopy(obj):
     new = zope.copy.clone(obj)
     return new
+
+
+def execute_callback(app, callback, login):
+    # set site and interaction that will be memorized in job
+    request = DummyRequest()
+    request.root = app
+    registry = get_current_registry()
+    manager.push({'registry': registry, 'request': request})
+    locator = registry.queryMultiAdapter((app, request),
+                                              IUserLocator)
+    if locator is None:
+        locator = DefaultUserLocator(app, request)
+
+    user = locator.get_user_by_login(login)
+    request.user = user
+    callback()
+    manager.pop()
