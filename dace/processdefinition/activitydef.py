@@ -25,3 +25,6 @@ class SubProcessDefinition(ActivityDefinition):
     def __init__(self, contexts=(), pd=None, **kwargs):
         super(SubProcessDefinition, self).__init__(contexts, **kwargs)
         self.sub_process_definition = pd
+
+    def _init_subprocess(self, process, subprocess):
+        pass

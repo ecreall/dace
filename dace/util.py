@@ -130,6 +130,37 @@ def find_entities(interfaces=None, states=None, all_states_relation=False):
     return entities
 
 
+def _acces_validation(context, request, validator, discriminator='Application'):
+    dace_catalog = find_catalog('dace')
+    context_id_index = dace_catalog['context_id']
+    object_provides_index = dace_catalog['object_provides']
+    isautomatic_index = dace_catalog['isautomatic']
+    query = isautomatic_index.eq(True) & \
+            object_provides_index.any((IBusinessAction.__identifier__,)) & \
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
+    for a in query.execute().all():
+        if validator(context, request, a):
+            return True
+
+    def_container = find_service('process_definition_container')
+    definitions = [d for d in def_container.definitions if d.discriminator == discriminator]
+    # Add start workitem
+    for pd in definitions:
+        if not pd.isControlled:
+            wis = pd.start_process()
+            if wis:
+                for wi in wis.values():
+                    actions = [a for a in wi.actions if a.isautomatic and a.context.__provides__(context)]
+                    for a in actions:
+                        if validator(context, request, a):
+                            return True
+
+    return False
+
+
+acces_validation = _acces_validation
+
+
 def get_current_process_uid(request):
     action_uid = request.params.get('action_uid', None)
     if action_uid is not None:

@@ -66,14 +66,16 @@ class SubProcess(Activity):
         super(SubProcess, self).__init__(definition)
         self.sub_processes = []
 
+
     def _start_subprocess(self):
         def_container = find_service('process_definition_container')
-        pd = def_container.get_definition(self.definition.sub_process_definition.id)
+        pd = def_container.get_definition(getattr(self.definition.sub_process_definition, 'id', self.definition.sub_process_definition))
         proc = pd()
         proc.__name__ = proc.id
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
         proc.defineGraph(pd)
+        self.definition._init_subprocess(self.process, proc)
         proc.execute()
         self.sub_processes.append(proc)
         # unindex wi, but dont delete it
@@ -307,22 +309,23 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if not context.__provides__(self.context):
             raise ValidationError(msg='Context is not valid')
 
-        if self.relation_validation and not self.relation_validation.__func__(process, context):
+        if not (self.relation_validation is NotImplemented) and not self.relation_validation.__func__(process, context):
             raise ValidationError(msg='Context is not valid')
 
         _assigned_to = self.assigned_to
         if _assigned_to:
             admin = getSite()['principals']['users']['admin']# replace: getAdmin() ?
-            if not( get_current(request) in _assigned_to) and not(get_current(request) is admin):
+            current_user = get_current(request)
+            if not( current_user in _assigned_to) and not(current_user is admin):
                 raise ValidationError(msg='Action is assigned to an other user')
 
-        elif self.roles_validation and not self.roles_validation.__func__(process, context):
+        elif not(self.roles_validation is NotImplemented) and not self.roles_validation.__func__(process, context):
             raise ValidationError(msg='Role is not valid')
 
-        if self.processsecurity_validation and not self.processsecurity_validation.__func__(process, context):
+        if not(self.processsecurity_validation is NotImplemented) and not self.processsecurity_validation.__func__(process, context):
             raise ValidationError(msg='Security is violeted')
 
-        if self.state_validation and not self.state_validation.__func__(process, context):
+        if not(self.state_validation is NotImplemented) and not self.state_validation.__func__(process, context):
             raise ValidationError(msg='Context state is not valid')
 
         return True
@@ -463,6 +466,15 @@ class LoopActionDataInput(BusinessAction):
 class MultiInstanceAction(BusinessAction):
     loopCardinality = None
     isSequential = False
+
+
+    def is_locked(self, request):
+        if not self.isSequential:
+            return False
+
+        return super(MultiInstanceAction, self).is_locked(request)
+
+
 
 
 class LimitedCardinality(MultiInstanceAction):
