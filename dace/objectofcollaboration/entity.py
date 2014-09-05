@@ -1,5 +1,8 @@
 from zope.interface import implementer
 from persistent.list import PersistentList
+from pyramid.threadlocal import get_current_registry
+
+from substanced.event import ObjectModified
 
 from dace.interfaces import IEntity
 from .object import Object
@@ -64,6 +67,11 @@ class Entity(Object):
         self.state = PersistentList()
         for s in state:
             self.state.append(s)
+
+    def reindex(self):
+        event = ObjectModified(self)
+        registry = get_current_registry()
+        registry.subscribers((event, self), None)
 
     @property
     def actions(self):
