@@ -80,8 +80,9 @@ def start_intermediate_events_callback():
 def start_intermediate_events(event):
     db = event.database
     app_root = db.open().root()['app_root']
-    execute_callback(app_root, start_intermediate_events_callback, 'system')
-    execute_callback(app_root, run_crawler, 'system')
+    if 'system' in app_root['principals']['users']:
+        execute_callback(app_root, start_intermediate_events_callback, 'system')
+        execute_callback(app_root, run_crawler, 'system')
     app_root._p_jar.close()
 
 
