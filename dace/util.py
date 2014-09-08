@@ -459,15 +459,15 @@ def copy(obj, container, new_name=None, shared_properties=False,
                             composite_properties=composite_properties,
                             roles=roles)
 
-                # copy roles
-                if roles:
-                    relations = find_relations(obj, {'target_id': get_oid(obj)})
-                    for rel in relations:
-                        source = rel.source
-                        target = new
-                        opts = {'reftype': rel.reftype, 'relation_id':
-                                rel.relation_id, 'tags': list(rel.tags)}
-                        connect(source, target, **opts)
+    # copy roles
+    if roles:
+        relations = find_relations(obj, {'target_id': get_oid(obj)})
+        for rel in relations:
+            source = rel.source
+            target = new
+            opts = {'reftype': rel.reftype, 'relation_id':
+                    rel.relation_id, 'tags': list(rel.tags)}
+            connect(source, target, **opts)
 
     return new
 
