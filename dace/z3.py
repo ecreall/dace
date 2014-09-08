@@ -20,12 +20,15 @@ class BaseJob(object):
     # created, and reestablishes them when run, tearing down as necessary.
 
     args = ()
-    def __init__(self):
+    def __init__(self, login=None):
         request = get_current_request()
         self.site_id = 'app_root'
         self.database_name = request.root._p_jar.db().database_name
-        from dace.objectofcollaboration.principal.util import get_current
-        self.userid = get_oid(request.user)#(get_current())
+        if login is not None:
+            user = request.root['principals']['users'][login]
+        else:
+            user = request.user
+        self.userid = get_oid(user)
         self.registry = get_current_registry()
 
     def retry(self):

@@ -53,7 +53,7 @@ class DelayedCallback(object):
 def push_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
     # the logged in user.
-    job = Job()
+    job = Job('system')
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.
         if status:
@@ -298,7 +298,7 @@ class SignalEvent(EventKind):
         s.setsockopt_string(zmq.SUBSCRIBE, u'')
         s.connect(get_socket_url())
         stream = ZMQStream(s)
-        job = Job()
+        job = Job('system')
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
         event_oid = self.event._p_oid
