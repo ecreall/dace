@@ -121,7 +121,7 @@ def find_entities(interfaces=None, states=None, all_states_relation=False):
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any([i.__identifier__ for i in interfaces])
     if states is not None:
-        if all_states_relation:  
+        if all_states_relation:
             query = query & states_index.all(states)
         else :
             query = query & states_index.any(states)
@@ -185,7 +185,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     results = [w for w in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            try: 
+            try:
                 action.validate(context, request)
                 allactions.append(action)
             except Exception:
@@ -199,7 +199,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
         if s_wi is not None:
             swisactions = s_wi.actions
             for action in swisactions:
-                try: 
+                try:
                     action.validate(context, request)
                     allactions.append(action)
                 except Exception:
@@ -234,7 +234,7 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     results = [a for a in query.execute().all()]
     if len(results) > 0:
         for action in results:
-            try: 
+            try:
                 action.validate(context, request)
                 allactions.append(action)
             except Exception:
@@ -374,43 +374,82 @@ class utility(object):
 
 
 import zope.copy
+from dace.descriptors import Descriptor, CompositeUniqueProperty, SharedUniqueProperty, CompositeMultipleProperty, SharedMultipleProperty
 _marker = object()
+ATTRIBUTES_TO_NOT_COPY = ('data', 'created_at', 'modified_at',
+                          'dynamic_properties_def')
 
-def copy(obj):
+def copy(obj, container=None, shared_properties=False, composite_properties=False, roles=False):
     """Return a copy of obj without composition relations
 
-    Example of a container:
-        (Pdb) pp orig.__dict__
-{'_BTreeContainer__len': <BTrees.Length.Length object at 0x7f3f0c04d410>,
- '_SampleContainer__data': <BTrees.OOBTree.OOBTree object at 0x7f3f0c04b4d0>,
- '__name__': u'vuescontainer',
- '__parent__': <monapplication.content.monapplication_applicationfile.MonApplication_ApplicationFile object at 0x598cc08>,
- '_order': ['vue2', 'vue1'],
- '_vues': ['vue2', 'vue1'],
- 'state': [],
- 'title': u'Vuescontainer'}
+(Pdb) pp obj.__dict__
+{'__name__': u'object1',
+ '__oid__': 4368702640781270144,
+ '__parent__': <substanced.root.Root object None at 0x407cb18>,
+ '__property__': None,
+ '_composition_u_valuekey': u'object2',
+ '_num_objects': <BTrees.Length.Length object at 0x4950758>,
+ 'created_at': datetime.datetime(2014, 9, 8, 13, 0, 11, 351214),
+ 'data': <BTrees.OOBTree.OOBTree object at 0x49513d0>,
+ 'dynamic_properties_def': {},
+ 'modified_at': datetime.datetime(2014, 9, 8, 13, 0, 11, 351227)}
 
-_BTreeContainer__len, _SampleContainer__data, _order are attributes of a container.
-_vues is used for a composition relation.
-We only want to copy state and title. Be careful to create a new list instance for state.
+(Pdb) pp new.__dict__
+{'__property__': None,
+ '_num_objects': <BTrees.Length.Length object at 0x46a6140>,
+ 'created_at': datetime.datetime(2014, 9, 8, 13, 6, 48, 635835),
+ 'data': <BTrees.OOBTree.OOBTree object at 0x46a1bd0>,
+ 'dynamic_properties_def': {},
+ 'modified_at': datetime.datetime(2014, 9, 8, 13, 6, 48, 635852)}
     """
-    new = obj.__class__()                                                                    
+    new = obj.__class__()
     # wake up object to have obj.__dict__ populated
     obj._p_activate()
     for key, value in obj.__dict__.items():
-        if key.startswith('_') or key=='data':
+        if key.startswith('_') or key in ATTRIBUTES_TO_NOT_COPY:
             continue
 
-        new_value = zope.copy.copy(value)
+        new_value = zope.copy.clone(value)
+        # this does a new pickle for primitive value
         setattr(new, key, new_value)
 
+    if container is None:
+        # we are in a deepcopy, keep the same name
+        new.__name__ = obj.__name__
+    else:
+        new_name = 'copy_of_%s' % obj.__name__
+        # we need to add it to a container so the object is indexed
+        # and has a __oid__ attribute
+        container.add(new_name, new)
+
+    seen = set()
+    # We can have descriptors inherited,
+    # so take care to not get descriptor of above classes if it has been
+    # overriden in a subclass. This is what the seen variable is for here.
+    for klass in obj.__class__.__mro__:
+        for descriptor_id, descriptor in klass.__dict__.items():
+            if descriptor_id in seen:
+                continue
+
+            seen.add(descriptor_id)
+            if isinstance(descriptor, Descriptor):
+                value = descriptor.__get__(obj)
+                if not value:
+                    continue
+
+#                if isinstance(descriptor, (SharedUniqueProperty, SharedMultipleProperty)) and shared_properties:
+#                    descriptor.__set__(new, value)  # this can have the side effect of moving value to a different container!
+                # TODO do we really want to copy shared properties?
+                if isinstance(descriptor, (CompositeUniqueProperty, CompositeMultipleProperty)) and composite_properties:
+                    new_value = copy(value,
+                            shared_properties=shared_properties,
+                            composite_properties=composite_properties,
+                            roles=roles)
+                    descriptor.__set__(new, new_value)
+
+                # TODO roles copy
+
     return new
-
-
-def deepcopy(obj):
-    new = zope.copy.clone(obj)
-    return new
-
 
 def execute_callback(app, callback, login):
     # set site and interaction that will be memorized in job

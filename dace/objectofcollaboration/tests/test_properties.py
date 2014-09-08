@@ -144,3 +144,34 @@ class TestProperties(FunctionalTests):
 
         self.assertTrue(isinstance(object2.getproperty('shared23_u'), Object1))
         self.assertIs(object2.getproperty('shared23_u'), object4)
+
+    def test_copy(self):
+        from dace.objectofcollaboration.object import Object
+        self.app['container'] = container = Object()
+        container['object1'] = object1 = Object1()
+        container['object2'] = object2 = Object2()
+
+        object1.composition_u = object2
+
+        from dace.util import copy
+        object3 = copy(object1, container)
+        self.assertIs(object1.composition_u, object2)
+        self.assertIs(object2.shared2_u, object1)
+        self.assertIs(object3.composition_u, None)
+        self.assertTrue(hasattr(object3, '__oid__'))
+        self.assertEqual(object3.__name__, 'copy_of_object1')
+
+        object4 = copy(object1, container, composite_properties=True)
+        self.assertEqual(object4.__name__, 'copy_of_object1-2')
+        # no change for object1 and object2
+        self.assertIs(object1.composition_u, object2)
+        self.assertIs(object2.shared2_u, object1)
+        # the copy object4 of object1 contains a copy of object2
+        # which is object5 here
+        self.assertIsNot(object4.composition_u, None)
+        object5 = object4.composition_u
+        # object5 has the same name of object2
+        self.assertEqual(object5.__name__, 'object2')
+        # and the copied composition object5 point to object4
+        self.assertIs(object5.shared2_u, object4)
+
