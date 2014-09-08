@@ -374,13 +374,24 @@ class utility(object):
 
 
 import zope.copy
-from dace.descriptors import Descriptor, CompositeUniqueProperty, SharedUniqueProperty, CompositeMultipleProperty, SharedMultipleProperty
+from dace.descriptors import (Descriptor, CompositeUniqueProperty,
+        SharedUniqueProperty, CompositeMultipleProperty,
+        SharedMultipleProperty)
+from dace.relations import find_relations, connect
 _marker = object()
-ATTRIBUTES_TO_NOT_COPY = ('data', 'created_at', 'modified_at',
-                          'dynamic_properties_def')
+OMIT_ATTRIBUTES = ('data', 'created_at', 'modified_at',
+                   'dynamic_properties_def')
 
-def copy(obj, container=None, shared_properties=False, composite_properties=False, roles=False):
-    """Return a copy of obj without composition relations
+def copy(obj, container, new_name=None, shared_properties=False,
+        composite_properties=False, roles=False,
+        omit=OMIT_ATTRIBUTES):
+    """Return a copy of obj
+
+    If you need a deepcopy of the object, set composite_properties to True
+    To copy the roles, set roles to True
+
+    container can be a folder or a tuple (folder, propertyname)
+    If this is a tuple, the new object will be set via propertyname.
 
 (Pdb) pp obj.__dict__
 {'__name__': u'object1',
@@ -406,20 +417,22 @@ def copy(obj, container=None, shared_properties=False, composite_properties=Fals
     # wake up object to have obj.__dict__ populated
     obj._p_activate()
     for key, value in obj.__dict__.items():
-        if key.startswith('_') or key in ATTRIBUTES_TO_NOT_COPY:
+        if key.startswith('_') or key in omit:
             continue
 
         new_value = zope.copy.clone(value)
         # this does a new pickle for primitive value
         setattr(new, key, new_value)
 
-    if container is None:
-        # we are in a deepcopy, keep the same name
-        new.__name__ = obj.__name__
-    else:
+    if new_name is None:
         new_name = 'copy_of_%s' % obj.__name__
-        # we need to add it to a container so the object is indexed
-        # and has a __oid__ attribute
+    # we need to add it to a container so the object is indexed
+    # and has a __oid__ attribute
+    if isinstance(container, tuple):
+        container, propertyname = container
+        new.__name__ = new_name
+        setattr(container, propertyname, new)
+    else:
         container.add(new_name, new)
 
     seen = set()
@@ -441,13 +454,20 @@ def copy(obj, container=None, shared_properties=False, composite_properties=Fals
 #                    descriptor.__set__(new, value)  # this can have the side effect of moving value to a different container!
                 # TODO do we really want to copy shared properties?
                 if isinstance(descriptor, (CompositeUniqueProperty, CompositeMultipleProperty)) and composite_properties:
-                    new_value = copy(value,
+                    new_value = copy(value, (new, descriptor_id), new_name=value.__name__,
                             shared_properties=shared_properties,
                             composite_properties=composite_properties,
                             roles=roles)
-                    descriptor.__set__(new, new_value)
 
-                # TODO roles copy
+                # copy roles
+                if roles:
+                    relations = find_relations(obj, {'target_id': get_oid(obj)})
+                    for rel in relations:
+                        source = rel.source
+                        target = new
+                        opts = {'reftype': rel.reftype, 'relation_id':
+                                rel.relation_id, 'tags': list(rel.tags)}
+                        connect(source, target, **opts)
 
     return new
 

@@ -150,6 +150,12 @@ class TestProperties(FunctionalTests):
         self.app['container'] = container = Object()
         container['object1'] = object1 = Object1()
         container['object2'] = object2 = Object2()
+        system = self.app['principals']['users']['system']
+        from dace.objectofcollaboration.principal.util import (
+                grant_roles, get_roles)
+        grant_roles(system, (('System', object1),))
+        roles = get_roles(user=system, obj=object1)
+        self.assertEqual(roles, ['System'])
 
         object1.composition_u = object2
 
@@ -160,8 +166,12 @@ class TestProperties(FunctionalTests):
         self.assertIs(object3.composition_u, None)
         self.assertTrue(hasattr(object3, '__oid__'))
         self.assertEqual(object3.__name__, 'copy_of_object1')
+        # verify roles weren't copied
+        roles = get_roles(user=system, obj=object3)
+        self.assertEqual(roles, [])
 
-        object4 = copy(object1, container, composite_properties=True)
+        object4 = copy(object1, container, composite_properties=True,
+                roles=True)
         self.assertEqual(object4.__name__, 'copy_of_object1-2')
         # no change for object1 and object2
         self.assertIs(object1.composition_u, object2)
@@ -172,6 +182,10 @@ class TestProperties(FunctionalTests):
         object5 = object4.composition_u
         # object5 has the same name of object2
         self.assertEqual(object5.__name__, 'object2')
+        self.assertTrue(hasattr(object5, '__oid__'))
         # and the copied composition object5 point to object4
         self.assertIs(object5.shared2_u, object4)
 
+        # roles should be copied
+        roles = get_roles(user=system, obj=object4)
+        self.assertEqual(roles, ['System'])
