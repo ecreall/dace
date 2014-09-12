@@ -207,5 +207,5 @@ class ProcessDefinition(Entity):
         query = object_provides_index.any((IProcess.__identifier__,)) & processid_index.eq(self.id)
         results = query.execute().all()
         processes = [p for p in results]
-        processes.sort()
+        #processes.sort()
         return processes
