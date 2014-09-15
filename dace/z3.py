@@ -11,8 +11,8 @@ from pyramid.threadlocal import (
         get_current_registry, get_current_request, manager)
 from pyramid.testing import DummyRequest
 from substanced.util import get_oid
-from substanced.interfaces import IUserLocator
-from substanced.principal import DefaultUserLocator
+
+from dace.util import get_user_by_login, get_user_by_userid
 
 
 class BaseJob(object):
@@ -25,7 +25,7 @@ class BaseJob(object):
         self.site_id = 'app_root'
         self.database_name = request.root._p_jar.db().database_name
         if login is not None:
-            user = request.root['principals']['users'][login]
+            user = get_user_by_login(login)
         else:
             user = request.user
         self.userid = get_oid(user)
@@ -61,12 +61,7 @@ class BaseJob(object):
         request = DummyRequest()
         request.root = app
         manager.push({'registry': self.registry, 'request': request})
-        locator = self.registry.queryMultiAdapter((app, request),
-                                                  IUserLocator)
-        if locator is None:
-            locator = DefaultUserLocator(app, request)
-
-        user = locator.get_user_by_userid(self.userid)
+        user = get_user_by_userid(self.userid)
         request.user = user
         return app
 

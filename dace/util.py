@@ -481,12 +481,35 @@ def execute_callback(app, callback, login):
     request.root = app
     registry = get_current_registry()
     manager.push({'registry': registry, 'request': request})
-    locator = registry.queryMultiAdapter((app, request),
-                                              IUserLocator)
-    if locator is None:
-        locator = DefaultUserLocator(app, request)
-
-    user = locator.get_user_by_login(login)
+    user = get_user_by_login(login, request)
     request.user = user
     callback()
     manager.pop()
+
+
+def _get_user_by_attr(attr, login, request=None):
+    if request is None:
+        request = get_current_request()
+
+    registry = request.registry
+    app = request.root
+    locator = registry.queryMultiAdapter((app, request),
+                                         IUserLocator)
+    if locator is None:
+        locator = DefaultUserLocator(app, request)
+
+    user = getattr(locator, attr)(login)
+    return user
+
+
+def get_user_by_login(login, request=None):
+    return _get_user_by_attr('get_user_by_login', login, request)
+
+
+def get_user_by_userid(login, request=None):
+    return _get_user_by_attr('get_user_by_userid', login, request)
+
+
+def get_userid_by_login(login, request=None):
+    user = get_user_by_login(login, request)
+    return get_oid(user)

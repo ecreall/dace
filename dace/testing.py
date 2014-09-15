@@ -2,9 +2,14 @@ import unittest
 
 from pyramid.config import Configurator
 from pyramid.testing import DummyRequest
+from pyramid.interfaces import IRequestExtensions
 from pyramid import testing
+from pyramid.tests.test_security import _registerAuthenticationPolicy
+from pyramid.threadlocal import get_current_request
 
 from substanced.db import root_factory
+
+from dace.util import get_userid_by_login
 
 
 def main(global_config, **settings):
@@ -12,6 +17,13 @@ def main(global_config, **settings):
     """
     config = Configurator(settings=settings, root_factory=root_factory)
     return config.make_wsgi_app()
+
+
+def login(login):
+    request = get_current_request()
+    userid = get_userid_by_login(login, request)
+    _registerAuthenticationPolicy(request.registry, userid)
+    # request.authenticated_userid will now return the oid of the user object
 
 
 class FunctionalTests(unittest.TestCase):
@@ -37,13 +49,22 @@ class FunctionalTests(unittest.TestCase):
         self.db = app.registry._zodb_databases['']
         self.request = request = DummyRequest()
         self.config = testing.setUp(registry=app.registry, request=request)
+
+        # set extensions (add_request_method, so the request.user works)
+        extensions = app.registry.queryUtility(IRequestExtensions)
+        if extensions is not None:
+            request._set_extensions(extensions)
+
         self.registry = self.config.registry
         self.app = root_factory(request)
-        request.root = self.app
+        request.root = request.context = self.app
+        # request.user execute substanced.sdi.user which get request.context to find objectmap
         self.users = self.app['principals']['users']
         self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
         self.app['principals'].add_user('bob', password='bob', email='alice@example.com')
-        request.user = self.users['admin']
+        login('admin')
+        # request.user is the admin user, but if you do later login('system'), you will still have admin in request.user
+        #request.user = self.users['admin']
         import dace.objectofcollaboration.principal.util
         dace.objectofcollaboration.principal.util.get_current_test = True
         self.def_container = self.app['process_definition_container']
