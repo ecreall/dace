@@ -65,8 +65,6 @@ class FunctionalTests(unittest.TestCase):
         login('admin')
         # request.user is the admin user, but if you do later login('system'), you will still have admin in request.user
         #request.user = self.users['admin']
-        import dace.objectofcollaboration.principal.util
-        dace.objectofcollaboration.principal.util.get_current_test = True
         self.def_container = self.app['process_definition_container']
 
     def tearDown(self):

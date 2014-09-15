@@ -29,16 +29,11 @@ def anonymous_oid_generator():
     return oid+descriminator
 
 
-get_current_test = False
-
-
 def get_current(request=None):
     if request is None:
         request = get_current_request()
 
-    result = sduser(request)
-    if get_current_test:
-        result = request.user
+    result = request.user
 
     if result is None:
         if 'dace_user' in request.session and request.session['dace_user']:
