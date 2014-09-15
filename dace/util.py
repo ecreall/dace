@@ -431,7 +431,7 @@ def copy(obj, container, new_name=None, shared_properties=False,
     if isinstance(container, tuple):
         container, propertyname = container
         new.__name__ = new_name
-        setattr(container, propertyname, new)
+        container.addtoproperty(propertyname, new)
     else:
         container.add(new_name, new)
 
@@ -454,8 +454,11 @@ def copy(obj, container, new_name=None, shared_properties=False,
 #                    descriptor.__set__(new, value)  # this can have the side effect of moving value to a different container!
                 # TODO do we really want to copy shared properties?
                 if isinstance(descriptor, (CompositeUniqueProperty, CompositeMultipleProperty)) and composite_properties:
-                    # TODO this work only for composite unique, this will crash for composite multiple
-                    new_value = copy(value, (new, descriptor_id), new_name=value.__name__,
+                    if isinstance(descriptor, CompositeUniqueProperty):
+                        value = [value]
+
+                    for item in value:
+                        copy(item, (new, descriptor_id), new_name=item.__name__,
                             shared_properties=shared_properties,
                             composite_properties=composite_properties,
                             roles=roles)

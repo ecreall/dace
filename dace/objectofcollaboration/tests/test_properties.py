@@ -145,47 +145,88 @@ class TestProperties(FunctionalTests):
         self.assertTrue(isinstance(object2.getproperty('shared23_u'), Object1))
         self.assertIs(object2.getproperty('shared23_u'), object4)
 
-    def test_copy(self):
+    def _create_objects(self):
         from dace.objectofcollaboration.object import Object
         self.app['container'] = container = Object()
-        container['object1'] = object1 = Object1()
-        container['object2'] = object2 = Object2()
+        container['folder'] = folder = Object1()
+        container['item'] = item = Object2()
+        return container, folder, item
+
+    def test_copy_composite_unique_and_role(self):
+        container, folder, item = self._create_objects()
         system = self.app['principals']['users']['system']
         from dace.objectofcollaboration.principal.util import (
                 grant_roles, get_roles)
-        grant_roles(system, (('System', object1),))
-        roles = get_roles(user=system, obj=object1)
+        grant_roles(system, (('System', folder),))
+        roles = get_roles(user=system, obj=folder)
         self.assertEqual(roles, ['System'])
 
-        object1.composition_u = object2
+        folder.composition_u = item
 
         from dace.util import copy
-        object3 = copy(object1, container)
-        self.assertIs(object1.composition_u, object2)
-        self.assertIs(object2.shared2_u, object1)
-        self.assertIs(object3.composition_u, None)
-        self.assertTrue(hasattr(object3, '__oid__'))
-        self.assertEqual(object3.__name__, 'copy_of_object1')
+        foldercopy = copy(folder, container)
+        self.assertIs(folder.composition_u, item)
+        self.assertIs(item.shared2_u, folder)
+        self.assertIs(foldercopy.composition_u, None)
+        self.assertTrue(hasattr(foldercopy, '__oid__'))
+        self.assertEqual(foldercopy.__name__, 'copy_of_folder')
         # verify roles weren't copied
-        roles = get_roles(user=system, obj=object3)
+        roles = get_roles(user=system, obj=foldercopy)
         self.assertEqual(roles, [])
 
-        object4 = copy(object1, container, composite_properties=True,
+        foldercopy2 = copy(folder, container, composite_properties=True,
                 roles=True)
-        self.assertEqual(object4.__name__, 'copy_of_object1-2')
-        # no change for object1 and object2
-        self.assertIs(object1.composition_u, object2)
-        self.assertIs(object2.shared2_u, object1)
-        # the copy object4 of object1 contains a copy of object2
-        # which is object5 here
-        self.assertIsNot(object4.composition_u, None)
-        object5 = object4.composition_u
-        # object5 has the same name of object2
-        self.assertEqual(object5.__name__, 'object2')
-        self.assertTrue(hasattr(object5, '__oid__'))
-        # and the copied composition object5 point to object4
-        self.assertIs(object5.shared2_u, object4)
+        self.assertEqual(foldercopy2.__name__, 'copy_of_folder-2')
+        # no change for folder and item
+        self.assertIs(folder.composition_u, item)
+        self.assertIs(item.shared2_u, folder)
+        # the copy foldercopy2 of folder contains a copy of item
+        # which is item2 here
+        self.assertIsNot(foldercopy2.composition_u, None)
+        item2 = foldercopy2.composition_u
+        self.assertIsNot(item, item2)
+        # item2 has the same name of item
+        self.assertEqual(item2.__name__, 'item')
+        self.assertTrue(hasattr(item2, '__oid__'))
+        # and the copied composition item2 point to foldercopy2
+        self.assertIs(item2.shared2_u, foldercopy2)
 
         # roles should be copied
-        roles = get_roles(user=system, obj=object4)
+        roles = get_roles(user=system, obj=foldercopy2)
         self.assertEqual(roles, ['System'])
+
+    def test_dont_copy_composite_multiple(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+
+        from dace.util import copy
+        foldercopy = copy(folder, container)
+        # no change for folder and item
+        self.assertEqual(folder.composition_m, [item])
+        self.assertIs(item.shared21_u, folder)
+        # new foldercopy is empty
+        self.assertEqual(len(foldercopy.composition_m), 0)
+        # The copy has been indexed in objectmap
+        self.assertTrue(hasattr(foldercopy, '__oid__'))
+        self.assertEqual(foldercopy.__name__, 'copy_of_folder')
+
+    def test_copy_composite_multiple(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+
+        from dace.util import copy
+        foldercopy = copy(folder, container, composite_properties=True)
+        self.assertEqual(foldercopy.__name__, 'copy_of_folder')
+        # no change for folder and item
+        self.assertEqual(folder.composition_m, [item])
+        self.assertIs(item.shared21_u, folder)
+        # the copy foldercopy of folder contains a copy of item
+        # which is item2 here
+        self.assertEqual(len(foldercopy.composition_m), 1)
+        item2 = foldercopy.composition_m[0]
+        self.assertIsNot(item, item2)
+        # item2 has the same name of item
+        self.assertEqual(item2.__name__, 'item')
+        self.assertTrue(hasattr(item2, '__oid__'))
+        # and the copied composition item2 point to foldercopy
+        self.assertIs(item2.shared21_u, foldercopy)
