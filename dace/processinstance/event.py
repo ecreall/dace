@@ -93,6 +93,7 @@ class Event(BehavioralFlowNode, FlowNode):
             self.execute()
             self.finish_behavior(wi)
             self.execution_finished = True
+            self.execution_prepared = False
         else:
             self.stop()
 
@@ -101,6 +102,7 @@ class Event(BehavioralFlowNode, FlowNode):
             self.execute()
             self.finish_behavior(decision)
             self.execution_finished = True
+            self.execution_prepared = False
 
         super(Event, self).replay_path(decision, transaction)
 
@@ -111,7 +113,7 @@ class Event(BehavioralFlowNode, FlowNode):
         pass # pragma: no cover
 
     def stop(self):
-        pass # pragma: no cover
+        self.execution_prepared = False
 
 
 class Throwing(Event):
@@ -244,14 +246,14 @@ class ConditionalEvent(EventKind):
                 del callbacks[self.event._p_oid]
 
         if self.validate():
-            log.info('%s %s', self.event, "validate ok")
+            #log.info('%s %s', self.event, "validate ok")
             wi = self.event._get_workitem()
             if wi is not None:
                 self.event.start(None)
             else:
                 self.stop()
         else:
-            log.info('%s %s', self.event, "validate ko, retry in 1s")
+            #log.info('%s %s', self.event, "validate ko, retry in 1s")
             self._push_callback()
 
     def _push_callback(self):
