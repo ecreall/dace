@@ -10,7 +10,7 @@ class SharedMultipleProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = propertyref + '_value'
+        self.key = '_'+propertyref + '_value'
 
     def _get(self, obj):
         current_values = obj.__dict__.get(self.key, None)

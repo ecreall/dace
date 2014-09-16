@@ -8,7 +8,7 @@ class CompositeUniqueProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = '_'+propertyref + '_valuekey'
+        self.key = '_'+propertyref + '_value'
 
     def _get(self, obj):
         current_value_name = obj.__dict__.get(self.key, None)

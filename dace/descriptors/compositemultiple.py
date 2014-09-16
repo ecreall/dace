@@ -10,7 +10,7 @@ class CompositeMultipleProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = '_'+propertyref + '_contents_keys'
+        self.key = '_'+propertyref + '_value'
 
     def _get(self, obj):
         contents_keys = obj.__dict__.get(self.key, None)
