@@ -630,6 +630,10 @@ class Process(Entity):
     definition = property(definition)
 
     @property
+    def discriminator(self):
+        return self.definition.discriminator
+
+    @property
     def isSubProcess(self):
         return self.definition.isSubProcess
 
