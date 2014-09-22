@@ -230,3 +230,52 @@ class TestProperties(FunctionalTests):
         self.assertTrue(hasattr(item2, '__oid__'))
         # and the copied composition item2 point to foldercopy
         self.assertIs(item2.shared21_u, foldercopy)
+
+    def test_copy_composite_relations(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+        container['item2'] = item2 = Object2()
+        folder.composition_u = item2
+
+        from dace.util import copy
+        foldercopy = copy(folder, container, composite_properties=True)
+        self.assertEqual(len(foldercopy.composition_m), 1)
+        self.assertIsNot(foldercopy.composition_u, None)
+
+    def test_copy_composite_relations_but_omit_composite_u(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+        container['item2'] = item2 = Object2()
+        folder.composition_u = item2
+
+        from dace.util import copy
+        foldercopy = copy(folder, container, composite_properties=True,
+                          omit=('composition_u',))
+        self.assertEqual(len(foldercopy.composition_m), 1)
+        self.assertIs(foldercopy.composition_u, None)
+
+    def test_copy_composite_relations_select_composition_m(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+        container['item2'] = item2 = Object2()
+        folder.composition_u = item2
+
+        from dace.util import copy
+        foldercopy = copy(folder, container, composite_properties=True,
+                          select=('composition_m',))
+        self.assertEqual(len(foldercopy.composition_m), 1)
+        self.assertIs(foldercopy.composition_u, None)
+
+    def test_copy_composite_relations_select_and_omit_composition_m(self):
+        container, folder, item = self._create_objects()
+        folder.addtoproperty('composition_m', item)
+        container['item2'] = item2 = Object2()
+        folder.composition_u = item2
+
+        from dace.util import copy
+        foldercopy = copy(folder, container, composite_properties=True,
+                          omit=('composition_m',), select=('composition_m',))
+        # omit overrides select
+        self.assertEqual(len(foldercopy.composition_m), 0)
+        self.assertIs(foldercopy.composition_u, None)
+

@@ -384,7 +384,7 @@ OMIT_ATTRIBUTES = ('data', 'created_at', 'modified_at',
 
 def copy(obj, container, new_name=None, shared_properties=False,
         composite_properties=False, roles=False,
-        omit=OMIT_ATTRIBUTES):
+        omit=OMIT_ATTRIBUTES, select=None):
     """Return a copy of obj
 
     If you need a deepcopy of the object, set composite_properties to True
@@ -413,6 +413,9 @@ def copy(obj, container, new_name=None, shared_properties=False,
  'dynamic_properties_def': {},
  'modified_at': datetime.datetime(2014, 9, 8, 13, 6, 48, 635852)}
     """
+    if omit is not OMIT_ATTRIBUTES:
+        omit = set(omit) | set(OMIT_ATTRIBUTES)
+
     new = obj.__class__()
     # wake up object to have obj.__dict__ populated
     obj._p_activate()
@@ -445,6 +448,12 @@ def copy(obj, container, new_name=None, shared_properties=False,
                 continue
 
             seen.add(descriptor_id)
+            if descriptor_id in omit:
+                continue
+
+            if select is not None and descriptor_id not in select:
+                continue
+
             if isinstance(descriptor, Descriptor):
                 value = descriptor.__get__(obj)
                 if not value:
@@ -461,7 +470,8 @@ def copy(obj, container, new_name=None, shared_properties=False,
                         copy(item, (new, descriptor_id), new_name=item.__name__,
                             shared_properties=shared_properties,
                             composite_properties=composite_properties,
-                            roles=roles)
+                            roles=roles,
+                            omit=omit, select=select)
 
     # copy roles
     if roles:
