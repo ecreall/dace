@@ -42,10 +42,12 @@ class CompositeUniqueProperty(Descriptor):
             return
 
         value_name = value.__name__
-        if getattr(value, '__property__', None) is not None:
-            getattr(value.__parent__.__class__, value.__property__).remove(value.__parent__, value)
-        elif getattr(value, '__parent__', None) is not None:
-            value.__parent__.remove(value_name)
+        value_parent = getattr(value, '__parent__', None)
+        value_property = getattr(value, '__property__', None)
+        if  not(None in (value_parent, value_property)):
+            getattr(value_parent.__class__, value_property).remove(value_parent, value)
+        elif value_parent is not None:
+            value_parent.remove(value_name)
 
         obj.add(value_name, value)
         value.__property__ = self.propertyref

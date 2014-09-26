@@ -379,8 +379,9 @@ from dace.descriptors import (Descriptor, CompositeUniqueProperty,
         SharedMultipleProperty)
 from dace.relations import find_relations, connect
 _marker = object()
-OMIT_ATTRIBUTES = ('data', 'created_at', 'modified_at',
-                   'dynamic_properties_def')
+OMIT_ATTRIBUTES = ('data', 'dynamic_properties_def')
+#'created_at', 'modified_at'
+                   
 
 def copy(obj, container, new_name=None, shared_properties=False,
         composite_properties=False, roles=False,
