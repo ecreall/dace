@@ -1,9 +1,10 @@
+import transaction
 from persistent.list import PersistentList
 from zope.interface import implementer
 
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
-import transaction
+from substanced.event import ObjectModified
 
 from .activity import SubProcess
 from .event import Event
@@ -11,8 +12,8 @@ from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
 from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
-from dace.interfaces import IProcess, IWorkItem
-from dace.util import find_catalog, find_service
+from dace.interfaces import IProcess, IWorkItem, IBusinessAction
+from dace.util import find_catalog, find_service, allSubobjectsOfType
 from dace.objectofcollaboration.object import Object
 from dace.descriptors import (
         SHARED_MULTIPLE,
@@ -31,6 +32,10 @@ class ExecutionContext(Object):
         self.parent = None
         self.sub_execution_contexts = PersistentList()
         self.properties_names = PersistentList()
+
+    def _reindex(self):
+        if self.process is not None:
+            self.process.reindex()
 
     def root_execution_context(self):
         if self.parent is None:
@@ -155,6 +160,8 @@ class ExecutionContext(Object):
             self._init_property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
 
+        self._reindex()
+
     def remove_entity(self, name, value):
         if value in self.involveds:
             self.delproperty('involveds', value)
@@ -165,6 +172,9 @@ class ExecutionContext(Object):
         if name in self.dynamic_properties_def:
             self._init_property(name, self.dynamic_properties_def[name])
             self.delproperty(name, value)
+
+        self._reindex()
+
 
     def add_created_entity(self, name, value):
         self.addtoproperty('createds', value)
@@ -369,6 +379,9 @@ class ExecutionContext(Object):
                 self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
                 self._init_property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
+
+        self._reindex()
+
 
     def remove_collection(self, name, values):
         index_key = name+'_index'
@@ -751,6 +764,17 @@ class Process(Entity):
                 next(starttransaction)
                 if self._finished:
                     break
+
+    def reindex(self):
+        event = ObjectModified(self)
+        registry = get_current_registry()
+        registry.subscribers((event, self), None)
+        wis = [n.workitems for n in self.nodes]
+        wis = [item for sublist in wis for item in sublist]
+        actions = [w.actions for w in wis]
+        actions = [item for sublist in actions for item in sublist]
+        for action in actions:
+            action.reindex()
 
     def __repr__(self):# pragma: no cover
         return "Process(%r)" % self.definition.id

@@ -171,8 +171,10 @@ def get_current_process_uid(request):
 
 def getBusinessAction(process_id, node_id, behavior_id, request, context):
     allactions = []
+    context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
+    principal_context = dace_catalog['principal_context']
     node_id_index = dace_catalog['node_id']
     #behavior_id_index = dace_catalog['behavior_id']
     context_id_index = dace_catalog['context_id']
@@ -180,7 +182,8 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     query = process_id_index.eq(process_id) & \
             node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
+            principal_context.any(['any',context_oid])
 
     results = [w for w in query.execute().all()]
     if len(results) > 0:
@@ -220,12 +223,15 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     if request is None:
         request = get_current_request()
 
+    context_oid = str(get_oid(context))
     allactions = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
+    principal_context = dace_catalog['principal_context']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
+            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
+            principal_context.any(['any', context_oid])
 
     if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']

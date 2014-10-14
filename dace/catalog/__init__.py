@@ -133,6 +133,14 @@ class DaceCatalogViews(object):
 
         return adapter.isautomatic()
 
+    @indexview()
+    def principal_context(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None:
+            return default
+
+        return adapter.principal_context()
+
 
 @catalog_factory('dace')
 class DaceIndexes(object):
@@ -151,6 +159,7 @@ class DaceIndexes(object):
     context_id = Keyword()
     context_provides = Keyword()
     isautomatic = Field()
+    principal_context = Keyword()
 
 
 @adapter(context=Interface)
@@ -238,6 +247,12 @@ class StartWorkItemSearch(Adapter):
 
         return False
 
+    def principal_context(self):
+        result = []
+        for a in self.context.actions:
+            result.extend(a.principal_context)
+
+        return list(set(result))
 
 @adapter(context=IDecisionWorkItem)
 @implementer(ISearchableObject)
@@ -265,6 +280,13 @@ class DecisionWorkItemSearch(Adapter):
                 return True
 
         return False
+
+    def principal_context(self):
+        result = []
+        for a in self.context.actions:
+            result.extend(a.principal_context)
+
+        return list(set(result))
 
 
 @adapter(context=IWorkItem)
@@ -294,6 +316,13 @@ class WorkItemSearch(Adapter):
 
         return False
 
+    def principal_context(self):
+        result = []
+        for a in self.context.actions:
+            result.extend(a.principal_context)
+
+        return list(set(result))
+
 
 @adapter(context=IBusinessAction)
 @implementer(ISearchableObject)
@@ -317,6 +346,9 @@ class BusinessActionSearch(Adapter):
     def isautomatic(self):
         return self.context.isautomatic
 
+    def principal_context(self):
+        return self.context.principal_context
+
 
 @adapter(context=IProcess)
 @implementer(ISearchableObject)
@@ -339,3 +371,6 @@ class ProcessSearch(Adapter):
 
     def isautomatic(self):
         return False
+
+    def principal_context(self):
+        return []

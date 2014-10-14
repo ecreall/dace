@@ -3,10 +3,12 @@ from zope.interface import implementer
 from persistent import Persistent
 from persistent.list import PersistentList
 
-from pyramid.threadlocal import get_current_request
+from pyramid.threadlocal import get_current_request, get_current_registry
 from pyramid.interfaces import ILocation
 
+from substanced.event import ObjectModified
 from substanced.util import get_oid
+
 from dace.util import find_service, get_obj
 
 from .core import (
@@ -109,6 +111,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     node_definition = NotImplemented
     context = NotImplemented
+    processs_relation_id = NotImplemented
     report =  NotImplemented
     study =  NotImplemented
     actionType = NotImplemented #!!
@@ -172,6 +175,21 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     def get_validator(cls, **kw):
         return getBusinessActionValidator(cls)
 
+    @property
+    def principal_context(self):
+        try:
+            contexts = self.process.execution_context.involved_entities(self.processs_relation_id)
+            result = []
+            for context in contexts:
+                try:
+                    result.append(str(get_oid(context)))
+                except Exception:
+                    pass
+            
+            return result
+        except Exception:
+            return ['any']
+          
     @property
     def actions(self):
         allactions = getAllBusinessAction(self)
@@ -363,6 +381,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         # TODO self.workitem is a real workitem?
         if self.isexecuted:
             self.workitem.node.finish_behavior(self.workitem)
+
+    def reindex(self):
+        event = ObjectModified(self)
+        registry = get_current_registry()
+        registry.subscribers((event, self), None)
 
 
 
