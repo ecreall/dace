@@ -1,4 +1,4 @@
-from dace.descriptors.base import Descriptor
+from dace.descriptors.base import Descriptor, get_oid
 from dace.descriptors.compositeunique import CompositeUniqueProperty
 from dace.descriptors.compositemultiple import CompositeMultipleProperty
 from dace.descriptors.sharedunique import SharedUniqueProperty

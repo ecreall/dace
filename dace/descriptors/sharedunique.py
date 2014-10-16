@@ -12,7 +12,7 @@ class SharedUniqueProperty(Descriptor):
 
     def _get(self, obj):
         return obj.__dict__.get(self.key, None)
-
+        
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
