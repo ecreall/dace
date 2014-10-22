@@ -88,6 +88,7 @@ class SubProcess(Activity):
 class ActionType:
     automatic = 1
     manual = 2
+    system = 3
 
 
 def getBusinessActionValidator(action_cls):
@@ -176,7 +177,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return getBusinessActionValidator(cls)
 
     @property
-    def principal_context(self):
+    def potential_contexts_ids(self):
         try:
             contexts = self.process.execution_context.involved_entities(self.processs_relation_id)
             result = []
@@ -237,6 +238,15 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return False
 
     @property
+    def issystem(self):
+        if self.actionType is NotImplemented:
+            return False
+        elif self.actionType == ActionType.system:
+            return True
+
+        return False
+
+    @property
     def isstart(self):
         return isinstance(self.workitem, StartWorkItem)
 
@@ -251,6 +261,33 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     def action_view(self):
         if self.__class__ in DEFAULTMAPPING_ACTIONS_VIEWS:
             return DEFAULTMAPPING_ACTIONS_VIEWS[self.__class__]
+
+        return None
+
+    @property
+    def assigned_to(self):
+        if hasattr(self, 'local_assigned_to') and self.local_assigned_to:
+            return self.local_assigned_to
+
+        node = self.node
+        if hasattr(node, 'assigned_to'):
+            return self.node.assigned_to
+
+        return []
+
+    def get_potential_context(self, request=None):
+        if request is None:
+            request = get_current_request()
+
+        entities = []
+        try:
+            entities = self.process.execution_context.involved_entities(self.processs_relation_id)
+        except Exception:
+            entities = find_entities((self.context,))
+
+        for e in entities:
+            if (self.validate(e, request)):
+                return e
 
         return None
 
@@ -278,17 +315,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         content = u''
         # TODO url
         return content
-
-    @property
-    def assigned_to(self):
-        if hasattr(self, 'local_assigned_to') and self.local_assigned_to:
-            return self.local_assigned_to
-
-        node = self.node
-        if hasattr(node, 'assigned_to'):
-            return self.node.assigned_to
-
-        return []
 
     def assigne_to(self, users):
         if not isinstance(users, (list, tuple)):

@@ -134,12 +134,20 @@ class DaceCatalogViews(object):
         return adapter.isautomatic()
 
     @indexview()
-    def principal_context(self, default):
+    def issystem(self, default):
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
 
-        return adapter.principal_context()
+        return adapter.issystem()
+
+    @indexview()
+    def potential_contexts_ids(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None:
+            return default
+
+        return adapter.potential_contexts_ids()
 
 
 @catalog_factory('dace')
@@ -159,7 +167,8 @@ class DaceIndexes(object):
     context_id = Keyword()
     context_provides = Keyword()
     isautomatic = Field()
-    principal_context = Keyword()
+    issystem = Field()
+    potential_contexts_ids = Keyword()
 
 
 @adapter(context=Interface)
@@ -247,10 +256,17 @@ class StartWorkItemSearch(Adapter):
 
         return False
 
-    def principal_context(self):
+    def issystem(self):
+        for a in self.context.actions:
+            if a.issystem:
+                return True
+
+        return False
+
+    def potential_contexts_ids(self):
         result = []
         for a in self.context.actions:
-            result.extend(a.principal_context)
+            result.extend(a.potential_contexts_ids)
 
         return list(set(result))
 
@@ -281,10 +297,17 @@ class DecisionWorkItemSearch(Adapter):
 
         return False
 
-    def principal_context(self):
+    def issystem(self):
+        for a in self.context.actions:
+            if a.issystem:
+                return True
+
+        return False
+
+    def potential_contexts_ids(self):
         result = []
         for a in self.context.actions:
-            result.extend(a.principal_context)
+            result.extend(a.potential_contexts_ids)
 
         return list(set(result))
 
@@ -316,10 +339,17 @@ class WorkItemSearch(Adapter):
 
         return False
 
-    def principal_context(self):
+    def issystem(self):
+        for a in self.context.actions:
+            if a.issystem:
+                return True
+
+        return False
+
+    def potential_contexts_ids(self):
         result = []
         for a in self.context.actions:
-            result.extend(a.principal_context)
+            result.extend(a.potential_contexts_ids)
 
         return list(set(result))
 
@@ -346,8 +376,11 @@ class BusinessActionSearch(Adapter):
     def isautomatic(self):
         return self.context.isautomatic
 
-    def principal_context(self):
-        return self.context.principal_context
+    def issystem(self):
+        return self.context.issystem
+
+    def potential_contexts_ids(self):
+        return self.context.potential_contexts_ids
 
 
 @adapter(context=IProcess)
@@ -372,5 +405,8 @@ class ProcessSearch(Adapter):
     def isautomatic(self):
         return False
 
-    def principal_context(self):
+    def issystem(self):
+        return False
+
+    def potential_contexts_ids(self):
         return []

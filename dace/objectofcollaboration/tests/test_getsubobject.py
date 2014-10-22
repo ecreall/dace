@@ -31,20 +31,20 @@ class TestRequest(FunctionalTests):
 
     def test_allSubobjects(self):
         object1, object2, object3, object4, object5 = self._create_objects()
-        result = allSubobjectsOfType(object1, IObjectB)
+        result = list(allSubobjectsOfType(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = allSubobjectsOfKind(object1, IObjectB)
+        result = list(allSubobjectsOfKind(object1, IObjectB))
 
         self.assertEqual(len(result), 3)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
         self.assertTrue((object5 in result))
 
-        result = allSubobjectsOfType(object1, IObjectC)
+        result = list(allSubobjectsOfType(object1, IObjectC))
 
         self.assertEqual(len(result), 1)
         self.assertTrue((object5 in result))
@@ -52,19 +52,19 @@ class TestRequest(FunctionalTests):
 
     def test_subobjects(self):
         object1, object2, object3, object4, object5 = self._create_objects()
-        result = subobjectsOfType(object1, IObjectB)
+        result = list(subobjectsOfType(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = subobjectsOfKind(object1, IObjectB)
+        result = list(subobjectsOfKind(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = subobjectsOfType(object1, IObjectC)
+        result = list(subobjectsOfType(object1, IObjectC))
 
         self.assertEqual(len(result), 0)
         self._del_objects()

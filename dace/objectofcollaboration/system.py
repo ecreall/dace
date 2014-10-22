@@ -5,7 +5,7 @@ from substanced.util import get_oid
 
 from dace.interfaces import IEntity
 from dace.processinstance.event import DelayedCallback
-from dace.util import find_catalog
+from dace.util import find_catalog, getAllSystemActions
 from dace.z3 import BaseJob
 from dace import log
 
@@ -17,7 +17,7 @@ def _call_action(action, context):
     transaction.begin()
     request = get_current_request()
     try:
-        action.action.execute(context, request, {})  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
+        action.execute(context, request, {})  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
         log.info("Execute action %s", action.title)
         transaction.commit()
     except Exception as e:
@@ -41,30 +41,21 @@ def run():
     if last_transaction != last_tid:
         last_transaction_by_machine[cache_key] = last_tid
         transaction.begin()
-    #            query = {'object_provides': {'any_of': (IBusinessAction.__identifier__,)}}
-    #            results = list(catalog.apply(query))
-    #            print "actions to check:", len(results)
-    #            continue
-        query = catalog['object_provides'].any((IEntity.__identifier__,))
-        results = list(query.execute().all())
-        log.info("new zodb transactions, objects to check: %s", len(results))
+        results = getAllSystemActions()
+        log.info("new zodb transactions, actions to check: %s", len(results))
+        for action in results:
+            #continue  # TODO remove this line and fix _call_action
+            context = None
+            try:
+                context = action.get_potential_context()
+            except Exception:
+                continue
 
-        for content in results:
-            continue  # TODO remove this line and fix _call_action
-            for action in content.actions:
-                if getattr(action.action, '__parent__', None) is None:
-                    # action.action.workitem is a StartWorkitem
-                    continue
+            if getattr(action, '__parent__', None) is not None and context is not None:
+                _call_action(action, context)
 
-                # DecisionWorkItem may have been removed
-                # action.action.__parent__ is the workitem
-                # if decision workitem was removed, so the actions
-#                if getattr(action.action.__parent__, '_v_removed', False):
-#                    continue
-
-                _call_action(action, content)
         log.info("checked")
-        #log.info("objects to check: done")
+        log.info("actions to check: done")
     run_crawler()
 
 

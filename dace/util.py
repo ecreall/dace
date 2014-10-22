@@ -61,7 +61,7 @@ def allSubobjectsOfType(root=None, interface=None):
     object_type_index = dace_catalog['object_type']
     containers_oids_index = dace_catalog['containers_oids']
     query = containers_oids_index.any((root_oid,)) & object_type_index.eq(interface_id)
-    return [o for o in query.execute().all()]
+    return query.execute().all()
 
 
 def allSubobjectsOfKind(root=None, interface=None):
@@ -78,7 +78,7 @@ def allSubobjectsOfKind(root=None, interface=None):
     object_provides_index = dace_catalog['object_provides']
     containers_oids_index = dace_catalog['containers_oids']
     query = containers_oids_index.any((root_oid,)) & object_provides_index.any((interface_id,))
-    return [o for o in query.execute().all()]
+    return query.execute().all()
 
 
 def subobjectsOfType(root=None, interface=None):
@@ -95,7 +95,7 @@ def subobjectsOfType(root=None, interface=None):
     object_type_index = dace_catalog['object_type']
     container_oid_index = dace_catalog['container_oid']
     query = container_oid_index.eq(root_oid) & object_type_index.eq(interface_id)
-    return [o for o in query.execute().all()]
+    return query.execute().all()
 
 
 def subobjectsOfKind(root=None, interface=None):
@@ -112,7 +112,7 @@ def subobjectsOfKind(root=None, interface=None):
     object_provides_index = dace_catalog['object_provides']
     container_oid_index = dace_catalog['container_oid']
     query = container_oid_index.eq(root_oid) & object_provides_index.any((interface_id,))
-    return [o for o in query.execute().all()]
+    return query.execute().all()
 
 
 def find_entities(interfaces=None, states=None, all_states_relation=False):
@@ -177,7 +177,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
-    principal_context = dace_catalog['principal_context']
+    potential_contexts_ids = dace_catalog['potential_contexts_ids']
     node_id_index = dace_catalog['node_id']
     #behavior_id_index = dace_catalog['behavior_id']
     context_id_index = dace_catalog['context_id']
@@ -186,7 +186,7 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
             node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
-            principal_context.any(['any',context_oid])
+            potential_contexts_ids.any(['any',context_oid])
 
     results = [w for w in query.execute().all()]
     if len(results) > 0:
@@ -217,6 +217,31 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
         return None
 
 
+def getAllSystemActions(request=None):
+    if request is None:
+        request = get_current_request()
+
+    allactions = []
+    dace_catalog = find_catalog('dace')
+    issystem_index = dace_catalog['issystem']
+    object_provides_index = dace_catalog['object_provides']
+    query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
+            issystem_index.eq(True)
+
+    allactions = [a for a in query.execute().all()]
+    def_container = find_service('process_definition_container')
+    allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+    # Add start workitem
+    for name, pd in allprocess:
+        if not pd.isControlled:
+            wis = pd.start_process()
+            if wis:
+                for key in wis.keys():
+                    allactions.extend([a for a in wis[key].actions if a.issystem])
+
+    return allactions
+
+
 def queryBusinessAction(process_id, node_id, behavior_id, request, context):
     return getBusinessAction(process_id, node_id, behavior_id,
                  request, context)
@@ -230,11 +255,11 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
     allactions = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
-    principal_context = dace_catalog['principal_context']
+    potential_contexts_ids = dace_catalog['potential_contexts_ids']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
-            principal_context.any(['any', context_oid])
+            potential_contexts_ids.any(['any', context_oid])
 
     if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']
