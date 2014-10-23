@@ -932,34 +932,38 @@ class TestsPotentialActions(FunctionalTests):
         for o in objects:
             self.assertIn(o, entities)
 
-    def test_potential_actions(self):
+    def test_potential_actions(self, index=0):
         self.logAdmin()
         objecta= ObjectA()
-        self.app['myobject'] = objecta
+        self.app['myobject1'+str(index)] = objecta
         pd = self._process_cycle()
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')
         actiona = start_wi.actions[0]
         self._test_find_entities(actiona, [objecta])#potential contexts
         potential_context_a = actiona.get_potential_context() #anyone-the first
-        self.assertIs(potential_context_a, objecta)
+        self.assertTrue(isinstance(potential_context_a, ObjectA))
         actiona.execute(objecta, self.request, {'object':objecta})
         process = actiona.process
         actionb = process['a'].workitems[0].actions[0] 
         potential_context_b = actionb.get_potential_context()
         self.assertIs(potential_context_b, objecta)
         objecta2= ObjectA()
-        self.app['myobject2'] = objecta2
+        self.app['myobject2'+str(index)] = objecta2
         actionb.execute(objecta, self.request, {})
         decision_wi_a = [ w for w in process['b'].workitems if w.node.__name__ == 'a'][0]
         actiona = decision_wi_a.actions[0]
         self._test_find_entities(actiona, [objecta, objecta2]) #potential contexts
         potential_context_a = actiona.get_potential_context() # anyone-the first
-        self.assertIn(potential_context_a, [objecta, objecta2])
+        self.assertTrue(isinstance(potential_context_a, ObjectA))
         actiona.execute(objecta, self.request, {'object':objecta2})
         actionb = process['a'].workitems[0].actions[0] 
         potential_context_b = actionb.get_potential_context()
         self.assertIs(potential_context_b, objecta2)
+
+    def test_multiple_process_potential_actions(self):
+        for i in range(4): # 4 process
+            self.test_potential_actions(i)
 
 
 class TestsSubProcess(FunctionalTests):
