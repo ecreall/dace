@@ -1,7 +1,7 @@
 from pyramid.threadlocal import get_current_registry
 
 from dace.interfaces import IProcessDefinition
-from dace.util import  getWorkItem, getBusinessAction
+from dace.util import  getWorkItem, getBusinessAction, find_entities
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition, SubProcessDefinition
@@ -25,7 +25,9 @@ from dace.processinstance.tests.example.process import (
     ActionYLD,
     ActionYSteps,
     ActionSP,
-    ActionSPMI)
+    ActionSPMI,
+    ActionA,
+    ActionB)
 from dace.processinstance.workitem import StartWorkItem
 from dace.objectofcollaboration.tests.example.objects import ObjectA
 from dace.testing import FunctionalTests
@@ -867,6 +869,97 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(action_x.validate(objecta, self.request), True)
         self.logAdmin()
         self.assertEqual(action_x.validate(objecta, self.request), True)
+
+
+class TestsPotentialActions(FunctionalTests):
+
+    def tearDown(self):
+        registry = get_current_registry()
+        registry.unregisterUtility(provided=IProcessDefinition)
+        super(TestsPotentialActions, self).tearDown()
+
+    def logAdmin(self):
+        self.request.user = self.users['admin']
+
+    def logAlice(self):
+        self.request.user = self.users['alice']
+
+    def logBob(self):
+        self.request.user = self.users['bob']
+
+    def  _process_cycle(self):
+        """
+        S: start event
+        E: end event
+        G0, 1, (x): XOR Gateway
+        P,0(+): Parallel Gateway
+        A, B, C, D: activities
+
+          |---------------------------|
+          |                           |
+          |                           |
+-----  ---V---    ------  ------    --|-----    -----   ----
+| S |->| G0(x)|-->| A |-->|  B  |-->| G1(x) |-->| C |-->| E |
+-----  ------     ------  ------    --------    -----   ----
+
+        """
+        pd = ProcessDefinition(**{'id':u'sample'})
+        self.app['sample'] = pd
+        pd.defineNodes(
+                s = StartEventDefinition(),
+                a = ActivityDefinition(contexts=[ActionA]),
+                b = ActivityDefinition(contexts=[ActionB]),
+                c = ActivityDefinition(contexts=[ActionX]),
+                g0 = ExclusiveGatewayDefinition(),
+                g1 = ExclusiveGatewayDefinition(),
+                e = EndEventDefinition(),
+        )
+        pd.defineTransitions(
+                TransitionDefinition('s', 'g0'),
+                TransitionDefinition('g0', 'a'),
+                TransitionDefinition('a', 'b'),
+                TransitionDefinition('b', 'g1'),
+                TransitionDefinition('g1', 'g0'),
+                TransitionDefinition('g1', 'c'),
+                TransitionDefinition('c', 'e'),
+        )
+
+        self.config.scan(example)
+        return pd
+
+    def _test_find_entities(self, action, objects):
+        entities = list(find_entities((action.context,)))
+        for o in objects:
+            self.assertIn(o, entities)
+
+    def test_potential_actions(self):
+        self.logAdmin()
+        objecta= ObjectA()
+        self.app['myobject'] = objecta
+        pd = self._process_cycle()
+        self.def_container.add_definition(pd)
+        start_wi = pd.start_process('a')
+        actiona = start_wi.actions[0]
+        self._test_find_entities(actiona, [objecta])#potential contexts
+        potential_context_a = actiona.get_potential_context() #anyone-the first
+        self.assertIs(potential_context_a, objecta)
+        actiona.execute(objecta, self.request, {'object':objecta})
+        process = actiona.process
+        actionb = process['a'].workitems[0].actions[0] 
+        potential_context_b = actionb.get_potential_context()
+        self.assertIs(potential_context_b, objecta)
+        objecta2= ObjectA()
+        self.app['myobject2'] = objecta2
+        actionb.execute(objecta, self.request, {})
+        decision_wi_a = [ w for w in process['b'].workitems if w.node.__name__ == 'a'][0]
+        actiona = decision_wi_a.actions[0]
+        self._test_find_entities(actiona, [objecta, objecta2]) #potential contexts
+        potential_context_a = actiona.get_potential_context() # anyone-the first
+        self.assertIn(potential_context_a, [objecta, objecta2])
+        actiona.execute(objecta, self.request, {'object':objecta2})
+        actionb = process['a'].workitems[0].actions[0] 
+        potential_context_b = actionb.get_potential_context()
+        self.assertIs(potential_context_b, objecta2)
 
 
 class TestsSubProcess(FunctionalTests):

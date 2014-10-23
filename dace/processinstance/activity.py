@@ -9,7 +9,7 @@ from pyramid.interfaces import ILocation
 from substanced.event import ObjectModified
 from substanced.util import get_oid
 
-from dace.util import find_service, get_obj
+from dace.util import find_service, get_obj, find_entities
 
 from .core import (
         EventHandler,
@@ -281,9 +281,12 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
         entities = []
         try:
-            entities = self.process.execution_context.involved_entities(self.processs_relation_id)
+            entities = [self.process.execution_context.involved_entity(self.processs_relation_id)]
         except Exception:
-            entities = find_entities((self.context,))
+            try:
+                entities = self.process.execution_context.involved_collection(self.processs_relation_id)
+            except Exception:
+                entities = find_entities((self.context,))
 
         for e in entities:
             if (self.validate(e, request)):

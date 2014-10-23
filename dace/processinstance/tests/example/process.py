@@ -34,6 +34,40 @@ def state_validationA(process, context):
     return True
 
 
+
+class ActionA(ElementaryAction):
+    #identification et classification
+    process_id = 'sample'
+    node_id = 'a'
+    title = 'action a'
+    context = IObjectA
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        self.process.execution_context.add_created_entity('objecta', appstruct['object'])
+        return True
+
+class ActionB(ElementaryAction):
+    #identification et classification
+    process_id = 'sample'
+    node_id = 'b'
+    title = 'action b'
+    context = IObjectA
+    processs_relation_id = 'objecta'
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = roles_validationA
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        return True
+
+
 def condition(obj):
     if not hasattr(obj, 'bool'):
         return True
