@@ -216,7 +216,7 @@ class EventKind(object):
     def validate(self):
         return True
 
-    def prepare_for_execution(self):
+    def prepare_for_execution(self, restart=False):
         pass # pragma: no cover
 
     # cette operation est appelee par les evenements "Throwing"
@@ -237,7 +237,7 @@ class ConditionalEvent(EventKind):
     def validate(self):
         return self.definition.condition(self.event.process)
 
-    def prepare_for_execution(self):
+    def prepare_for_execution(self, restart=False):
         self._push_callback()
 
     def _callback(self):
@@ -294,7 +294,7 @@ class SignalEvent(EventKind):
     def validate(self):
         return self.definition.refSignal(self.event.process) == self._msg
 
-    def prepare_for_execution(self):
+    def prepare_for_execution(self, restart=False):
         ctx = get_zmq_context()
         s = ctx.socket(zmq.SUB)
         s.setsockopt_string(zmq.SUBSCRIBE, u'')
@@ -359,29 +359,39 @@ class SignalEvent(EventKind):
 
 class TimerEvent(EventKind):
 
-    def _start_time(self):
+    def __init__(self):
+        super(TimerEvent, self).__init__()
+        self.time_date = None
+        self.time_duration = None
+        self.time_cycle = None
+
+    def _prepare_time(self, time, restart=False):
+        if getattr(self, time, None) is None or not restart:
+            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO 
+
+    def _start_time(self, restart=False):
         """Return start time in milliseconds.
         """
         if self.definition.time_date is not None:
-            deadline = self.definition.time_date(self.event.process)
-            if not isinstance(deadline, datetime.datetime):
-                raise TypeError("Unsupported deadline %r" % deadline)
-            return (time.mktime(deadline.timetuple()) - time.time()) * 1000
+            self._prepare_time('time_date', restart)
+            if not isinstance(self.time_date, datetime.datetime):
+                raise TypeError("Unsupported deadline %r" % self.time_date)
+            return (time.mktime(self.time_date.timetuple()) - time.time()) * 1000
         elif self.definition.time_duration is not None:
-            deadline = self.definition.time_duration(self.event.process)
-            if not isinstance(deadline, datetime.timedelta):
-                raise TypeError("Unsupported deadline %r" % deadline)
-            return deadline.total_seconds() * 1000
+            self._prepare_time('time_duration', restart)
+            if not isinstance(self.time_duration, datetime.timedelta):
+                raise TypeError("Unsupported deadline %r" % self.time_duration)
+            return self.time_duration.total_seconds() * 1000
         elif self.definition.time_cycle is not None:
             raise NotImplementedError
         else:
-            raise TypeError("Unsupported deadline %r" % deadline)
+            raise TypeError("Unsupported deadline")
 
     def validate(self):
         return True
 
-    def prepare_for_execution(self):
-        self._push_callback()
+    def prepare_for_execution(self, restart=False):
+        self._push_callback(restart)
 
     def _callback(self):
         if self.event._p_oid in callbacks:
@@ -397,8 +407,8 @@ class TimerEvent(EventKind):
         else:
             self._push_callback()
 
-    def _push_callback(self):
-        deadline = self._start_time()
+    def _push_callback(self, restart=False):
+        deadline = self._start_time(restart)
         push_callback_after_commit(self.event, self._callback, (), deadline)
 
     def stop(self):
