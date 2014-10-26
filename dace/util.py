@@ -115,7 +115,7 @@ def subobjectsOfKind(root=None, interface=None):
     return query.execute().all()
 
 
-def find_entities(interfaces=None, states=None, all_states_relation=False):
+def find_entities(interfaces=None, states=None, all_states_relation=False, not_any=False):
     if interfaces is None:
         interfaces = [IEntity]
 
@@ -124,10 +124,13 @@ def find_entities(interfaces=None, states=None, all_states_relation=False):
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any([i.__identifier__ for i in interfaces])
     if states is not None:
-        if all_states_relation:
-            query = query & states_index.all(states)
-        else :
-            query = query & states_index.any(states)
+        if not_any:
+            query = query & states_index.notany(states) 
+        else:
+            if all_states_relation:
+                query = query & states_index.all(states)
+            else :
+                query = query & states_index.any(states)
 
     entities = query.execute().all()
     return entities

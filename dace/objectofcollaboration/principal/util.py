@@ -34,7 +34,6 @@ def get_current(request=None):
         request = get_current_request()
 
     result = request.user
-
     if result is None:
         if 'dace_user' in request.session and request.session['dace_user']:
             result = request.session['dace_user']
@@ -147,11 +146,45 @@ def _get_flatened_superiors(role_id):
     return superiors
 
 
-def _get_allsuperiors(role_id):
+def _get_allsuperiors(role_id, root):
     superiors = _get_flatened_superiors(role_id)
-    root = getSite()
     normalized_superiors = [(r.name, root) for r in superiors]
     return normalized_superiors
+
+
+def has_role(role, user=None, ignore_superiors=False, root=None):
+    if root is None:
+        root = getSite()
+
+    if user is None:
+        user = get_current()
+
+    normalized_roles = []
+    if len(role) == 1:
+        role = (role[0], root)
+
+    normalized_roles.append(role)
+    if not ignore_superiors:
+        normalized_roles.extend(_get_allsuperiors(role[0], root))
+
+    if isinstance(user, Anonymous):
+        return any(RoleAnonymous.name == r[0] for r in normalized_roles) #TODO use cookies to find roles
+
+    if any('Admin'== r[0] for r in  normalized_roles):
+        principals = find_service(root, 'principals')
+        sd_admin = principals['users']['admin']
+        if sd_admin is user:
+            return True
+
+    for role in normalized_roles:
+        opts = {u'source_id': get_oid(user),
+                u'target_id': get_oid(role[1])}
+        opts[u'relation_id'] = role[0]
+        opts[u'reftype'] = 'Role'
+        if find_relations(role[1], opts).__len__()>0:
+            return True
+
+    return False
 
 
 def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
@@ -166,35 +199,30 @@ def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
         if isinstance(role, basestring) and role in roles_id:
             normalized_roles.append((role, root))
             if not ignore_superiors:
-                normalized_roles.extend(_get_allsuperiors(role))
+                normalized_roles.extend(_get_allsuperiors(role, root))
         elif role[0] in roles_id:
             normalized_roles.append(role)
             if not ignore_superiors:
-                normalized_roles.extend(_get_allsuperiors(role[0]))
+                normalized_roles.extend(_get_allsuperiors(role[0], root))
 
     if user is None:
         user = get_current()
 
     if isinstance(user, Anonymous):
-        rolesid = [r[0] for r in normalized_roles] #TODO use cookies to find roles
-        if RoleAnonymous.name in rolesid:
+        return any(RoleAnonymous.name == r[0] for r in normalized_roles)
+
+    if any('Admin'== r[0] for r in  normalized_roles):
+        principals = find_service(root, 'principals')
+        sd_admin = principals['users']['admin']
+        if sd_admin is user:
             return True
-
-        return False
-
-    principals = find_service(root, 'principals')
-    sd_admin = principals['users']['admin']
-    all_roles = [r[0] for r in  normalized_roles]
-    if sd_admin is user and 'Admin' in all_roles:
-        return True
 
     for role in normalized_roles:
         opts = {u'source_id': get_oid(user),
                 u'target_id': get_oid(role[1])}
         opts[u'relation_id'] = role[0]
         opts[u'reftype'] = 'Role'
-        role_relations = [r for r in find_relations(role[1], opts).all()]
-        if role_relations:
+        if find_relations(role[1], opts).__len__()>0:
             return True
 
     return False
