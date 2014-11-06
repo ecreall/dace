@@ -69,13 +69,13 @@ class FunctionalTests(unittest.TestCase):
 
     def tearDown(self):
         from dace.processinstance import event
-        for dc_or_stream in event.callbacks.values():
-            if hasattr(dc_or_stream, 'close'):
-                dc_or_stream.close()
-            else:
-                dc_or_stream.stop()
-
         with event.callbacks_lock:
+            for dc_or_stream in event.callbacks.values():
+                if hasattr(dc_or_stream, 'close'):
+                    dc_or_stream.close()
+                else:
+                    dc_or_stream.stop()
+
             event.callbacks = {}
 
         from dace.objectofcollaboration.system import CRAWLERS
