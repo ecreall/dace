@@ -71,3 +71,5 @@ def create_process_definition_container(root):
     root['process_definition_container'] = def_container
     for definition in DEFINITIONS.values():
         def_container.add_definition(definition)
+
+    DEFINITIONS.clear()
