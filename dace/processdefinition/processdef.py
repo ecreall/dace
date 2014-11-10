@@ -62,7 +62,6 @@ class ProcessDefinition(Entity):
     def _is_end_orphan(self, node):
         return not isinstance(node, EndEventDefinition) and not node.outgoing
 
-
     def _normalize_definition(self):
         new_transitions = ()
         orphan_nodes = [node for node in self.nodes if self._is_start_orphan(node)]
@@ -190,7 +189,7 @@ class ProcessDefinition(Entity):
         global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
-        # une trandsaction pour un evenement (pour l'instant c'est un evenement)
+        # une transaction pour un evenement (pour l'instant c'est un evenement)
         sub_transaction = global_transaction.start_subtransaction(type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         start_workitems = dict([(wi.node.__name__, wi) for wi in start_workitems])

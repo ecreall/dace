@@ -1,3 +1,4 @@
+
 import datetime
 from zope.interface import implementer
 import colander
@@ -5,126 +6,13 @@ from pyramid.compat import is_nonstr_iter
 from pyramid.threadlocal import get_current_registry
 
 from substanced.folder import Folder
-from substanced.util import get_oid
 from substanced.event import ObjectModified
 
 from dace.interfaces import IObject
-from dace.relations import connect, disconnect, find_relations
 from dace.descriptors import Descriptor, __properties__
 
-# TODO a optimiser il faut, aussi, ajouter les relations de referensement
 
 _marker = object()
-
-
-# dead code
-def SharedUniquePropertyRelation(propertyref, opposite=None, isunique=False):
-
-    def _get(self,):
-        opts = {u'source_id': get_oid(self)}
-        opts[u'relation_id'] = propertyref
-        try:
-            return [r for r in find_relations(self, opts).all()][0].target
-        except Exception:
-            return None
-
-    def _add(self, value, initiator=True):
-        myproperty = self.__class__.properties[propertyref]
-        myproperty['set'](self, value, initiator)
-
-    def _set(self, value, initiator=True):
-        myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self)
-        if currentvalue == value:
-            return
-
-        if initiator and opposite is not None and opposite in value.__class__.properties:
-            value.__class__.properties[opposite]['add'](value, self, False)
-
-        myproperty['del'](self, currentvalue)
-        if value is None:
-            return
-        kw = {}
-        kw['relation_id'] = propertyref
-        connect(self, value, **kw)
-
-    def _del(self, value, initiator=True):
-        myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self)
-        if currentvalue is not None and currentvalue == value:
-            if initiator and opposite is not None and opposite in value.__class__.properties:
-                value.__class__.properties[opposite]['del'](value, self, False)
-
-            opts = {u'target_id': get_oid(value)}
-            opts[u'relation_id'] = propertyref
-            relation = [r for r in find_relations(self, opts).all()][0]
-            disconnect(relation)
-
-    def init(self):
-        return
-
-
-# dead code
-def SharedMultiplePropertyRelation(propertyref, opposite=None, isunique=False):
-
-    def _get(self):
-        opts = {u'source_id': get_oid(self)}
-        opts[u'relation_id'] = propertyref
-        try:
-            return [r.target for r in find_relations(self, opts).all()]
-        except Exception:
-            return None
-
-    def _add(self, value, initiator=True):
-        if value is None:
-            return
-
-        myproperty = self.__class__.properties[propertyref]
-        currentvalue = myproperty['get'](self)
-        if isunique and value in currentvalue:
-            return
-
-        if initiator and opposite is not None and opposite in value.__class__.properties:
-            value.__class__.properties[opposite]['add'](value, self, False)
-
-        kw = {}
-        kw['relation_id'] = propertyref
-        connect(self, value, **kw)
-
-    def _set(self, value, initiator=True):
-        myproperty = self.__class__.properties[propertyref]
-        if not isinstance(value, (list, tuple, set)):
-            value = [value]
-
-        oldvalues = myproperty['get'](self)
-        toremove = []
-        toadd = []
-        if value is None:
-            toremove = oldvalues
-        else:
-            toremove = [v for v in oldvalues if not (v in value)]
-            toadd = [v for v in value if not (v in oldvalues)]
-
-        myproperty['del'](self, toremove)
-        if toadd:
-            for v in toadd:
-                myproperty['add'](self, v)
-
-    def _del(self, value, initiator=True):
-        if not isinstance(value, (list, tuple, set)):
-            value = [value]
-
-        for v in value:
-            if initiator and opposite is not None and opposite in v.__class__.properties:
-                v.__class__.properties[opposite]['del'](v, self, False)
-
-            opts = {u'target_id': get_oid(v)}
-            opts[u'relation_id'] = propertyref
-            relation = [r for r in find_relations(self, opts).all()][0]
-            disconnect(relation)
-
-    def init(self):
-        return
 
 
 @implementer(IObject)

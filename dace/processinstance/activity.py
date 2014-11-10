@@ -68,7 +68,6 @@ class SubProcess(Activity):
         super(SubProcess, self).__init__(definition)
         self.sub_processes = []
 
-
     def _start_subprocess(self):
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(getattr(self.definition.sub_process_definition, 'id', self.definition.sub_process_definition))
@@ -146,7 +145,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if source_action is not None and (source_action._class_ is cls) and source_action.validate(context, request):
             return source_action
 
-        instances = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
+        instances = getBusinessAction(context, request, 
+                                      cls.node_definition.process.id, 
+                                      cls.node_definition.__name__, 
+                                      cls.behavior_id)
         if instances is None:
             return None
 
@@ -166,7 +168,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
-        instance = getBusinessAction(cls.node_definition.process.id, cls.node_definition.__name__, cls.behavior_id, request, context)
+        instance = getBusinessAction(context, request, 
+                                      cls.node_definition.process.id, 
+                                      cls.node_definition.__name__, 
+                                      cls.behavior_id)
         if instance is None:
             return None
 

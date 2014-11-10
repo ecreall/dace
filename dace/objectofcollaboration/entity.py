@@ -1,3 +1,4 @@
+
 from zope.interface import implementer
 from persistent.list import PersistentList
 from pyramid.threadlocal import get_current_registry
@@ -5,30 +6,31 @@ from pyramid.threadlocal import get_current_registry
 from substanced.event import ObjectModified
 
 from dace.interfaces import IEntity
-from .object import Object
+from dace.objectofcollaboration.object import Object
 from dace.descriptors import SharedUniqueProperty, SharedMultipleProperty
 from dace.util import getAllBusinessAction
 
 
 class ActionCall(object):
-    # il faut faire ici un delegation des attribut de l'action en question
-    def __init__(self, action, obj):
+
+    def __init__(self, action, context):
         super(ActionCall, self).__init__()
-        self.object = obj
+        self.context = context
         self.action = action
         self.title = self.action.title
         self.process = self.action.process
 
     @property
     def url(self):
-        return self.action.url(self.object)
+        return self.action.url(self.context)
 
     @property
     def content(self):
-        return self.action.content(self.object)
+        return self.action.content(self.context)
 
 
 class ProcessSharedUniqueProperty(SharedUniqueProperty):
+
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
@@ -41,6 +43,7 @@ class ProcessSharedUniqueProperty(SharedUniqueProperty):
 
 
 class ProcessSharedMultipleProperty(SharedMultipleProperty):
+
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
@@ -77,7 +80,3 @@ class Entity(Object):
     def actions(self):
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
-
-    #les relations avec le processus sont des relations d'agregation multiple bidirectionnelles
-    # il faut donc les difinir comme des properties
-

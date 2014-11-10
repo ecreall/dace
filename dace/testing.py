@@ -60,8 +60,12 @@ class FunctionalTests(unittest.TestCase):
         request.root = request.context = self.app
         # request.user execute substanced.sdi.user which get request.context to find objectmap
         self.users = self.app['principals']['users']
-        self.app['principals'].add_user('alice', password='alice', email='alice@example.com')
-        self.app['principals'].add_user('bob', password='bob', email='alice@example.com')
+        self.app['principals'].add_user('alice', 
+                                        password='alice', 
+                                        email='alice@example.com')
+        self.app['principals'].add_user('bob', 
+                                        password='bob', 
+                                        email='alice@example.com')
         login('admin')
         # request.user is the admin user, but if you do later login('system'), you will still have admin in request.user
         #request.user = self.users['admin']

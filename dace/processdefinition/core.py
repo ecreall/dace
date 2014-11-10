@@ -1,3 +1,4 @@
+
 from persistent import Persistent
 from zope.interface import Attribute
 
@@ -17,8 +18,6 @@ class FlowNodeDefinition(BPMNElementDefinition):
     outgoing = SharedMultipleProperty('outgoing', 'source', False)
     process = SharedUniqueProperty('process', 'nodes', False)
 
-    #relation s_u opposite s_m avec les transitions
-    #relation s_u opposite c_m avec les Processdef
     factory = Attribute("factory")
     performer = '' #??
 
@@ -69,7 +68,7 @@ class Transaction(Persistent):
 
     def remove_subtransaction(self, transaction):
         if self.sub_transactions and transaction in self.sub_transactions:
-           self.sub_transactions.remove(transaction)
+            self.sub_transactions.remove(transaction)
 
     def find_allsubpaths_for(self, node, type=None, unique=True):
         path = self.get_path_for(node, type)
@@ -89,7 +88,8 @@ class Transaction(Persistent):
         return result
 
     def get_path_for(self, node, type=None):
-        if self.path is not None and (type is None or type == self.type) and node in self.path.targets:
+        if self.path is not None and (type is None or type == self.type) and \
+           node in self.path.targets:
             return self.path
 
         return None
@@ -102,7 +102,8 @@ class Transaction(Persistent):
 
         sub_paths = []
         for subtransaction in self.sub_transactions:
-            sub_paths.extend(subtransaction.find_allsubpaths_by_source(node, type))
+            sub_paths.extend(subtransaction.find_allsubpaths_by_source(
+                                                            node, type))
 
         if unique:
             sub_paths = [p for p in sub_paths if not p.equal(path)]
@@ -111,7 +112,8 @@ class Transaction(Persistent):
         return result
 
     def get_path_by_source(self, node, type=None):
-        if self.path is not None and (type is None or type == self.type) and node in self.path.sources:
+        if self.path is not None and (type is None or type == self.type) and \
+           node in self.path.sources:
             return self.path
 
         return None
@@ -133,7 +135,8 @@ class Transaction(Persistent):
         return result
 
     def get_path_cross(self, node, type=None):
-        if self.path is not None and (type is None or type == self.type) and self.path.contains_node(node):
+        if self.path is not None and (type is None or type == self.type) and \
+           self.path.contains_node(node):
             return self.path
 
         return None
@@ -161,7 +164,10 @@ class Transaction(Persistent):
         self.sub_transactions = []
 
     def __repr__(self):# pragma: no cover
-        return 'Transaction('+self.type+'):\n' +'Path:'+repr(self.path)+ '\n Sub_Transactions:[\n'+'\n'.join([repr(t) for t in self.sub_transactions])+']'
+        return 'Transaction('+self.type+'):\n' +\
+               'Path:'+repr(self.path)+ \
+               '\n Sub_Transactions:[\n'+\
+               '\n'.join([repr(t) for t in self.sub_transactions])+']'
 
     #def __eq__(self, other):
     #    return self.path == other.path
@@ -210,15 +216,15 @@ class Path(Persistent):
     def first(self):
         if self.transitions:
             source_transitions = []
-            for t in self.transitions:
+            for transition in self.transitions:
                 is_source = True
-                for inc in t.source.incoming:
+                for inc in transition.source.incoming:
                     if  self.contains_transition(inc):
                         is_source = False
                         break
 
                 if is_source:
-                    source_transitions.append(t)
+                    source_transitions.append(transition)
 
             return source_transitions
 
@@ -228,15 +234,15 @@ class Path(Persistent):
     def latest(self):
         if self.transitions:
             target_transitions = []
-            for t in self.transitions:
+            for transition in self.transitions:
                 is_target = True
-                for inc in t.target.outgoing:
+                for inc in transition.target.outgoing:
                     if  self.contains_transition(inc):
                         is_target = False
                         break
 
                 if is_target:
-                    target_transitions.append(t)
+                    target_transitions.append(transition)
 
             return target_transitions
 
@@ -261,15 +267,15 @@ class Path(Persistent):
         return True
 
     def contains_transition(self, transition):
-        for t in self.transitions:
-            if t.equal(transition):
+        for transition_ in self.transitions:
+            if transition_.equal(transition):
                 return True
 
         return False
 
     def contains_node(self, node):
-        for t in self.transitions:
-            if t.source is node or t.target is node:
+        for transition in self.transitions:
+            if transition.source is node or transition.target is node:
                 return True
 
         return False
@@ -279,10 +285,10 @@ class Path(Persistent):
         result_set = []
         if result:
             result_set = [result.pop()]
-            for t in result:
-                eqs = [tt for tt in result_set if tt.equal(t)]
+            for transition in result:
+                eqs = [t for t in result_set if t.equal(transition)]
                 if not eqs:
-                    result_set.append(t)
+                    result_set.append(transition)
 
         return result_set
 
@@ -291,28 +297,28 @@ class Path(Persistent):
         result_set = []
         if result:
             result_set = [result.pop()]
-            for t in result:
-                eqs = [tt for tt in result_set if tt.equal(t)]
+            for transition in result:
+                eqs = [t for t in result_set if t.equal(transition)]
                 if not eqs:
-                    result_set.append(t)
+                    result_set.append(transition)
 
         return result_set
 
     def get_multiple_target(self):
         results = set()
-        for t in self.transitions:
-            transitions = self._get_transitions_source(t.source)
-            if len(transitions)>1:
-                results.add(t.source)
+        for transition in self.transitions:
+            transitions = self._get_transitions_source(transition.source)
+            if len(transitions) > 1:
+                results.add(transition.source)
 
         return results
 
     def merge(self, other):
         result = list(self.transitions)
         xor_result = []
-        for t in other.transitions:
-            if not self.contains_transition(t):
-                xor_result.append(t)
+        for transition in other.transitions:
+            if not self.contains_transition(transition):
+                xor_result.append(transition)
 
         result.extend(xor_result)
         result_path = Path(transitions=result)

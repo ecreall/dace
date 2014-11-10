@@ -94,6 +94,14 @@ class DaceCatalogViews(object):
         return adapter.process_id()
 
     @indexview()
+    def process_discriminator(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None:
+            return default
+
+        return adapter.process_discriminator()
+
+    @indexview()
     def node_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
@@ -162,6 +170,7 @@ class DaceIndexes(object):
     containers_oids = Keyword()
     oid = Field()
     process_id = Field()
+    process_discriminator = Field()
     node_id = Field()
     process_inst_uid = Keyword()
     context_id = Keyword()
@@ -236,6 +245,9 @@ class StartWorkItemSearch(Adapter):
     def process_id(self):
         return self.context.process_id
 
+    def process_discriminator(self):
+        return self.context.process.discriminator
+
     def node_id(self):
         return self.context.node_id
 
@@ -270,12 +282,16 @@ class StartWorkItemSearch(Adapter):
 
         return list(set(result))
 
+
 @adapter(context=IDecisionWorkItem)
 @implementer(ISearchableObject)
 class DecisionWorkItemSearch(Adapter):
 
     def process_id(self):
         return self.context.process_id
+
+    def process_discriminator(self):
+        return self.context.process.discriminator
 
     def node_id(self):
         return self.context.node_id
@@ -319,6 +335,9 @@ class WorkItemSearch(Adapter):
     def process_id(self):
         return self.context.process_id
 
+    def process_discriminator(self):
+        return self.context.process.discriminator
+
     def node_id(self):
         return self.context.node_id
 
@@ -361,6 +380,9 @@ class BusinessActionSearch(Adapter):
     def process_id(self):
         return self.context.process_id
 
+    def process_discriminator(self):
+        return self.context.process.discriminator
+
     def node_id(self):
         return self.context.node_id
 
@@ -389,6 +411,9 @@ class ProcessSearch(Adapter):
 
     def process_id(self):
         return self.context.id
+
+    def process_discriminator(self):
+        return self.context.discriminator
 
     def node_id(self):
         return ''

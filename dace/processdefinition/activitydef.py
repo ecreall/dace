@@ -15,8 +15,8 @@ class ActivityDefinition(EventHandlerDefinition):
 
     def _init_contexts(self, contexts):
         self.contexts = contexts
-        for c in contexts:
-            c.node_definition = self
+        for context in contexts:
+            context.node_definition = self
 
 
 class SubProcessDefinition(ActivityDefinition):

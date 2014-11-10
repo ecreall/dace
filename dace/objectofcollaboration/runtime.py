@@ -3,7 +3,7 @@ from zope.interface import implementer
 from substanced.interfaces import IService
 
 from dace.interfaces import IRuntime
-from .entity import Entity
+from dace.objectofcollaboration.entity import Entity
 from dace.descriptors import CompositeMultipleProperty
 
 

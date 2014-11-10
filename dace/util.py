@@ -1,4 +1,6 @@
+
 import venusian
+import zope.copy
 from zope.interface import Interface
 from zope.interface import providedBy, implementedBy
 from pyramid.exceptions import Forbidden
@@ -6,15 +8,20 @@ from pyramid.traversal import find_root
 from pyramid.testing import DummyRequest
 from pyramid.threadlocal import (
         get_current_registry, get_current_request, manager)
+
 from substanced.interfaces import IUserLocator
 from substanced.principal import DefaultUserLocator
-
 from substanced.util import find_objectmap, find_catalog as fcsd, get_oid
 from substanced.util import find_service as fssd
-from .interfaces import (
+
+from dace.interfaces import (
         IEntity,
         IWorkItem,
         IBusinessAction)
+from dace.descriptors import (
+    Descriptor, CompositeUniqueProperty, CompositeMultipleProperty)
+from dace.relations import find_relations, connect
+
 
 
 def getSite(resource=None):
@@ -60,7 +67,8 @@ def allSubobjectsOfType(root=None, interface=None):
     dace_catalog = find_catalog('dace')
     object_type_index = dace_catalog['object_type']
     containers_oids_index = dace_catalog['containers_oids']
-    query = containers_oids_index.any((root_oid,)) & object_type_index.eq(interface_id)
+    query = containers_oids_index.any((root_oid,)) & \
+            object_type_index.eq(interface_id)
     return query.execute().all()
 
 
@@ -77,7 +85,8 @@ def allSubobjectsOfKind(root=None, interface=None):
     dace_catalog = find_catalog('dace')
     object_provides_index = dace_catalog['object_provides']
     containers_oids_index = dace_catalog['containers_oids']
-    query = containers_oids_index.any((root_oid,)) & object_provides_index.any((interface_id,))
+    query = containers_oids_index.any((root_oid,)) & \
+            object_provides_index.any((interface_id,))
     return query.execute().all()
 
 
@@ -94,7 +103,8 @@ def subobjectsOfType(root=None, interface=None):
     dace_catalog = find_catalog('dace')
     object_type_index = dace_catalog['object_type']
     container_oid_index = dace_catalog['container_oid']
-    query = container_oid_index.eq(root_oid) & object_type_index.eq(interface_id)
+    query = container_oid_index.eq(root_oid) & \
+            object_type_index.eq(interface_id)
     return query.execute().all()
 
 
@@ -111,7 +121,8 @@ def subobjectsOfKind(root=None, interface=None):
     dace_catalog = find_catalog('dace')
     object_provides_index = dace_catalog['object_provides']
     container_oid_index = dace_catalog['container_oid']
-    query = container_oid_index.eq(root_oid) & object_provides_index.any((interface_id,))
+    query = container_oid_index.eq(root_oid) & \
+            object_provides_index.any((interface_id,))
     return query.execute().all()
 
 
@@ -136,37 +147,6 @@ def find_entities(interfaces=None, states=None, all_states_relation=False, not_a
     return entities
 
 
-def _acces_validation(context, request, validator, discriminator='Application'):
-    dace_catalog = find_catalog('dace')
-    context_id_index = dace_catalog['context_id']
-    object_provides_index = dace_catalog['object_provides']
-    isautomatic_index = dace_catalog['isautomatic']
-    query = isautomatic_index.eq(True) & \
-            object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__]))
-    for a in query.execute().all():
-        if validator(context, request, a):
-            return True
-
-    def_container = find_service('process_definition_container')
-    definitions = [d for d in def_container.definitions if d.discriminator == discriminator]
-    # Add start workitem
-    for pd in definitions:
-        if not pd.isControlled:
-            wis = pd.start_process()
-            if wis:
-                for wi in wis.values():
-                    actions = [a for a in wi.actions if a.isautomatic and a.context.__provides__(context)]
-                    for a in actions:
-                        if validator(context, request, a):
-                            return True
-
-    return False
-
-
-acces_validation = _acces_validation
-
-
 def get_current_process_uid(request):
     action_uid = request.params.get('action_uid', None)
     if action_uid is not None:
@@ -175,7 +155,11 @@ def get_current_process_uid(request):
     return None
 
 
-def getBusinessAction(process_id, node_id, behavior_id, request, context):
+def getBusinessAction(context,
+                      request,
+                      process_id, 
+                      node_id, 
+                      behavior_id=None):
     allactions = []
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
@@ -188,7 +172,8 @@ def getBusinessAction(process_id, node_id, behavior_id, request, context):
     query = process_id_index.eq(process_id) & \
             node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
+            context_id_index.any(tuple([d.__identifier__ \
+                                    for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any',context_oid])
 
     results = [w for w in query.execute().all()]
@@ -240,33 +225,59 @@ def getAllSystemActions(request=None):
             wis = pd.start_process()
             if wis:
                 for key in wis.keys():
-                    allactions.extend([a for a in wis[key].actions if a.issystem])
+                    allactions.extend([a for a in wis[key].actions \
+                                       if a.issystem])
 
     return allactions
 
 
 def queryBusinessAction(process_id, node_id, behavior_id, request, context):
-    return getBusinessAction(process_id, node_id, behavior_id,
-                 request, context)
+    return getBusinessAction(context, request,
+                        process_id, node_id, behavior_id)
 
 
-def getAllBusinessAction(context, request=None, isautomatic=False):
+def getAllBusinessAction(context, 
+                         request=None, 
+                         isautomatic=False,
+                         process_id=None,
+                         node_id=None,
+                         behavior_id=None,
+                         process_descriminator=None):
     if request is None:
         request = get_current_request()
 
+    def_container = find_service('process_definition_container')
     context_oid = str(get_oid(context))
     allactions = []
+    allprocess = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
     potential_contexts_ids = dace_catalog['potential_contexts_ids']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ for d in context.__provides__.__iro__])) & \
+            context_id_index.any(tuple([d.__identifier__ \
+                                   for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any', context_oid])
 
     if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']
         query = query & isautomatic_index.eq(True)
+
+    if process_id:
+        process_id_index = dace_catalog['process_id']
+        query = query & process_id_index.eq(process_id)
+        pd = def_container.get_definition(process_id)
+        allprocess = [(process_id, pd)]
+    else:       
+        allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+
+    if node_id:
+        node_id_index = dace_catalog['node_id']
+        query = query & node_id_index.eq(node_id)
+
+    if process_descriminator:
+        process_descriminator_index = dace_catalog['process_descriminator']
+        query = query & process_descriminator_index.eq(process_descriminator)
 
     results = [a for a in query.execute().all()]
     if len(results) > 0:
@@ -277,18 +288,16 @@ def getAllBusinessAction(context, request=None, isautomatic=False):
             except Exception:
                 continue
 
-    def_container = find_service('process_definition_container')
-    allprocess = [(pd.id, pd) for pd in  def_container.definitions]
-
     # Add start workitem
     for name, pd in allprocess:
         if not pd.isControlled:
-            wis = pd.start_process()
+            wis = pd.start_process(node_id)
             if wis:
                 for key in wis.keys():
                     swisactions = wis[key].actions
                     for action in swisactions:
-                        if ((isautomatic and action.isautomatic) or not isautomatic):
+                        if ((isautomatic and action.isautomatic) or \
+                             not isautomatic):
                             try:
                                 action.validate(context, request)
                                 allactions.append(action)
@@ -378,7 +387,10 @@ class adapter(object):
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
             mprovided = list(ob.__implemented__.interfaces())[0]
-            scanner.config.registry.registerAdapter(factory=ob, required=(self.context,), provided=mprovided, name=self.name)
+            scanner.config.registry.registerAdapter(factory=ob, 
+                                                    required=(self.context,), 
+                                                    provided=mprovided, 
+                                                    name=self.name)
 
         venusian.attach(wrapped, callback)
         return wrapped
@@ -387,10 +399,10 @@ class adapter(object):
 class utility(object):
 
     def __init__(self, name, provides=None, direct=False, **kw):
-       self.name = name
-       self.provides = provides
-       self.direct = direct
-       self.kw = kw
+        self.name = name
+        self.provides = provides
+        self.direct = direct
+        self.kw = kw
 
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
@@ -404,17 +416,14 @@ class utility(object):
                 if self.provides is None:
                     provides = list(providedBy(component))[0]
 
-            scanner.config.registry.registerUtility(component, provides, self.name)
+            scanner.config.registry.registerUtility(
+                                        component, provides, self.name)
 
         venusian.attach(wrapped, callback)
         return wrapped
 
 
-import zope.copy
-from dace.descriptors import (Descriptor, CompositeUniqueProperty,
-        SharedUniqueProperty, CompositeMultipleProperty,
-        SharedMultipleProperty)
-from dace.relations import find_relations, connect
+
 _marker = object()
 OMIT_ATTRIBUTES = ('data', 'dynamic_properties_def')
 #'created_at', 'modified_at'

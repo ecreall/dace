@@ -1,15 +1,18 @@
+
 import transaction
 
 from pyramid.threadlocal import get_current_request
 from substanced.util import get_oid
 
-from dace.interfaces import IEntity
 from dace.processinstance.event import DelayedCallback
 from dace.util import find_catalog, getAllSystemActions
 from dace.z3 import BaseJob
 from dace import log
 
+
 last_transaction_by_machine = {}
+
+
 CRAWLERS = []
 
 
@@ -17,7 +20,7 @@ def _call_action(action, context):
     transaction.begin()
     request = get_current_request()
     try:
-        action.execute(context, request, {})  #TODO AttributeError: 'WorkItem' object has no attribute 'execute'
+        action.execute(context, request, {})
         log.info("Execute action %s", action.title)
         transaction.commit()
     except Exception as e:
@@ -51,7 +54,8 @@ def run():
             except Exception:
                 continue
 
-            if getattr(action, '__parent__', None) is not None and context is not None:
+            if getattr(action, '__parent__', None) is not None and \
+               context is not None:
                 _call_action(action, context)
 
         log.info("checked")

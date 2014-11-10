@@ -1,3 +1,4 @@
+
 import signal
 import threading
 import zmq.eventloop.ioloop
@@ -15,12 +16,12 @@ from dace.objectofcollaboration.runtime import Runtime
 from substanced.event import RootAdded
 from substanced.util import find_service
 
-from .interfaces import IWorkItem
-from .processinstance.event import IntermediateCatchEvent
-from .objectofcollaboration.principal import Machine
-from .objectofcollaboration.principal.util import grant_roles
-from .objectofcollaboration.system import run_crawler
-from .util import execute_callback, find_catalog
+from dace.interfaces import IWorkItem
+from dace.processinstance.event import IntermediateCatchEvent
+from dace.objectofcollaboration.principal import Machine
+from dace.objectofcollaboration.principal.util import grant_roles
+from dace.objectofcollaboration.system import run_crawler
+from dace.util import execute_callback, find_catalog
 
 
 class ConsumeTasks(threading.Thread):
@@ -35,7 +36,9 @@ class ConsumeTasks(threading.Thread):
         loop = zmq.eventloop.ioloop.IOLoop.instance()
         loop.stop()
 
+
 consumetasks = None
+
 
 @subscriber(IDatabaseOpenedWithRoot)
 def start_ioloop(event):
@@ -54,11 +57,15 @@ def stop_ioloop():
         consumetasks.join(3)
         consumetasks = None
 
+
 curr_sigint_handler = signal.getsignal(signal.SIGINT)
+
+
 
 def sigint_handler(*args):
     stop_ioloop()
     curr_sigint_handler(*args)
+
 
 signal.signal(signal.SIGINT, sigint_handler)
 
