@@ -177,7 +177,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 2)
 
         # get sample.y business action for alice
-        allaction_y_alice = getBusinessAction(objecta, 'sample', 'y', self.request)
+        allaction_y_alice = getBusinessAction(objecta, self.request, 'sample', 'y')
         self.assertEqual(len(allaction_y_alice), 5)# 2 pour actions_y_validated_alice et 3 pour le StartWorkItem Y (Une nouvelle execution)
         self.assertIn(actions_y_validated_alice[0], allaction_y_alice)
         self.assertIn(actions_y_validated_alice[1], allaction_y_alice)
