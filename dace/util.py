@@ -242,7 +242,7 @@ def getAllBusinessAction(context,
                          process_id=None,
                          node_id=None,
                          behavior_id=None,
-                         process_descriminator=None):
+                         process_discriminator=None):
     if request is None:
         request = get_current_request()
 
@@ -269,15 +269,19 @@ def getAllBusinessAction(context,
         pd = def_container.get_definition(process_id)
         allprocess = [(process_id, pd)]
     else:       
-        allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+        if process_discriminator:
+            allprocess = [(pd.id, pd) for pd in  def_container.definitions \
+                          if pd.discriminator == process_discriminator]
+        else:
+            allprocess = [(pd.id, pd) for pd in  def_container.definitions]
 
     if node_id:
         node_id_index = dace_catalog['node_id']
         query = query & node_id_index.eq(node_id)
 
-    if process_descriminator:
-        process_descriminator_index = dace_catalog['process_descriminator']
-        query = query & process_descriminator_index.eq(process_descriminator)
+    if process_discriminator:
+        process_discriminator_index = dace_catalog['process_discriminator']
+        query = query & process_discriminator_index.eq(process_discriminator)
 
     results = [a for a in query.execute().all()]
     if len(results) > 0:
