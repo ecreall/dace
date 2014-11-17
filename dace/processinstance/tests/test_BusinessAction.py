@@ -1070,7 +1070,7 @@ class TestsSubProcess(FunctionalTests):
         self.app['objecta'] = objecta
         action_sp.before_execution(objecta, self.request)
         action_sp.execute(objecta, self.request, None, **{})
-        wi_sa = getWorkItem('sub_process', 'sa', self.request, objecta)
+        wi_sa = getWorkItem(objecta, self.request, 'sub_process', 'sa')
         proc =  action_sp.process
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 3)
@@ -1126,7 +1126,9 @@ class TestsSubProcess(FunctionalTests):
         start_wi = pd.start_process('sp')
         actions_sp = start_wi.actions
         self.assertEqual(len(actions_sp), 3)# multi instance action and 2 actioninstance (objecta, objectb)
-        actions = dict([(a.item.__name__, a) for a in actions_sp if hasattr(a, 'item') and a.item in self.request.objects])
+        actions = dict([(a.item.__name__, a) for a in actions_sp \
+                       if hasattr(a, 'item') and \
+                          a.item in self.request.objects])
         self.assertEqual(len(actions), 2)
         action_sp = actions['objecta']
         action_sp2 = actions['objectb']
@@ -1134,7 +1136,7 @@ class TestsSubProcess(FunctionalTests):
         #sub_process 1 ('objecta')
         action_sp.before_execution(objectc, self.request)
         action_sp.execute(objectc, self.request, None, **{})
-        wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
+        wi_sa = getWorkItem(objectc, self.request, 'sub_process', 'sa')
         proc =  action_sp.process
 
         item = action_sp.sub_process.execution_context.involved_entity('item')
@@ -1185,7 +1187,7 @@ class TestsSubProcess(FunctionalTests):
         #sub_process 2 ('objectb')
         action_sp2.before_execution(objectc, self.request)
         action_sp2.execute(objectc, self.request, None, **{})
-        wi_sa = getWorkItem('sub_process', 'sa', self.request, objectc)
+        wi_sa = getWorkItem(objectc, self.request, 'sub_process', 'sa')
         proc =  action_sp2.process
 
 

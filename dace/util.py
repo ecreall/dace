@@ -126,7 +126,10 @@ def subobjectsOfKind(root=None, interface=None):
     return query.execute().all()
 
 
-def find_entities(interfaces=None, states=None, all_states_relation=False, not_any=False):
+def find_entities(interfaces=None, 
+                  states=None, 
+                  all_states_relation=False, 
+                  not_any=False):
     if interfaces is None:
         interfaces = [IEntity]
 
@@ -231,7 +234,11 @@ def getAllSystemActions(request=None):
     return allactions
 
 
-def queryBusinessAction(process_id, node_id, behavior_id, request, context):
+def queryBusinessAction(context, 
+                        request, 
+                        process_id, 
+                        node_id, 
+                        behavior_id=None):
     return getBusinessAction(context, request,
                         process_id, node_id, behavior_id)
 
@@ -249,7 +256,7 @@ def getAllBusinessAction(context,
     def_container = find_service('process_definition_container')
     context_oid = str(get_oid(context))
     allactions = []
-    allprocess = []
+    allprocessdef = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
     potential_contexts_ids = dace_catalog['potential_contexts_ids']
@@ -267,13 +274,13 @@ def getAllBusinessAction(context,
         process_id_index = dace_catalog['process_id']
         query = query & process_id_index.eq(process_id)
         pd = def_container.get_definition(process_id)
-        allprocess = [(process_id, pd)]
+        allprocessdef = [(process_id, pd)]
     else:       
         if process_discriminator:
-            allprocess = [(pd.id, pd) for pd in  def_container.definitions \
+            allprocessdef = [(pd.id, pd) for pd in  def_container.definitions \
                           if pd.discriminator == process_discriminator]
         else:
-            allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+            allprocessdef = [(pd.id, pd) for pd in  def_container.definitions]
 
     if node_id:
         node_id_index = dace_catalog['node_id']
@@ -293,7 +300,7 @@ def getAllBusinessAction(context,
                 continue
 
     # Add start workitem
-    for name, pd in allprocess:
+    for name, pd in allprocessdef:
         if not pd.isControlled:
             wis = pd.start_process(node_id)
             if wis:
@@ -311,18 +318,15 @@ def getAllBusinessAction(context,
     return allactions
 
 
-def getWorkItem(process_id, node_id, request, context,
-                behavior_validator=lambda p, c: True):
+def getWorkItem(context, request, process_id, node_id):
     # If we previous call to getWorkItem was the same request
     # and returned a workitem from a gateway, search first in the
     # same gateway
-
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
     node_id_index = dace_catalog['node_id']
     process_inst_uid_index = dace_catalog['process_inst_uid']
     object_provides_index = dace_catalog['object_provides']
-
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
     # Retrieve the same workitem we used to show the link
@@ -330,12 +334,6 @@ def getWorkItem(process_id, node_id, request, context,
     process_ids = ()
     if p_uid is not None:
         process_ids = (int(p_uid),)
-    else:
-        # TODO: Do we need this?
-        if IEntity.providedBy(context):
-            filter_by_involved = True
-            if filter_by_involved:
-                pass#process_ids = tuple(context.getInvolvedProcessIds())
 
     query =  process_id_index.eq(process_id) & \
             node_id_index.eq(process_id+'.'+node_id) & \
@@ -343,34 +341,23 @@ def getWorkItem(process_id, node_id, request, context,
     if process_ids:
         query = query & process_inst_uid_index.any(process_ids)
 
-    results = [w for w in query.execute().all()]
-    if len(results) > 0:
-        wi = None
-        for wv in results:
-            if wv.validate():
-                wi = wv
-                break
-
-        if wi is None:
-            raise Forbidden
-
-        return wi
+    results = [w for w in query.execute().all() if w.validate()]
+    if results:
+        return results[0]
 
     # Not found in catalog, we return a start workitem
     if not pd.isControlled:
         wi = pd.start_process(node_id)
-        if wi is None:
-            raise Forbidden
-        else:
+        if wi is not None:
             return wi
 
     raise Forbidden
 
 
-def queryWorkItem(process_id, node_id, request, context):
+def queryWorkItem(context, request, process_id, node_id):
     try:
-        wi = getWorkItem(process_id, node_id,
-                     request, context)
+        wi = getWorkItem(context, request, 
+            process_id, node_id)
         return wi
     except Forbidden:
         return None
@@ -385,8 +372,8 @@ class Adapter(object):
 class adapter(object):
 
     def __init__(self, context, name=u''):
-       self.context = context
-       self.name = name
+        self.context = context
+        self.name = name
 
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
@@ -535,6 +522,7 @@ def copy(obj, container, new_name=None, shared_properties=False,
             connect(source, target, **opts)
 
     return new
+
 
 def execute_callback(app, callback, login):
     # set site and interaction that will be memorized in job

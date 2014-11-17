@@ -1,3 +1,4 @@
+
 import transaction
 from pyramid.exceptions import Forbidden
 from pyramid.threadlocal import get_current_registry
@@ -17,7 +18,6 @@ from dace.processdefinition.eventdef import (
     IntermediateCatchEventDefinition,
     ConditionalEventDefinition,
     TimerEventDefinition)
-
 from dace.testing import FunctionalTests
 
 
@@ -337,12 +337,12 @@ class TestsWorkItems(FunctionalTests):
     def test_getWorkItem_startworkitem(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        wi = queryWorkItem('sample', 'a', self.request, None)
+        wi = queryWorkItem(None, self.request, 'sample', 'a')
         self.assertIsNot(wi, None)
         self.assertTrue(IStartWorkItem.providedBy(wi))
-        wi = queryWorkItem('sample', 'b', self.request, None)
+        wi = queryWorkItem(None, self.request, 'sample', 'b')
         self.assertIs(wi, None)
-        wi = queryWorkItem('sample', 'c', self.request, None)
+        wi = queryWorkItem(None, self.request, 'sample', 'c')
         self.assertIs(wi, None)
 
 
@@ -768,8 +768,8 @@ class TestsWorkItems(FunctionalTests):
     def test_catalogued_workitems(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
         request = self.request
-        self.assertIs(b_wi, getWorkItem('sample', 'b', request, None))
-        self.assertIs(c_wi, getWorkItem('sample', 'c', request, None))
+        self.assertIs(b_wi, getWorkItem(None, request, 'sample', 'b'))
+        self.assertIs(c_wi, getWorkItem(None, request, 'sample', 'c'))
 
     def test_waiting_workitem_b_to_finish(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
@@ -782,13 +782,13 @@ class TestsWorkItems(FunctionalTests):
     def test_no_start_workitem_for_pd_subprocessOnly(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        start_wi = queryWorkItem('sample', 'a', self.request, None)
+        start_wi = queryWorkItem(None, self.request, 'sample', 'a')
         self.assertIsNot(start_wi, None)
         pd.isControlled = True
-        start_wi = queryWorkItem('sample', 'a', self.request, None)
+        start_wi = queryWorkItem(None, self.request, 'sample', 'a')
         self.assertIs(start_wi, None)
         with self.assertRaises(Forbidden):
-            start_wi = getWorkItem('sample', 'a', self.request, None)
+            start_wi = getWorkItem(None, self.request, 'sample', 'a')
 
     def _process_a_pg_bc(self):
         """

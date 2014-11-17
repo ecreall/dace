@@ -1,19 +1,16 @@
-from zope.interface import Interface
+
 from pyramid.httpexceptions import HTTPFound
-#from zope.authentication.interfaces import IAuthentication
-#from zope.pluggableauth import PluggableAuthentication as PAU
-#from com.ecreall.omegsi.library.authentication import initialize_pau
 
 from dace.util import getWorkItem
 from dace.catalog.interfaces import ISearchableObject
-from dace.interfaces import IProcessDefinition
+
 
 
 
 class Action(object):
 
     def __call__(self, form):
-        work_item = getWorkItem('process_id', 'activity_id', form.request)
+        work_item = getWorkItem(None, form.request, 'process_id', 'activity_id')
         work_item.lock()
         data = form.extractData()
         work_item.start(*data)
@@ -22,9 +19,6 @@ class Action(object):
 class StartALink(object):
 
     def render(self):
-#        wi = getWorkItem('sample', 'a', self.request)
-#        if wi is None:
-#            return u""
         return u"""<a href="%s">%s</a>""" % (
                 self.request.resource_url(self.context, '@@starta'),
                 u"Start A")
@@ -34,7 +28,7 @@ class StartBLink(object):
 
     def render(self):
         # need the permission, the action context, the action context's state
-        wi = getWorkItem('sample', 'b', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'b')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -46,7 +40,7 @@ class StartBLink(object):
 class StartCLink(object):
 
     def render(self):
-        wi = getWorkItem('sample', 'c', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'c')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -59,7 +53,7 @@ class StartDLink(object):
 
     def render(self):
         # need the permission, the action context, the action context's state
-        wi = getWorkItem('sample', 'd', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'd')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -70,27 +64,27 @@ class StartDLink(object):
 
 class StartB(object):
     def render(self):
-        wi = getWorkItem('sample', 'b', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'b')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartC(object):
     def render(self):
-        wi = getWorkItem('sample', 'c', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'c')
         wi.start(['azerty', 'qwerty'])
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartD(object):
     def render(self):
-        wi = getWorkItem('sample', 'd', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'd')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartA(object):
     def render(self):
-        wi = getWorkItem('sample', 'a', self.request)
+        wi = getWorkItem(None, self.request, 'sample', 'a')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
