@@ -6,10 +6,10 @@ roles_id = {}
 class role(object):
 
     def __init__(self, name='', superiors=[], lowers=[], islocal=False):
-       self.name = name
-       self.superiors = superiors
-       self.lowers = lowers
-       self.islocal = islocal
+        self.name = name
+        self.superiors = superiors
+        self.lowers = lowers
+        self.islocal = islocal
 
 
     def __call__(self, wrapped):
@@ -17,8 +17,17 @@ class role(object):
             ob.name = self.name
             ob.islocal = self.islocal
             ob.superiors = self.superiors
+            def get_allsuperiors(ob):
+                superiors = list(ob.superiors)
+                for sup in ob.superiors:
+                    superiors.extend(get_allsuperiors(sup))
+
+                return list(set(superiors))
+
+            ob.all_superiors = get_allsuperiors(ob)
             for role in self.lowers:
                 role.superiors.append(ob)
+                role.all_superiors = get_allsuperiors(role)
 
             roles_id[ob.name] = ob
  
@@ -29,6 +38,7 @@ class role(object):
 class Role(object):
     name = NotImplemented
     superiors = NotImplemented
+    all_superiors = NotImplemented
     islocal = NotImplemented
 
 @role(name='Admin')

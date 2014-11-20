@@ -304,6 +304,9 @@ def getAllBusinessAction(context,
         if not pd.isControlled:
             wis = pd.start_process(node_id)
             if wis:
+                if not isinstance(wis, dict):
+                    wis = {node_id: wis}
+
                 for key in wis.keys():
                     swisactions = wis[key].actions
                     for action in swisactions:

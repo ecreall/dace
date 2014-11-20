@@ -67,8 +67,8 @@ class CompositeMultipleProperty(Descriptor):
 
         # FIXME should iterate over toremove and call self.remove
         self.remove(obj, toremove)
-        for v in toadd:
-            self.add(obj, v)
+        for newvalue in toadd:
+            self.add(obj, newvalue)
 
     # FIXME not the same signature as compositeunique
     def remove(self, obj, values, initiator=True):
