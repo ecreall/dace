@@ -1,3 +1,4 @@
+
 from pyramid.decorator import reify
 from zope.interface import implementer
 
@@ -64,14 +65,15 @@ class ProcessDefinition(Entity):
 
     def _normalize_definition(self):
         new_transitions = ()
-        orphan_nodes = [node for node in self.nodes if self._is_start_orphan(node)]
+        orphan_nodes = [node for node in self.nodes \
+                        if self._is_start_orphan(node)]
         if orphan_nodes:
             start_events = self._get_start_events()
             empty_start_event = None
             if start_events:
-                for se in start_events:
-                    if se.eventKind is None:
-                        empty_start_event = se
+                for s_e in start_events:
+                    if s_e.eventKind is None:
+                        empty_start_event = s_e
                         break
 
             if empty_start_event is None:
@@ -88,21 +90,22 @@ class ProcessDefinition(Entity):
                 oldtransition.set_source(p_g)
 
             new_transitions += (TransitionDefinition(empty_start_event.__name__, 'startpg'), )
-            for on in orphan_nodes:
-                new_transitions+= (TransitionDefinition('startpg', on.__name__), )
+            for o_n in orphan_nodes:
+                new_transitions += (TransitionDefinition('startpg', o_n.__name__), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
             new_transitions = ()
 
-        orphan_nodes = [node for node in self.nodes if self._is_end_orphan(node)]
+        orphan_nodes = [node for node in self.nodes \
+                        if self._is_end_orphan(node)]
         if orphan_nodes:
             end_events = self._get_end_events()
             empty_end_event = None
             if end_events:
-                for ee in end_events:
-                    if ee.eventKind is None:
-                        empty_end_event = ee
+                for e_e in end_events:
+                    if e_e.eventKind is None:
+                        empty_end_event = e_e
                         break
 
             if empty_end_event is None:
@@ -119,8 +122,8 @@ class ProcessDefinition(Entity):
                 oldtransition.set_target(e_g)
 
             new_transitions += (TransitionDefinition('endeg', empty_end_event.__name__), )
-            for on in orphan_nodes:
-                new_transitions += (TransitionDefinition(on.__name__, 'endeg'), )
+            for o_n in orphan_nodes:
+                new_transitions += (TransitionDefinition(o_n.__name__, 'endeg'), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
@@ -130,11 +133,11 @@ class ProcessDefinition(Entity):
 
     def _normalize_startevents(self):
         start_events = self._get_start_events()
-        for se in start_events:
-            if len(se.outgoing) > 1:
+        for s_e in start_events:
+            if len(s_e.outgoing) > 1:
                 p_g = ParallelGatewayDefinition()
                 self.defineNodes(mergepg=p_g)
-                oldtransitions = list(se.outgoing)
+                oldtransitions = list(s_e.outgoing)
                 for oldtransition in oldtransitions:
                     oldtransition.set_source(p_g)
 
@@ -142,15 +145,15 @@ class ProcessDefinition(Entity):
 
     def _normalize_endevents(self):
         end_events = self._get_end_events()
-        for ee in end_events:
-            if len(ee.incoming) > 1:
+        for e_e in end_events:
+            if len(e_e.incoming) > 1:
                 e_g = ExclusiveGatewayDefinition()
                 self.defineNodes(mergeeg=e_g)
-                oldtransitions = list(ee.incoming)
+                oldtransitions = list(e_e.incoming)
                 for oldtransition in oldtransitions:
                     oldtransition.set_target(e_g)
 
-                self.defineTransitions(TransitionDefinition('mergeeg', ee.__name__))
+                self.defineTransitions(TransitionDefinition('mergeeg', e_e.__name__))
 
     def _get_start_events(self):
         result = []
@@ -205,7 +208,8 @@ class ProcessDefinition(Entity):
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
-        query = object_provides_index.any((IProcess.__identifier__,)) & processid_index.eq(self.id)
+        query = object_provides_index.any((IProcess.__identifier__,)) & \
+                processid_index.eq(self.id)
         results = query.execute().all()
         processes = [p for p in results]
         #processes.sort()

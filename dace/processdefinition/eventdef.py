@@ -1,6 +1,7 @@
 from .core import FlowNodeDefinition, Path
 from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
-    TimerEvent, SignalEvent, IntermediateCatchEvent, IntermediateThrowEvent, ConditionalEvent)
+    TimerEvent, SignalEvent, IntermediateCatchEvent,
+    IntermediateThrowEvent, ConditionalEvent)
 from dace.processinstance.workitem import StartWorkItem
 
 from dace.processinstance.core import EventHandler
@@ -20,8 +21,8 @@ class EventDefinition(FlowNodeDefinition):
         self.contexts = ()
 
     def create(self):
-        eventKind = self.eventKind and self.eventKind.create() or None
-        return self.factory(self, eventKind)
+        event_kind = self.eventKind and self.eventKind.create() or None
+        return self.factory(self, event_kind)
 
 
 class StartEventDefinition(EventDefinition):
@@ -41,6 +42,7 @@ class StartEventDefinition(EventDefinition):
                             start_workitems[swi.node.__name__].merge(swi)
                         else:
                             start_workitems[swi.node.__name__] = swi
+                            #yield swi ?
 
             for swi in start_workitems.values():
                 yield swi

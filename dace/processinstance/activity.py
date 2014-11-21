@@ -596,14 +596,14 @@ class ActionInstance(BusinessAction):
         super(ActionInstance, self).__init__(workitem, **kwargs)
         self.principalaction = principalaction
         self.item = item
-        id = item
+        item_id = item
         if not isinstance(item, int):
-            id  = get_oid(item)
+            item_id  = get_oid(item)
             self.title = self.title+' ('+item.title+')'
         else:
             self.title = self.title+' ('+str(item)+')'
 
-        self.behavior_id = self.principalaction.node_id+'_'+str(id)
+        self.behavior_id = self.principalaction.node_id+'_'+str(item_id)
 
     @property
     def _class_(self):
@@ -630,20 +630,20 @@ class ActionInstance(BusinessAction):
 
     @property
     def informations(self):# pragma: no cover
-        id = str(self.item)
+        item_id = str(self.item)
         if not isinstance(self.item, int):
-            id  = self.item.title
+            item_id  = self.item.title
 
         if self.process is not None:
             return 'Description: ' + \
                    self.description + \
                    '\n Process: ' + \
-                   self.process.title+'\n Instance: '+id
+                   self.process.title+'\n Instance: '+item_id
         else:
             return 'Description: ' + \
                    self.description + \
                    '\n Process: ' + \
-                   self.node.process.id+'\n Instance: '+id
+                   self.node.process.id+'\n Instance: '+item_id
 
     def before_execution(self,context, request, **kw):
         self.lock(request)

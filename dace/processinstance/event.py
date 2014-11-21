@@ -11,7 +11,6 @@ from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
 from dace.z3 import Job
-from dace import log
 
 # shared between threads
 callbacks = {}

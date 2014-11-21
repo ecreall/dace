@@ -106,10 +106,15 @@ class MakerFlowNode(FlowNode):
             if transition.sync or transition.condition(self.process):
                 node = transition.target
                 initial_path = Path([transition])
-                global_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
-                executable_paths = node.find_executable_paths(initial_path, self)
+                global_transaction.start_subtransaction(type='Find', 
+                                                    path=initial_path, 
+                                                    initiator=self)
+                executable_paths = node.find_executable_paths(
+                                            initial_path, self)
                 for executable_path in executable_paths:
-                    dwi = DecisionWorkItem(executable_path, self.process[executable_path.targets[0].__name__], self)
+                    dwi = DecisionWorkItem(executable_path, 
+                           self.process[executable_path.targets[0].__name__],
+                           self)
                     if dwi.node.__name__ in workitems:
                         workitems[dwi.node.__name__].merge(dwi)
                     else:
@@ -142,7 +147,8 @@ class MakerFlowNode(FlowNode):
         result = []
         allprocessworkitems = self.process.getAllWorkItems()
         for wi in allprocessworkitems:
-            if isinstance(wi, DecisionWorkItem) and self in wi.concerned_nodes():
+            if isinstance(wi, DecisionWorkItem) and \
+               self in wi.concerned_nodes():
                 result.append(wi)
 
         return result
@@ -175,11 +181,13 @@ class BehavioralFlowNode(MakerFlowNode):
         yield decision_path
 
     def _get_workitem(self):
-        workitems = [w for w in self.workitems if w.validate() and isinstance(w, WorkItem)]
+        workitems = [w for w in self.workitems if w.validate() and \
+                     isinstance(w, WorkItem)]
         if workitems:
             return workitems[0]
 
-        workitems = [w for w in self.process.getAllWorkItems(node_id=self.__name__) if w.validate()]
+        workitems = [w for w in self.process.getAllWorkItems(node_id=self.__name__) \
+                     if w.validate()]
         if workitems:
             wi = workitems[0]
             if isinstance(wi, DecisionWorkItem):
@@ -240,26 +248,30 @@ class BehavioralFlowNode(MakerFlowNode):
         allconcernedworkitems = self.get_allconcernedworkitems()
         all_stoped_wis = []
         for cdecision in allconcernedworkitems:
-            for ft in first_transition:
-                if cdecision.path.contains_transition(ft):
-                    if not (cdecision in all_stoped_wis) and cdecision is not work_item:
-                       all_stoped_wis.append(cdecision)
-                       cdecision.validations.append(self)
-                       if cdecision.is_finished or not cdecision.path.is_segment(work_item.path):
-                           # don't cdecision.node.stop()
-                           cdecision.__parent__.delproperty('workitems', cdecision)
+            for f_t in first_transition:
+                if cdecision.path.contains_transition(f_t):
+                    if not (cdecision in all_stoped_wis) and \
+                            cdecision is not work_item:
+                        all_stoped_wis.append(cdecision)
+                        cdecision.validations.append(self)
+                        if cdecision.is_finished or \
+                           not cdecision.path.is_segment(work_item.path):
+                            # don't cdecision.node.stop()
+                            cdecision.__parent__.delproperty(
+                                       'workitems', cdecision)
 
                     break
 
         if work_item is not None:
             start_transition = work_item.path._get_transitions_source(self)[0]
             self.process.play_transitions(self, [start_transition])
-            paths = self.process.global_transaction.find_allsubpaths_by_source(self, 'Find')
+            paths = self.process.global_transaction.find_allsubpaths_by_source(
+                                                                   self, 'Find')
             if paths:
-                for p in set(paths):
-                    if work_item.path.contains_transition(p.first[0]):
-                        source_transaction = p.transaction.__parent__
-                        source_transaction.remove_subtransaction(p.transaction)
+                for path in set(paths):
+                    if work_item.path.contains_transition(path.first[0]):
+                        source_transaction = path.transaction.__parent__
+                        source_transaction.remove_subtransaction(path.transaction)
 
 
 class Error(Exception):
@@ -268,7 +280,7 @@ class Error(Exception):
     causes = NotImplemented
     solutions = NotImplemented
     type = NotImplemented
-    template= NotImplemented
+    template = NotImplemented
 
     def __init__(self, **kwargs):
         super(Error, self).__init__()
@@ -293,7 +305,7 @@ class ValidationError(Error):
     causes = []
     solutions = []
     type = 'danger'
-    template='templates/message.pt'
+    template = 'templates/message.pt'
 
 
 class Validator(object):
@@ -431,7 +443,8 @@ class Wizard(Behavior):
             except Exception:
                 pass
 
-            transitioninstance = Transition(sourceinstance, targetinstance, transitionid, condition, default)
+            transitioninstance = Transition(sourceinstance, targetinstance, 
+                                            transitionid, condition, default)
             self.transitionsinstances.append((transitionid, transitioninstance))
 
 
@@ -445,9 +458,9 @@ class EventHandler(FlowNode):
         self.boundaryEvents = [defi.create()
                 for defi in definition.boundaryEvents]
         for bedef in definition.boundaryEvents:
-            be = bedef.create()
-            be.id = bedef.id
-            be.__name__ = bedef.__name__
+            beinstance = bedef.create()
+            beinstance.id = bedef.id
+            beinstance.__name__ = bedef.__name__
             # FIXME: the implementation is unfinished
             self.process.addtoproperty('nodes', node)
 

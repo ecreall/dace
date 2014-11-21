@@ -17,9 +17,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
     incoming = SharedMultipleProperty('incoming', 'target', False)
     outgoing = SharedMultipleProperty('outgoing', 'source', False)
     process = SharedUniqueProperty('process', 'nodes', False)
-
     factory = Attribute("factory")
-    performer = '' #??
 
     def create(self):
         return self.factory(self)

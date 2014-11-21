@@ -1,3 +1,4 @@
+
 from zope.interface import implementer
 
 from dace.interfaces import ITransitionDefinition
