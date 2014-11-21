@@ -141,7 +141,7 @@ class ProcessDefinition(Entity):
                 for oldtransition in oldtransitions:
                     oldtransition.set_source(p_g)
 
-                self.defineTransitions(TransitionDefinition(se.__name__, 'mergepg'))
+                self.defineTransitions(TransitionDefinition(s_e.__name__, 'mergepg'))
 
     def _normalize_endevents(self):
         end_events = self._get_end_events()
