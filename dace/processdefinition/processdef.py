@@ -181,22 +181,24 @@ class ProcessDefinition(Entity):
 
     def start_process(self, node_name=None):
         if self.isUnique and self.started_processes:
-            if node_name is not None:
-                return None
-
-            return []
+            if node_name:
+                return {node_name: None}
+                
+            return {}
         #une transaction globale pour chaque demande
         global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
         # une transaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = global_transaction.start_subtransaction(type='Find', initiator=self)
+        sub_transaction = global_transaction.start_subtransaction(type='Find',
+                                                                initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
-        start_workitems = dict([(wi.node.__name__, wi) for wi in start_workitems])
+        start_workitems = dict([(wi.node.__name__, wi) \
+                                for wi in start_workitems])
         if node_name is None:
             return start_workitems
 
-        return start_workitems.get(node_name, None)
+        return {node_name: start_workitems.get(node_name, None)}
 
     @property
     def started_processes(self):

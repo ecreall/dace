@@ -179,21 +179,19 @@ def getBusinessAction(context,
                                     for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any',context_oid])
 
-    results = [w for w in query.execute().all()]
-    if len(results) > 0:
-        for action in results:
-            try:
-                action.validate(context, request)
-                allactions.append(action)
-            except Exception:
-                continue
+    for action in query.execute().all():
+        try:
+            action.validate(context, request)
+            allactions.append(action)
+        except Exception:
+            continue
 
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
     # Add start workitem
     if not pd.isControlled:
-        s_wi = pd.start_process(node_id)
-        if s_wi is not None:
+        s_wi = pd.start_process(node_id)[node_id]
+        if s_wi:
             swisactions = s_wi.actions
             for action in swisactions:
                 try:
@@ -221,16 +219,14 @@ def getAllSystemActions(request=None):
 
     allactions = [a for a in query.execute().all()]
     def_container = find_service('process_definition_container')
-    allprocess = [(pd.id, pd) for pd in  def_container.definitions]
+    allprocess = [(pd.id, pd) for pd in  def_container.definitions \
+                  if not pd.isControlled]
     # Add start workitem
     for name, pd in allprocess:
-        if not pd.isControlled:
-            wis = pd.start_process()
-            if wis:
-                for key in wis.keys():
-                    allactions.extend([a for a in wis[key].actions \
-                                       if a.issystem])
-
+        wis = pd.start_process()
+        allactions.extend([action for wi in list(wis.values()) \
+                            for action in wi.actions \
+                                if action.issystem])
     return allactions
 
 
@@ -277,10 +273,12 @@ def getAllBusinessAction(context,
         allprocessdef = [(process_id, pd)]
     else:       
         if process_discriminator:
-            allprocessdef = [(pd.id, pd) for pd in  def_container.definitions \
-                          if pd.discriminator == process_discriminator]
+            allprocessdef = [(pd.id, pd) for pd in def_container.definitions \
+                             if pd.discriminator == process_discriminator and \
+                                not pd.isControlled]
         else:
-            allprocessdef = [(pd.id, pd) for pd in  def_container.definitions]
+            allprocessdef = [(pd.id, pd) for pd in def_container.definitions \
+                             if not pd.isControlled]
 
     if node_id:
         node_id_index = dace_catalog['node_id']
@@ -290,33 +288,26 @@ def getAllBusinessAction(context,
         process_discriminator_index = dace_catalog['process_discriminator']
         query = query & process_discriminator_index.eq(process_discriminator)
 
-    results = [a for a in query.execute().all()]
-    if len(results) > 0:
-        for action in results:
-            try:
-                action.validate(context, request)
-                allactions.append(action)
-            except Exception:
-                continue
+    for action in query.execute().all():
+        try:
+            action.validate(context, request)
+            allactions.append(action)
+        except Exception:
+            continue
 
     # Add start workitem
     for name, pd in allprocessdef:
-        if not pd.isControlled:
-            wis = pd.start_process(node_id)
-            if wis:
-                if not isinstance(wis, dict):
-                    wis = {node_id: wis}
-
-                for key in wis.keys():
-                    swisactions = wis[key].actions
-                    for action in swisactions:
-                        if ((isautomatic and action.isautomatic) or \
-                             not isautomatic):
-                            try:
-                                action.validate(context, request)
-                                allactions.append(action)
-                            except Exception:
-                                continue
+        wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
+        for wi in wis:
+            swisactions = [action for action in wi.actions \
+                           if not isautomatic or \
+                             (isautomatic and action.isautomatic)]
+            for action in swisactions:
+                try:
+                    action.validate(context, request)
+                    allactions.append(action)
+                except Exception:
+                    continue
 
     return allactions
 
@@ -350,8 +341,8 @@ def getWorkItem(context, request, process_id, node_id):
 
     # Not found in catalog, we return a start workitem
     if not pd.isControlled:
-        wi = pd.start_process(node_id)
-        if wi is not None:
+        wi = pd.start_process(node_id)[node_id]
+        if wi:
             return wi
 
     raise Forbidden

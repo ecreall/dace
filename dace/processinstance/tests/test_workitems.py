@@ -349,7 +349,7 @@ class TestsWorkItems(FunctionalTests):
     def test_start_workitem(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         start_swi = ISearchableObject(start_wi)
         self.assertEqual(start_swi.process_id(), 'sample')
         self.assertEqual(start_swi.node_id(), 'sample.a')
@@ -375,7 +375,7 @@ class TestsWorkItems(FunctionalTests):
         pd = self._process_a_g_bc()
         pd.isVolatile = True
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         start_swi = ISearchableObject(start_wi)
         wi, proc = start_wi.consume()
         runtime = find_service('runtime')
@@ -747,7 +747,7 @@ class TestsWorkItems(FunctionalTests):
     def _test_waiting_workitem_to_finish(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -829,7 +829,7 @@ class TestsWorkItems(FunctionalTests):
         proc = pd()
         self.app['proc'] = proc
         self.assertEqual(len(proc.getWorkItems()), 0)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1463,7 +1463,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_end_event_a(self):
         pd = self._process()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1472,7 +1472,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_end_event_d_b(self):
         pd = self._process()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('d')
+        start_wi = pd.start_process('d')['d']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1484,7 +1484,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_end_event_b(self):
         pd = self._process()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('b')
+        start_wi = pd.start_process('b')['b']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1541,7 +1541,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_parallel_d_b_and_blocked(self):
         pd = self._process_parallel_join()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('d')
+        start_wi = pd.start_process('d')['d']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1555,7 +1555,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_parallel_a_b(self):
         pd = self._process_parallel_join()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1568,7 +1568,7 @@ class TestGatewayChain(FunctionalTests):
     def test_gateway_chain_parallel_b_a(self):
         pd = self._process_parallel_join()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('b')
+        start_wi = pd.start_process('b')['b']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         workitems = proc.getWorkItems()
@@ -1662,10 +1662,10 @@ class EventsTests(FunctionalTests):
         )
 
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('s')
+        start_wi = pd.start_process('s')['s']
         self.assertIs(start_wi, None)
         pd.set_start_condition(return_true)
-        start_wi = pd.start_process('s')
+        start_wi = pd.start_process('s')['s']
         self.assertIsNot(start_wi, None)
 
     def test_conditional_intermediate_event(self):
@@ -1702,7 +1702,7 @@ class EventsTests(FunctionalTests):
         self.def_container.add_definition(pd)
         # commit the application
         transaction.commit()
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         transaction.commit()
@@ -1763,7 +1763,7 @@ class EventsTests(FunctionalTests):
         self.def_container.add_definition(pd)
         # commit the application
         transaction.commit()
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         a_wi, proc = start_wi.consume()
         a_wi.start_test_activity()
         transaction.commit()

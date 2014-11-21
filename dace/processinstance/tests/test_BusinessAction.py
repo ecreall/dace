@@ -102,7 +102,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -214,7 +214,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYP])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -283,7 +283,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYPI])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -351,7 +351,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYI])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -431,7 +431,7 @@ class TestsBusinessAction(FunctionalTests):
         self.app['objectc'] = objectc
 
         self.request.objects = [objecta, objectb]
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -500,7 +500,7 @@ class TestsBusinessAction(FunctionalTests):
         self.app['objectc'] = objectc
 
         self.request.objects = [objecta, objectb]
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -549,7 +549,7 @@ class TestsBusinessAction(FunctionalTests):
 
     def _test_actions_YLC(self, pd, y):
         self.logAdmin()
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -613,7 +613,7 @@ class TestsBusinessAction(FunctionalTests):
         self.app['objectc'] = objectc
         self.request.objects = [objecta, objectb]
 
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -650,7 +650,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionYSteps])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
         self.assertEqual(len(actions_x), 1)
         action_x = actions_x[0]
@@ -779,7 +779,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
 
         objecta= ObjectA()
         self.app['objecta'] = objecta
@@ -802,7 +802,7 @@ class TestsBusinessAction(FunctionalTests):
         y, pd = self._process_valid_actions()
         y._init_contexts([ActionY])
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('x')
+        start_wi = pd.start_process('x')['x']
 
         objecta= ObjectA()
         self.app['objecta'] = objecta
@@ -938,7 +938,7 @@ class TestsPotentialActions(FunctionalTests):
         self.app['myobject1'+str(index)] = objecta
         pd = self._process_cycle()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         actiona = start_wi.actions[0]
         self._test_find_entities(actiona, [objecta])#potential contexts
         potential_context_a = actiona.get_potential_context() #anyone-the first
@@ -1058,7 +1058,7 @@ class TestsSubProcess(FunctionalTests):
         spaction._init_contexts([ActionSP])
         self.def_container.add_definition(pd)
         self.def_container.add_definition(sp)
-        start_wi = pd.start_process('sp')
+        start_wi = pd.start_process('sp')['sp']
         actions_sp = start_wi.actions
         self.assertEqual(len(actions_sp), 1)
         action_sp = actions_sp[0]
@@ -1123,7 +1123,7 @@ class TestsSubProcess(FunctionalTests):
 
         self.request.objects = [objecta, objectb]
 
-        start_wi = pd.start_process('sp')
+        start_wi = pd.start_process('sp')['sp']
         actions_sp = start_wi.actions
         self.assertEqual(len(actions_sp), 3)# multi instance action and 2 actioninstance (objecta, objectb)
         actions = dict([(a.item.__name__, a) for a in actions_sp \

@@ -72,7 +72,7 @@ class TestsSignal(FunctionalTests):
     def xtest_signal_event_start_sc(self):
         pd = self._process_definition()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('sc')
+        start_wi = pd.start_process('sc')['sc']
         sc_wi, proc = start_wi.consume()
         sc_wi.start_test_activity()
         self.assertEqual(len(proc.getWorkItems()), 2)
@@ -81,7 +81,7 @@ class TestsSignal(FunctionalTests):
     def test_signal_event(self):
         pd = self._process_definition()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('a')
+        start_wi = pd.start_process('a')['a']
         # commit the application
         transaction.commit()
         a_wi, proc = start_wi.consume()
@@ -150,7 +150,7 @@ class TestsSignal(FunctionalTests):
         from dace.processinstance.event import callbacks as event_callbacks
         pd = self._process_definition_with_activity_after_start_event()
         self.def_container.add_definition(pd)
-        start_wi = pd.start_process('b')
+        start_wi = pd.start_process('b')['b']
 
         # commit the application
         transaction.commit()
