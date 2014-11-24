@@ -1,3 +1,4 @@
+
 from dace.descriptors import SharedUniqueProperty
 from dace.objectofcollaboration.object import Object
 
@@ -28,7 +29,8 @@ class Transition(Object):
         return self.definition.sync
 
     def equal(self, transition):
-        return self.source is transition.source and self.target is transition.target
+        return self.source is transition.source and \
+                self.target is transition.target
 
     def __repr__(self):# pragma: no cover
         return "Transition(%r, %r)" % (self.source, self.target)

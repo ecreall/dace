@@ -1,3 +1,4 @@
+
 from zope.interface import Interface
 
 
@@ -18,9 +19,13 @@ class IObjectProvides(Interface):
     def oid():
         pass    
 
+
 class ISearchableObject(Interface):
 
     def process_id():
+        pass
+
+    def process_discriminator():
         pass
 
     def node_id():
@@ -36,4 +41,10 @@ class ISearchableObject(Interface):
         pass
 
     def isautomatic():
+        pass
+
+    def issystem():
+        pass
+
+    def potential_contexts_ids():
         pass

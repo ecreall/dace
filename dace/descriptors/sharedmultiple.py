@@ -1,3 +1,4 @@
+
 from persistent.list import PersistentList
 
 from dace.descriptors import Descriptor
@@ -6,6 +7,7 @@ _marker = object()
 
 
 class SharedMultipleProperty(Descriptor):
+    
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -55,8 +57,8 @@ class SharedMultipleProperty(Descriptor):
             toadd = [v for v in values if v not in oldvalues]
 
         self.remove(obj, toremove)
-        for v in toadd:
-            self.add(obj, v)
+        for value_toadd in toadd:
+            self.add(obj, value_toadd)
 
     def remove(self, obj, values, initiator=True):
         self.init(obj)
@@ -66,7 +68,8 @@ class SharedMultipleProperty(Descriptor):
 
         for value in values:
             if initiator and self.opposite is not None:
-                opposite_property = getattr(value.__class__, self.opposite, _marker)
+                opposite_property = getattr(value.__class__, 
+                                       self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 

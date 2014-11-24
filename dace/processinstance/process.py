@@ -1,3 +1,4 @@
+
 import transaction
 from persistent.list import PersistentList
 from zope.interface import implementer
@@ -12,8 +13,8 @@ from .core import ProcessStarted
 from dace.processdefinition.core import Transaction
 from dace.processdefinition.eventdef import EventHandlerDefinition
 from dace.objectofcollaboration.entity import Entity
-from dace.interfaces import IProcess, IWorkItem, IBusinessAction
-from dace.util import find_catalog, find_service, allSubobjectsOfType
+from dace.interfaces import IProcess, IWorkItem
+from dace.util import find_catalog, find_service
 from dace.objectofcollaboration.object import Object
 from dace.descriptors import (
         SHARED_MULTIPLE,
@@ -38,12 +39,15 @@ class ExecutionContext(Object):
             self.process.reindex()
 
     def root_execution_context(self):
+        """Return the root execution context"""
         if self.parent is None:
             return self
         else:
             return self.parent.root_execution_context()
 
     def add_sub_execution_context(self, ec):
+        """Add a sub execution context. A sub-execution context 
+           is associated to a sub-process"""
         if not(ec in self.sub_execution_contexts):
             self.sub_execution_contexts.append(ec)
             ec.parent = self
@@ -61,6 +65,8 @@ class ExecutionContext(Object):
         return set(result)
 
     def all_involveds(self):
+        """Return all involved entities. 
+           The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_involveds()
 
@@ -72,11 +78,14 @@ class ExecutionContext(Object):
         return set(result)
 
     def all_createds(self):
+        """Return all created entities. 
+           The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_createds()
 
     @property
     def active_involveds(self):
+        """Return all current relations of type 'involved'"""
         result = {}
         properties = dict(self.properties_names)
         for name in properties.keys():
@@ -84,7 +93,8 @@ class ExecutionContext(Object):
             if relation_result:
                 index_key = name+'_index'
                 i = self.get_localdata(index_key)
-                result[name] = ('collection', relation_result, name, i, True, properties[name])
+                result[name] = ('collection', relation_result, 
+                                name, i, True, properties[name])
                 continue
 
             relation_result = self.involved_entity(name)
@@ -95,7 +105,8 @@ class ExecutionContext(Object):
             else:
                 continue
 
-            result[name] = ('element', relation_result, name, i, True, properties[name])
+            result[name] = ('element', relation_result,
+                            name, i, True, properties[name])
 
         return result
 
@@ -112,11 +123,14 @@ class ExecutionContext(Object):
         return result
 
     def all_active_involveds(self):
+        """Return all current relations of type 'involved'.
+        The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_active_involveds()
 
     @property
     def classified_involveds(self):
+        """Return all archived relations of type 'involved'"""
         result = {}
         properties = dict(self.properties_names)
         for name in properties.keys():
@@ -126,7 +140,8 @@ class ExecutionContext(Object):
                 for i in range(index)[1:]:
                     prop_name = name+'_'+str(i)
                     self._init_property(prop_name, self.dynamic_properties_def[prop_name])
-                    result[prop_name] = ('collection', self.getproperty(prop_name), name, i, (i==(index-1)), properties[name])
+                    result[prop_name] = ('collection', self.getproperty(prop_name), 
+                                    name, i, (i==(index-1)), properties[name])
             else:
                 result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])
 
@@ -145,6 +160,8 @@ class ExecutionContext(Object):
         return result
 
     def all_classified_involveds(self):
+        """Return all archived relations of type 'involved'.
+        The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_classified_involveds()
 
@@ -156,7 +173,8 @@ class ExecutionContext(Object):
             self.addtoproperty(name, value)
         else:
             self.properties_names.append((name, type))
-            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
+            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 
+                                                 'involvers', True)
             self._init_property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
 
@@ -164,14 +182,14 @@ class ExecutionContext(Object):
 
     def remove_entity(self, name, value):
         if value in self.involveds:
-            self.delproperty('involveds', value)
+            self.delfromproperty('involveds', value)
 
         if value in self.createds:
-            self.delproperty('createds', value)
+            self.delfromproperty('createds', value)
 
         if name in self.dynamic_properties_def:
             self._init_property(name, self.dynamic_properties_def[name])
-            self.delproperty(name, value)
+            self.delfromproperty(name, value)
 
         self._reindex()
 
@@ -239,8 +257,8 @@ class ExecutionContext(Object):
 
         result = []
         collections = self.get_involved_collections(name)
-        for c in collections:
-            result.extend(c)
+        for collection in collections:
+            result.extend(collection)
 
         return result
 
@@ -323,7 +341,8 @@ class ExecutionContext(Object):
     def find_created_entities(self, name=None):
         root = self.root_execution_context()
         result_created = root.all_createds()
-        result = [e for e in root.find_involved_entities(name) if e in result_created]
+        result = [e for e in root.find_involved_entities(name) \
+                  if e in result_created]
         return result
     # created_entities end
 
@@ -376,7 +395,8 @@ class ExecutionContext(Object):
                 self.addtoproperty(name, value)
             else:
                 self.properties_names.append((prop_name, type))
-                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 'involvers', True)
+                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 
+                                                     'involvers', True)
                 self._init_property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
 
@@ -596,12 +616,14 @@ class Process(Entity):
 
     nodes = CompositeMultipleProperty('nodes', 'process', True)
     transitions = CompositeMultipleProperty('transitions', 'process', True)
-    execution_context = CompositeUniqueProperty('execution_context', 'process', True)
+    execution_context = CompositeUniqueProperty('execution_context'
+                                              , 'process', True)
 
     _started = False
     _finished = False
-    # l'instance d'activite (SubProcess) le manipulant
+    # if attached to a subprocess
     attachedTo = None
+
     def __init__(self, definition, startTransition, **kwargs):
         super(Process, self).__init__(**kwargs)
         self.id = definition.id
@@ -656,23 +678,24 @@ class Process(Entity):
         self.replay_transitions(decision, first_transitions, transaction)
         executed_transitions = first_transitions
         next_transitions = set()
-        for t in first_transitions:
-            next_transitions = next_transitions.union(set(path.next(t)))
+        for transition in first_transitions:
+            next_transitions = next_transitions.union(
+                                  set(path.next(transition)))
 
-        for nt in next_transitions:
-            if nt in executed_transitions:
-                next_transitions.remove(nt)
+        for next_transition in next_transitions:
+            if next_transition in executed_transitions:
+                next_transitions.remove(next_transition)
 
         while next_transitions:
             self.replay_transitions(decision, next_transitions, transaction)
             executed_transitions.extend(next_transitions)
             next_ts = set()
-            for t in next_transitions:
-                next_ts = next_ts.union(set(path.next(t)))
+            for next_transition in next_transitions:
+                next_ts = next_ts.union(set(path.next(next_transition)))
 
-            for nt in list(next_ts):
-                if nt in executed_transitions:
-                    next_ts.remove(nt)
+            for next_transition in list(next_ts):
+                if next_transition in executed_transitions:
+                    next_ts.remove(next_transition)
 
             next_transitions = next_ts
 
@@ -696,8 +719,8 @@ class Process(Entity):
         self.result_multiple = {} # for tests
         for wi in workitems:
             if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
-                for sp in wi.node.sub_processes:
-                    result.update(sp.getWorkItems())
+                for sub_process in wi.node.sub_processes:
+                    result.update(sub_process.getWorkItems())
 
             if wi.node.id in result:
                 self.result_multiple[wi.node.id].append(wi)
@@ -722,8 +745,8 @@ class Process(Entity):
         result = []
         for wi in workitems:
             if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
-                for sp in wi.node.sub_processes:
-                    result.extend(sp.getAllWorkItems())
+                for sub_process in wi.node.sub_processes:
+                    result.extend(sub_process.getAllWorkItems())
 
             if not (wi in result):
                 result.append(wi)
@@ -760,7 +783,10 @@ class Process(Entity):
 
             for transition in transitions:
                 next = transition.target
-                starttransaction = self.global_transaction.start_subtransaction('Start', transitions=(transition,), initiator=transition.source)
+                starttransaction = self.global_transaction.start_subtransaction(
+                                            'Start',
+                                            transitions=(transition,),
+                                            initiator=transition.source)
                 next(starttransaction)
                 if self._finished:
                     break

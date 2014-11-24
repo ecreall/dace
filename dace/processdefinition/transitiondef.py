@@ -6,6 +6,7 @@ from dace.descriptors import SharedUniqueProperty
 from dace.objectofcollaboration.object import Object
 from dace.processinstance.transition import Transition
 
+
 def always_true(data):
     return True
 
@@ -18,7 +19,12 @@ class TransitionDefinition(Object):
     source = SharedUniqueProperty('source', 'outgoing', False)
     process = SharedUniqueProperty('process', 'transitions', False)
 
-    def __init__(self, source_id, target_id, condition=always_true, sync=False, **kwargs):
+    def __init__(self, 
+                 source_id, 
+                 target_id, 
+                 condition=always_true, 
+                 sync=False, 
+                 **kwargs):
         super(TransitionDefinition, self).__init__(**kwargs)
         self.id = '%s-%s' % (source_id, target_id)
         self.source_id = source_id
@@ -49,9 +55,6 @@ class TransitionDefinition(Object):
 
     def equal(self, other): #deprecated
         return self.source is other.source and self.target is other.target
-
-   # def __eq__(self, other):
-   #     return self.source is other.source and self.target is other.target
 
     def __repr__(self):# pragma: no cover
         return "%s(%r, %r)" % (self.__class__.__name__,

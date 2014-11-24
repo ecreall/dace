@@ -1,3 +1,4 @@
+
 from .core import FlowNodeDefinition, Path
 from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
     TimerEvent, SignalEvent, IntermediateCatchEvent,
@@ -35,7 +36,8 @@ class StartEventDefinition(EventDefinition):
                 if transition.condition(None):
                     nodedef = self.process[transition.target.__name__]
                     initial_path = Path([transition], transaction)
-                    startable_paths = nodedef.find_startable_paths(initial_path, self)
+                    startable_paths = nodedef.find_startable_paths(initial_path,
+                                                                   self)
                     for startable_path in startable_paths:
                         swi = StartWorkItem(startable_path, self)
                         if swi.node.__name__ in start_workitems:
@@ -68,20 +70,23 @@ class EventKindDefinition(object):
 
 
 class SignalEventDefinition(EventKindDefinition):
+
     factory = SignalEvent
-    # Les parametres de l' __init__ sont calculables (i.e. des operations). Il faut donc les generer
-    # voir avec les adaptateurs ....
+
     def __init__(self, refSignal=None, **kwargs):
         super(SignalEventDefinition, self).__init__( **kwargs)
         self.refSignal = refSignal
 
 
 class TerminateEventDefinition(EventKindDefinition):
+
     factory = TerminateEvent
 
 
 class ConditionalEventDefinition(EventKindDefinition):
+
     factory = ConditionalEvent
+
     # the condition is a function with the process as parameter
     def __init__(self, condition, **kwargs):
         super(ConditionalEventDefinition, self).__init__(**kwargs)

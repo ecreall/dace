@@ -1,3 +1,4 @@
+
 import time
 import threading
 import transaction
@@ -65,7 +66,8 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
                 callbacks[event._p_oid] = dc
             dc.start()
 
-    transaction.get().addAfterCommitHook(after_commit_hook, args=(event, callback, callback_params, deadline, job))
+    transaction.get().addAfterCommitHook(after_commit_hook, 
+            args=(event, callback, callback_params, deadline, job))
 
 
 class Event(BehavioralFlowNode, FlowNode):
@@ -128,7 +130,6 @@ class Throwing(Event):
             else:
                 self.stop()
 
-    # l' operation est sans parametres (les parametres sont sur la definition est sont calculable)
     def execute(self):
         if self.eventKind is None:
             return
@@ -206,7 +207,9 @@ class EndEvent(Throwing):
             self.process.attachedTo.finish_execution(None, request)
 
         if self.process.definition.isVolatile:
-            getattr(self.process.__parent__.__class__, self.process.__property__).remove(self.process.__parent__, self.process)
+            getattr(self.process.__parent__.__class__, 
+                    self.process.__property__).remove(self.process.__parent__, 
+                                                      self.process)
 
 
 class EventKind(object):
@@ -230,7 +233,7 @@ class EventKind(object):
         return self.event.definition.eventKind
 
 
-# C'est OK pour cette class rien a executer et rien a valider (la validation est dans le super)
+
 class ConditionalEvent(EventKind):
 
     def validate(self):
@@ -265,7 +268,7 @@ class ConditionalEvent(EventKind):
                 del callbacks[self.event._p_oid]
 
 
-# C'est OK pour cette class rien a executer et rien a valider
+
 class TerminateEvent(EventKind):
     pass
 

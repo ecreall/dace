@@ -1,3 +1,4 @@
+
 from pyramid.threadlocal import get_current_request
 from pyramid.interfaces import ILocation
 from zope.interface import implementer
@@ -52,8 +53,8 @@ class StartWorkItem(UserDecision):
         self.process = None
         self.actions = []
         actions = []
-        for a in self.node.contexts:
-            action = a(self)
+        for action_context in self.node.contexts:
+            action = action_context(self)
             # The creation of the action can modify self.actions
             actions.append(action)
 
@@ -93,10 +94,13 @@ class StartWorkItem(UserDecision):
         proc.defineGraph(pd)
         proc.start()
         self.process = proc
-        self.path.transitions = [proc[t.__name__] for t in self.path.transitions]
-        start_transaction = proc.global_transaction.start_subtransaction('Start', (self.path.first[0]), initiator=self)
+        self.path.transitions = [proc[t.__name__] \
+                                for t in self.path.transitions]
+        start_transaction = proc.global_transaction.start_subtransaction(
+                            'Start', (self.path.first[0]), initiator=self)
         proc[self.path.sources[0].__name__].start(start_transaction)
-        replay_transaction = proc.global_transaction.start_subtransaction('Replay', path=self.path, initiator=self)
+        replay_transaction = proc.global_transaction.start_subtransaction(
+                                  'Replay', path=self.path, initiator=self)
         proc.replay_path(self, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
         wi = proc[self.node.__name__]._get_workitem()
@@ -140,8 +144,8 @@ class BaseWorkItem(LockableElement, Object):
         self.is_valide = True
 
     def _init_actions(self):
-        for a in self.node.definition.contexts:
-            action = a(self)
+        for action_context in self.node.definition.contexts:
+            action = action_context(self)
             action.__name__ = action.behavior_id
             self.addtoproperty('actions', action)
 
@@ -231,7 +235,8 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
 
             return wi
 
-        replay_transaction = self.process.global_transaction.start_subtransaction('Replay', path= self.path, initiator=self)
+        replay_transaction = self.process.global_transaction.start_subtransaction(
+                                    'Replay', path= self.path, initiator=self)
         self.process.replay_path(self, replay_transaction)
         self.process.global_transaction.remove_subtransaction(replay_transaction)
         wi = self.process[self.node.__name__]._get_workitem()

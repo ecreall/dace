@@ -41,8 +41,8 @@ class LockableElement(object):
         self.callbacks = []
 
     def call(self, obj):
-        for c in self.callbacks:
-            c(obj)
+        for callback in self.callbacks:
+            callback(obj)
 
         self.callbacks = ()
 

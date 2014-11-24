@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from zope.interface import Interface, Attribute
+
 from zope.interface.interfaces import IObjectEvent
 
 

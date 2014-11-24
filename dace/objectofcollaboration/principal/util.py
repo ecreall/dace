@@ -1,20 +1,23 @@
+
 import datetime
 import random
 
 from pyramid.threadlocal import get_current_request
 
 from substanced.util import get_oid, find_service
-from substanced.sdi import user as sduser
-import substanced.sdi
 
 from dace.relations import connect, disconnect, find_relations
 from dace.util import getSite
-from .role import roles_id, Anonymous as RoleAnonymous
+from .role import DACE_ROLES, Anonymous as RoleAnonymous
+
 
 try:
     basestring
 except NameError:
     basestring = str
+
+
+_marker = object()
 
 
 class Anonymous(object):
@@ -92,7 +95,7 @@ def grant_roles(user=None, roles=(), root=None):
             normalized_roles.append(role)
 
     for role in normalized_roles:
-        if role[0] in roles_id:
+        if role[0] in DACE_ROLES:
             obj = role[1]
             opts = {}
             opts[u'relation_id'] = role[0]
@@ -137,7 +140,8 @@ def revoke_roles(user=None, roles=()):
 
 
 def _get_allsuperiors(role_id, root):
-    return [(r.name, root) for r in roles_id[role_id].all_superiors]
+    return [(r.name, root) for r in getattr(DACE_ROLES.get(role_id, _marker),
+                                            'all_superiors', [])]
 
 
 def has_role(role, user=None, ignore_superiors=False, root=None):
@@ -156,7 +160,8 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         normalized_roles.update(dict(_get_allsuperiors(role[0], root)))
 
     if isinstance(user, Anonymous):
-        return RoleAnonymous.name in normalized_roles #TODO use cookies to find roles
+        return RoleAnonymous.name in normalized_roles 
+        #TODO use cookies to find roles
 
     if 'Admin' in  normalized_roles:
         principals = find_service(root, 'principals')
@@ -176,7 +181,10 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
     return False
 
 
-def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
+def has_any_roles(user=None,
+                  roles=(), 
+                  ignore_superiors=False, 
+                  root=None):
     if not roles:
         return True
 
@@ -185,11 +193,11 @@ def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
         root = getSite()
 
     for role in roles:
-        if isinstance(role, basestring) and role in roles_id:
+        if isinstance(role, basestring):
             normalized_roles[role] = root
             if not ignore_superiors:
                 normalized_roles.update(dict(_get_allsuperiors(role, root)))
-        elif role[0] in roles_id:
+        else:
             normalized_roles[role[0]] = role[1]
             if not ignore_superiors:
                 normalized_roles.update(dict(_get_allsuperiors(role[0], root)))
@@ -218,7 +226,10 @@ def has_any_roles(user=None, roles=(), ignore_superiors=False, root=None):
     return False
 
 
-def has_all_roles(user=None, roles=(), ignore_superiors=False, root=None):
+def has_all_roles(user=None, 
+                  roles=(), 
+                  ignore_superiors=False, 
+                  root=None):
     if not roles:
         return True
 
@@ -236,7 +247,8 @@ def has_all_roles(user=None, roles=(), ignore_superiors=False, root=None):
         user = get_current()
 
     if isinstance(user, Anonymous):
-        return False #TODO use cookies to find roles
+        return False 
+        #TODO use cookies to find roles
 
     for role in normalized_roles:
         if not has_any_roles(user, (role, ), ignore_superiors, root):
@@ -268,7 +280,8 @@ def get_objects_with_role(user=None, role=None):
         user = get_current()
 
     if isinstance(user, Anonymous):
-        return False #TODO use cookies to find objects
+        return False 
+        #TODO use cookies to find objects
 
     root = getSite()
     opts = {u'source_id': get_oid(user)}

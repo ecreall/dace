@@ -57,7 +57,8 @@ def object_deleted(event):
         return
 
     objectid = oid_from_resource(ob)
-    rels = catalog['source_id'].eq(objectid).execute(resolver=objectmap.object_for).all()
+    rels = catalog['source_id'].eq(objectid).execute(
+                   resolver=objectmap.object_for).all()
     for rel in rels:
         registry.notify(RelationSourceDeleted(ob, rel))
         parent = rel.__parent__
@@ -66,7 +67,8 @@ def object_deleted(event):
         except KeyError:
             continue
 
-    rels = catalog['target_id'].eq(objectid).execute(resolver=objectmap.object_for).all()
+    rels = catalog['target_id'].eq(objectid).execute(
+                  resolver=objectmap.object_for).all()
     for rel in rels:
         registry.notify(RelationTargetDeleted(ob, rel))
         parent = rel.__parent__

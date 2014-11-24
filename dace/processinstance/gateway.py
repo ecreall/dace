@@ -1,3 +1,4 @@
+
 from pyramid.threadlocal import get_current_registry
 
 from .core import ActivityFinished, ActivityStarted, FlowNode, MakerFlowNode
@@ -6,6 +7,7 @@ from dace.processdefinition.core import Path, Transaction
 
 class Gateway(FlowNode):
     pass# pragma: no cover
+
 
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway, MakerFlowNode):
@@ -25,7 +27,8 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
                 source_transaction.remove_subtransaction(source_path.transaction)
-                source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
+                source_transaction.start_subtransaction(type='Find', 
+                                    path=initial_path, initiator=self)
                 initial_path.add_transition(transition)
                 executable_paths = node.find_executable_paths(initial_path, self)
                 for executable_path in executable_paths:
@@ -37,18 +40,19 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
         if work_item is not None :
             work_item.validations.append(self)
             if work_item.is_finished:
-                work_item.__parent__.delproperty('workitems', work_item)
+                work_item.__parent__.delfromproperty('workitems', work_item)
 
         # clear commun work items
         allconcernedkitems = self.get_allconcernedworkitems()
         all_stoped_wis = []
         for cdecision in allconcernedkitems:
             if not cdecision in all_stoped_wis and cdecision is not work_item:
-               all_stoped_wis.append(cdecision)
-               cdecision.validations.append(self)
-               if cdecision.is_finished or not cdecision.path.is_segment(work_item.path):
-                   cdecision.node.stop()
-                   cdecision.__parent__.delproperty('workitems', cdecision)
+                all_stoped_wis.append(cdecision)
+                cdecision.validations.append(self)
+                if cdecision.is_finished or \
+                   not cdecision.path.is_segment(work_item.path):
+                    cdecision.node.stop()
+                    cdecision.__parent__.delfromproperty('workitems', cdecision)
 
         if work_item is not None:
             transition = work_item.path._get_transitions_source(self)[0]
@@ -57,10 +61,9 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
         paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
         paths.extend(self.process.global_transaction.find_allsubpaths_by_source(self, 'Find'))
         if paths:
-            for p in set(paths):
-                source_transaction = p.transaction.__parent__
-                source_transaction.remove_subtransaction(p.transaction)
-
+            for path in set(paths):
+                source_transaction = path.transaction.__parent__
+                source_transaction.remove_subtransaction(path.transaction)
 
 
 # parallel sans condition sans default
@@ -71,29 +74,29 @@ class ParallelGateway(Gateway):
         incoming_nodes = [t.source for t in self.incoming]
         paths = global_transaction.find_allsubpaths_for(self, 'Find')
         test_path = Path()
-        for p in paths:
-            test_path.add_transition(p.transitions)
+        for path in paths:
+            test_path.add_transition(path.transitions)
 
         multiple_target = test_path.get_multiple_target()
         if multiple_target:
-            for m in multiple_target:
-                if isinstance(m, ExclusiveGateway):
+            for node in multiple_target:
+                if isinstance(node, ExclusiveGateway):
                     return
 
         alllatest_transitions = []
-        for p in paths:
-            alllatest_transitions.extend(p.latest)
+        for path in paths:
+            alllatest_transitions.extend(path.latest)
 
         validated_nodes = set([t.source for t in alllatest_transitions])
         # pour le mode replay Start
         startpaths = global_transaction.find_allsubpaths_for(self, 'Start')
-        for p in startpaths:
-            source_nodes = set([t.source for t in p._get_transitions_target(self)])
+        for path in startpaths:
+            source_nodes = set([t.source for t in path._get_transitions_target(self)])
             validated_nodes = validated_nodes.union(source_nodes)
         # pour le mode replay End
         validated = True
-        for n in incoming_nodes:
-            if not (n in  validated_nodes):
+        for node in incoming_nodes:
+            if not (node in  validated_nodes):
                 validated = False
                 break
 
@@ -101,11 +104,13 @@ class ParallelGateway(Gateway):
             for transition in self.outgoing:
                 if transition.sync or transition.condition(self.process):
                     node = transition.target
-                    for p in list(paths):
-                        initial_path = p.clone()
-                        source_transaction = p.transaction.__parent__
-                        source_transaction.remove_subtransaction(p.transaction)
-                        source_transaction.start_subtransaction(type='Find', path=initial_path, initiator=self)
+                    for path in list(paths):
+                        initial_path = path.clone()
+                        source_transaction = path.transaction.__parent__
+                        source_transaction.remove_subtransaction(path.transaction)
+                        source_transaction.start_subtransaction(type='Find', 
+                                                            path=initial_path, 
+                                                            initiator=self)
                         initial_path.add_transition(transition)
                         executable_paths = node.find_executable_paths(initial_path, self)
                         for executable_path in executable_paths:
@@ -117,8 +122,8 @@ class ParallelGateway(Gateway):
         incoming_nodes = [t.source for t in self.incoming]
         paths = global_transaction.find_allsubpaths_for(self, 'Start')
         validated_nodes = set()
-        for p in paths:
-            source_nodes = set([t.source for t in p._get_transitions_target(self)])
+        for path in paths:
+            source_nodes = set([t.source for t in path._get_transitions_target(self)])
             validated_nodes = validated_nodes.union(source_nodes)
 
         if (len(validated_nodes) == len(incoming_nodes)):
@@ -126,29 +131,31 @@ class ParallelGateway(Gateway):
             registry.notify(ActivityStarted(self))
             self.play(self.outgoing)
             if paths:
-                for p in set(paths):
-                    source_transaction = p.transaction.__parent__
-                    source_transaction.remove_subtransaction(p.transaction)
+                for path in set(paths):
+                    source_transaction = path.transaction.__parent__
+                    source_transaction.remove_subtransaction(path.transaction)
 
     def _refresh_find_transactions(self, transaction):
         global_transaction = transaction.get_global_transaction()
         find_transitions = {}
         startpaths = global_transaction.find_allsubpaths_for(self, 'Find')
-        for p in startpaths:
-            source_ts = set(p.first)
-            for t in source_ts:
-                source_node = t.source
+        for path in startpaths:
+            source_ts = set(path.first)
+            for transition in source_ts:
+                source_node = transition.source
                 if source_node.__name__ in find_transitions:
-                    find_transitions[source_node.__name__].append(t)
+                    find_transitions[source_node.__name__].append(transition)
                 else:
-                    find_transitions[source_node.__name__] = [t]
+                    find_transitions[source_node.__name__] = [transition]
 
         re_transaction = Transaction(type='Refresh', initiator=self)
         re_transaction.sub_transactions.extend(list([global_transaction]))
-        for key, ts in find_transitions.items():
+        for key, transitions in find_transitions.items():
             source_node = self.process[key]
             if hasattr(source_node, 'refresh_decisions'):
-                t.source.refresh_decisions(re_transaction, ts)
+                source_node.refresh_decisions(
+                                re_transaction, transitions)
+
 
 # parallel avec condition avec default
 class InclusiveGateway(Gateway):

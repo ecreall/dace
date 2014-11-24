@@ -47,7 +47,7 @@ class Object(Folder):
     def addtoproperty(self, name, value):
         getattr(self.__class__, name).add(self, value)
 
-    def delproperty(self, name, value):
+    def delfromproperty(self, name, value):
         getattr(self.__class__, name).remove(self, value)
 
     def _init_property(self, name, propertydef):
@@ -105,6 +105,8 @@ class Object(Folder):
                 duplicating, moving, loading, registry)
 
     def get_data(self, node):
+        """return values of attributes descibed in
+           the colander schema node 'node' """
         result = {}
         for child in node:
             name = child.name

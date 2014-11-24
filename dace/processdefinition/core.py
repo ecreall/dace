@@ -133,7 +133,7 @@ class Transaction(Persistent):
         return result
 
     def get_path_cross(self, node, type=None):
-        if self.path is not None and (type is None or type == self.type) and \
+        if self.path and (type is None or type == self.type) and \
            self.path.contains_node(node):
             return self.path
 
@@ -145,10 +145,14 @@ class Transaction(Persistent):
 
         return self.__parent__.get_global_transaction()
 
-    def start_subtransaction(self, type='Normal', transitions=None, path=None, initiator=None):
+    def start_subtransaction(self, 
+                             type='Normal', 
+                             transitions=None, 
+                             path=None,
+                             initiator=None):
         transaction = Transaction(path=path, type=type, initiator=initiator)
         if path is None:
-            if transitions is not None:
+            if transitions:
                 if not isinstance(transitions, (tuple, list)):
                     transitions = [transitions]
 
@@ -175,7 +179,7 @@ class Path(Persistent):
 
     def __init__(self, transitions=None, transaction=None):
         self.transaction = transaction
-        if transaction is not None:
+        if transaction:
             transaction.set_path(self)
 
         if transitions is None:

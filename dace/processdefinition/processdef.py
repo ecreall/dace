@@ -89,9 +89,11 @@ class ProcessDefinition(Entity):
             for oldtransition in oldtransitions:
                 oldtransition.set_source(p_g)
 
-            new_transitions += (TransitionDefinition(empty_start_event.__name__, 'startpg'), )
+            new_transitions += (TransitionDefinition(empty_start_event.__name__,
+                                                     'startpg'), )
             for o_n in orphan_nodes:
-                new_transitions += (TransitionDefinition('startpg', o_n.__name__), )
+                new_transitions += (TransitionDefinition('startpg',
+                                                         o_n.__name__), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
@@ -121,9 +123,11 @@ class ProcessDefinition(Entity):
             for oldtransition in oldtransitions:
                 oldtransition.set_target(e_g)
 
-            new_transitions += (TransitionDefinition('endeg', empty_end_event.__name__), )
+            new_transitions += (TransitionDefinition('endeg', 
+                                                empty_end_event.__name__), )
             for o_n in orphan_nodes:
-                new_transitions += (TransitionDefinition(o_n.__name__, 'endeg'), )
+                new_transitions += (TransitionDefinition(o_n.__name__,
+                                                         'endeg'), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
@@ -141,7 +145,8 @@ class ProcessDefinition(Entity):
                 for oldtransition in oldtransitions:
                     oldtransition.set_source(p_g)
 
-                self.defineTransitions(TransitionDefinition(s_e.__name__, 'mergepg'))
+                self.defineTransitions(TransitionDefinition(s_e.__name__,
+                                                            'mergepg'))
 
     def _normalize_endevents(self):
         end_events = self._get_end_events()
@@ -153,7 +158,8 @@ class ProcessDefinition(Entity):
                 for oldtransition in oldtransitions:
                     oldtransition.set_target(e_g)
 
-                self.defineTransitions(TransitionDefinition('mergeeg', e_e.__name__))
+                self.defineTransitions(TransitionDefinition('mergeeg',
+                                                            e_e.__name__))
 
     def _get_start_events(self):
         result = []

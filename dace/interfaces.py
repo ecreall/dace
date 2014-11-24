@@ -38,44 +38,6 @@ class IMachine(IProfile):
 
 class IProcess(IEntity):
 
-    def addData(key, data, loop=False):
-        """Return a token.
-        """
-
-    def getData(key, loop=False, index=-1):
-        """Return a token.
-        """
-
-    def addCreatedEntities(entities, tag):
-        """Return a token.
-        """
-
-    def addInvolvedEntities(entities, tag):
-        """Return a token.
-        """
-
-    def getCreatedEntity(tag):
-        """Return a token.
-        """
-
-    def getInvolvedEntities():
-        """Return a token.
-        """
-
-    def getInvolvedEntity(tag):
-        """Return a token.
-        """
-
-    def getAllCreatedEntities():
-        """Return a token.
-        """
-
-    def hasRelationWith(self, entity, tag=None):
-        pass
-
-    def hasCreatedEntity(self, entity, tag=None):
-        pass
-
     definition = Attribute("Process definition")
 
     workflowRelevantData = Attribute(

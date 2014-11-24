@@ -1,3 +1,4 @@
+
 from persistent.list import PersistentList
 
 from dace.descriptors import Descriptor
@@ -6,6 +7,7 @@ _marker = object()
 
 
 class CompositeMultipleProperty(Descriptor):
+    
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -38,7 +40,8 @@ class CompositeMultipleProperty(Descriptor):
 
         value_name = value.__name__
         if getattr(value, '__property__', None) is not None:
-            getattr(value.__parent__.__class__, value.__property__).remove(value.__parent__, value)
+            getattr(value.__parent__.__class__,
+                    value.__property__).remove(value.__parent__, value)
         elif getattr(value, '__parent__', None) is not None:
             value.__parent__.remove(value_name)
 
@@ -79,7 +82,8 @@ class CompositeMultipleProperty(Descriptor):
 
         for value in values:
             if initiator and self.opposite is not None:
-                opposite_property = getattr(value.__class__, self.opposite, _marker)
+                opposite_property = getattr(value.__class__, 
+                                       self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 

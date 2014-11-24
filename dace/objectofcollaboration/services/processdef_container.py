@@ -1,3 +1,4 @@
+
 from zope.interface import implementer
 import venusian
 
@@ -18,20 +19,16 @@ class ProcessDefinitionContainer(Entity):
     def __init__(self, **kwargs):
         super(ProcessDefinitionContainer, self).__init__(**kwargs)
 
-    def getdefinitions(self):
-        return self.processes
-
     def add_definition(self, definition):
         definition.__name__ = definition.id
         self.addtoproperty('definitions', definition)
 
     def get_definition(self, name):
-        definitions = dict([(d.id, d) for d in self.definitions])
-        if name in definitions:
-            return definitions[name]
+        for definition in self.definitions:
+            if definition.id == name:
+                return definition
 
         return None
-
 
 class process_definition(object):
 
@@ -53,7 +50,7 @@ class process_definition(object):
                 def_container = db.open().root()['app_root']['process_definition_container']
                 old_def = def_container.get_definition(component.id)
                 if old_def is not None:
-                    def_container.delproperty('definitions', old_def)
+                    def_container.delfromproperty('definitions', old_def)
 
                 def_container.add_definition(component)
                 import transaction

@@ -1,9 +1,11 @@
+
 from dace.descriptors import Descriptor
 
 _marker = object()
 
 
 class CompositeUniqueProperty(Descriptor):
+    
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -45,7 +47,8 @@ class CompositeUniqueProperty(Descriptor):
         value_parent = getattr(value, '__parent__', None)
         value_property = getattr(value, '__property__', None)
         if  not(None in (value_parent, value_property)):
-            getattr(value_parent.__class__, value_property).remove(value_parent, value)
+            getattr(value_parent.__class__, 
+                    value_property).remove(value_parent, value)
         elif value_parent is not None:
             value_parent.remove(value_name)
 
@@ -63,7 +66,8 @@ class CompositeUniqueProperty(Descriptor):
         current_value = self._get(obj)
         if current_value is not None and current_value == value:
             if initiator and self.opposite is not None:
-                opposite_property = getattr(value.__class__, self.opposite, _marker)
+                opposite_property = getattr(value.__class__,
+                                      self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 

@@ -124,11 +124,8 @@ class MakerFlowNode(FlowNode):
 
     def refresh_decisions(self, transaction, transitions):
         workitems = self._calculate_decisions(transaction, transitions)
-        new_workitems = []
-        for wi in workitems.values():
-            if not (wi in self.workitems):
-                new_workitems.append(wi)
-
+        new_workitems = [wi for wi in workitems.values() \
+                         if not (wi in self.workitems)]
         if not  new_workitems:
             return
 
@@ -144,12 +141,10 @@ class MakerFlowNode(FlowNode):
             self.addtoproperty('workitems', workitem)
 
     def get_allconcernedworkitems(self):
-        result = []
         allprocessworkitems = self.process.getAllWorkItems()
-        for wi in allprocessworkitems:
-            if isinstance(wi, DecisionWorkItem) and \
-               self in wi.concerned_nodes():
-                result.append(wi)
+        result = [wi for wi in allprocessworkitems \
+                 if isinstance(wi, DecisionWorkItem) and \
+                    self in wi.concerned_nodes()]
 
         return result
 
@@ -186,7 +181,8 @@ class BehavioralFlowNode(MakerFlowNode):
         if workitems:
             return workitems[0]
 
-        workitems = [w for w in self.process.getAllWorkItems(node_id=self.__name__) \
+        workitems = [w for w in self.process.getAllWorkItems(
+                                              node_id=self.__name__) \
                      if w.validate()]
         if workitems:
             wi = workitems[0]
@@ -200,7 +196,8 @@ class BehavioralFlowNode(MakerFlowNode):
         return None
 
     def prepare(self):
-        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Replay')
+        paths = self.process.global_transaction.find_allsubpaths_for(
+                                                       self, 'Replay')
         user_decision = None
         if paths:
             user_decision = paths[0].transaction.initiator
@@ -225,15 +222,16 @@ class BehavioralFlowNode(MakerFlowNode):
 
     def finish_behavior(self, work_item):
         if work_item is not None and not isinstance(work_item, StartWorkItem):
-            self.delproperty('workitems', work_item)
+            self.delfromproperty('workitems', work_item)
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
-        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
+        paths = self.process.global_transaction.find_allsubpaths_for(
+                                                        self, 'Start')
         if paths:
-            for p in set(paths):
-                source_transaction = p.transaction.__parent__
-                source_transaction.remove_subtransaction(p.transaction)
+            for path in set(paths):
+                source_transaction = path.transaction.__parent__
+                source_transaction.remove_subtransaction(path.transaction)
 
         self.decide(self.process.global_transaction)
 
@@ -242,7 +240,7 @@ class BehavioralFlowNode(MakerFlowNode):
         if work_item is not None :
             work_item.validations.append(self)
             if work_item.is_finished:
-                work_item.__parent__.delproperty('workitems', work_item)
+                work_item.__parent__.delfromproperty('workitems', work_item)
 
         # clear commun work items
         allconcernedworkitems = self.get_allconcernedworkitems()
@@ -257,7 +255,7 @@ class BehavioralFlowNode(MakerFlowNode):
                         if cdecision.is_finished or \
                            not cdecision.path.is_segment(work_item.path):
                             # don't cdecision.node.stop()
-                            cdecision.__parent__.delproperty(
+                            cdecision.__parent__.delfromproperty(
                                        'workitems', cdecision)
 
                     break
@@ -271,7 +269,8 @@ class BehavioralFlowNode(MakerFlowNode):
                 for path in set(paths):
                     if work_item.path.contains_transition(path.first[0]):
                         source_transaction = path.transaction.__parent__
-                        source_transaction.remove_subtransaction(path.transaction)
+                        source_transaction.remove_subtransaction(
+                                                 path.transaction)
 
 
 class Error(Exception):
@@ -354,7 +353,8 @@ class Behavior(Step):
         instance = None
         if 'wizard' in kw and kw['wizard'] is not None:
             wizard = kw['wizard']
-            _stepinstances = dict([(s.behavior_id, s) for k, s in  dict(wizard.stepinstances).items()])
+            _stepinstances = dict([(s.behavior_id, s) for s in  \
+                                   list(dict(wizard.stepinstances).values())])
             instance = _stepinstances[cls.behavior_id]
         else:
             instance = cls()
@@ -400,7 +400,12 @@ def default_condition(context, request):
 
 class Transition(Persistent):
 
-    def __init__(self, source, target, id, condition=(lambda x, y:True), isdefault=False):
+    def __init__(self, 
+                 source, 
+                 target, 
+                 id, 
+                 condition=(lambda x, y:True), 
+                 isdefault=False):
         self.wizard = source.wizard
         self.source = source
         self.target = target
@@ -462,7 +467,7 @@ class EventHandler(FlowNode):
             beinstance.id = bedef.id
             beinstance.__name__ = bedef.__name__
             # FIXME: the implementation is unfinished
-            self.process.addtoproperty('nodes', node)
+            self.process.addtoproperty('nodes', beinstance)
 
 DEFAULTMAPPING_ACTIONS_VIEWS = {}
 

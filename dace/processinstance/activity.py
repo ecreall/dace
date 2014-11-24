@@ -97,8 +97,7 @@ def getBusinessActionValidator(action_cls):
         def validate(cls, context, request, **kw):
             instance = action_cls.get_instance(context, request, **kw)
             if instance is None:
-                e = ValidationError()
-                raise e
+                raise ValidationError()
 
             return True
 
@@ -131,7 +130,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if self.title == '' or self.title is NotImplemented:
             self.title = self.node.title
 
-        if self.description == ''  or self.description is NotImplemented:
+        if self.description == '' or self.description is NotImplemented:
             self.description = self.node.description
 
     @classmethod
@@ -141,7 +140,9 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if action_uid is not None:
             source_action = get_obj(int(action_uid))
 
-        if source_action is not None and (source_action._class_ is cls) and source_action.validate(context, request):
+        if source_action is not None and \
+           (source_action._class_ is cls) and \
+            source_action.validate(context, request):
             return source_action
 
         instances = getBusinessAction(context, request, 
@@ -494,7 +495,8 @@ class LoopActionDataInput(BusinessAction):
     loopDataInputRef = None
 
     def execute(self, context, request, appstruct, **kw):
-        super(LoopActionDataInput, self).execute(context, request, appstruct, **kw)
+        super(LoopActionDataInput, self).execute(context, request, 
+                                                 appstruct, **kw)
         instances = self.loopDataInputRef.__func__(context, request,
                                              self.process, appstruct)
         for item in instances:

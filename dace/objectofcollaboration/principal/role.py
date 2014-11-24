@@ -1,16 +1,20 @@
+
 import venusian
 
-roles_id = {}
+DACE_ROLES = {}
 
 
 class role(object):
 
-    def __init__(self, name='', superiors=[], lowers=[], islocal=False):
+    def __init__(self, 
+                 name='', 
+                 superiors=[], 
+                 lowers=[], 
+                 islocal=False):
         self.name = name
         self.superiors = superiors
         self.lowers = lowers
         self.islocal = islocal
-
 
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
@@ -29,7 +33,7 @@ class role(object):
                 role.superiors.append(ob)
                 role.all_superiors = get_allsuperiors(role)
 
-            roles_id[ob.name] = ob
+            DACE_ROLES[ob.name] = ob
  
         venusian.attach(wrapped, callback)
         return wrapped

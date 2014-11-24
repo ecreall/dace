@@ -269,16 +269,16 @@ class StartWorkItemSearch(Adapter):
         return False
 
     def issystem(self):
-        for a in self.context.actions:
-            if a.issystem:
+        for action in self.context.actions:
+            if action.issystem:
                 return True
 
         return False
 
     def potential_contexts_ids(self):
         result = []
-        for a in self.context.actions:
-            result.extend(a.potential_contexts_ids)
+        for action in self.context.actions:
+            result.extend(action.potential_contexts_ids)
 
         return list(set(result))
 
@@ -307,8 +307,8 @@ class DecisionWorkItemSearch(Adapter):
         return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
-        for a in self.context.actions:
-            if a.isautomatic:
+        for action in self.context.actions:
+            if action.isautomatic:
                 return True
 
         return False
@@ -322,8 +322,8 @@ class DecisionWorkItemSearch(Adapter):
 
     def potential_contexts_ids(self):
         result = []
-        for a in self.context.actions:
-            result.extend(a.potential_contexts_ids)
+        for action in self.context.actions:
+            result.extend(action.potential_contexts_ids)
 
         return list(set(result))
 
@@ -352,23 +352,23 @@ class WorkItemSearch(Adapter):
         return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
-        for a in self.context.actions:
-            if a.isautomatic:
+        for action in self.context.actions:
+            if action.isautomatic:
                 return True
 
         return False
 
     def issystem(self):
-        for a in self.context.actions:
-            if a.issystem:
+        for action in self.context.actions:
+            if action.issystem:
                 return True
 
         return False
 
     def potential_contexts_ids(self):
         result = []
-        for a in self.context.actions:
-            result.extend(a.potential_contexts_ids)
+        for action in self.context.actions:
+            result.extend(action.potential_contexts_ids)
 
         return list(set(result))
 
@@ -390,7 +390,8 @@ class BusinessActionSearch(Adapter):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_provides(self):
-        return [i.__identifier__ for i in Declaration(self.context.context).flattened()]
+        return [i.__identifier__ \
+                for i in Declaration(self.context.context).flattened()]
 
     def context_id(self):
         return [self.context.context.__identifier__]

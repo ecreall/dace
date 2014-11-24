@@ -24,10 +24,6 @@ class ActionCall(object):
     def url(self):
         return self.action.url(self.context)
 
-    @property
-    def content(self):
-        return self.action.content(self.context)
-
 
 class ProcessSharedUniqueProperty(SharedUniqueProperty):
 
@@ -68,8 +64,8 @@ class Entity(Object):
             state = [state]
 
         self.state = PersistentList()
-        for s in state:
-            self.state.append(s)
+        for state_item in state:
+            self.state.append(state_item)
 
     def reindex(self):
         event = ObjectModified(self)
