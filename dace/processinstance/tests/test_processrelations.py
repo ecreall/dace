@@ -155,7 +155,6 @@ class TestsProcessRelations(FunctionalTests):
         self.app['objectb'] = objectb
         self.app['objectc'] = objectc
         call_actions = objecta.actions
-        actions_id = [a.action.node_id for a in call_actions]
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
@@ -178,9 +177,9 @@ class TestsProcessRelations(FunctionalTests):
 
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
-        self.assertEqual('element', active_ivs['realtion1'][0])
+        self.assertEqual('element', active_ivs['realtion1']['type'])
         self.assertIn('realtion1', active_ivs)
-        self.assertIn(objecta, active_ivs['realtion1'][1])
+        self.assertIn(objecta, active_ivs['realtion1']['entities'])
 
 
         self.assertIs(objecta.creator, proc)
@@ -216,10 +215,10 @@ class TestsProcessRelations(FunctionalTests):
 
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
-        self.assertEqual('element', active_ivs['realtion1'][0])
+        self.assertEqual('element', active_ivs['realtion1']['type'])
         self.assertIn('realtion1', active_ivs)
-        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
-        self.assertIn(objectb, active_ivs['realtion1'][1])
+        self.assertEqual(len(active_ivs['realtion1']['entities']), 1)
+        self.assertIn(objectb, active_ivs['realtion1']['entities'])
 
 
         relations1 = ec.created_entities('realtion1')
@@ -238,9 +237,9 @@ class TestsProcessRelations(FunctionalTests):
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
         self.assertIn('realtion1', active_ivs)
-        self.assertEqual('element', active_ivs['realtion1'][0])
-        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
-        self.assertIn(objectc, active_ivs['realtion1'][1])
+        self.assertEqual('element', active_ivs['realtion1']['type'])
+        self.assertEqual(len(active_ivs['realtion1']['entities']), 1)
+        self.assertIn(objectc, active_ivs['realtion1']['entities'])
 
         relations1 = ec.created_entities('realtion1')
         self.assertEqual(len(relations1), 2)
@@ -263,7 +262,6 @@ class TestsProcessRelations(FunctionalTests):
         self.app['objectb'] = objectb
         self.app['objectc'] = objectc
         call_actions = objecta.actions
-        actions_id = [a.action.node_id for a in call_actions]
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
@@ -285,10 +283,10 @@ class TestsProcessRelations(FunctionalTests):
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
         self.assertIn('realtion1', active_ivs.keys())
-        self.assertEqual(len(active_ivs['realtion1'][1]), 2)
-        self.assertEqual('collection', active_ivs['realtion1'][0])
-        self.assertIn(objecta, active_ivs['realtion1'][1])
-        self.assertIn(objectb, active_ivs['realtion1'][1])
+        self.assertEqual(len(active_ivs['realtion1']['entities']), 2)
+        self.assertEqual('collection', active_ivs['realtion1']['type'])
+        self.assertIn(objecta, active_ivs['realtion1']['entities'])
+        self.assertIn(objectb, active_ivs['realtion1']['entities'])
 
         self.assertIs(objecta.creator, None)
         involvers = objecta.involvers
@@ -308,9 +306,9 @@ class TestsProcessRelations(FunctionalTests):
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
         self.assertIn('realtion1', active_ivs)
-        self.assertEqual('collection', active_ivs['realtion1'][0])
-        self.assertEqual(len(active_ivs['realtion1'][1]), 1)
-        self.assertIn(objectb, active_ivs['realtion1'][1])
+        self.assertEqual('collection', active_ivs['realtion1']['type'])
+        self.assertEqual(len(active_ivs['realtion1']['entities']), 1)
+        self.assertIn(objectb, active_ivs['realtion1']['entities'])
 
         ec.add_involved_collection('realtion1', [objecta, objectc])
         relation1 = ec.involved_collection('realtion1')
@@ -321,10 +319,10 @@ class TestsProcessRelations(FunctionalTests):
         active_ivs = ec.all_active_involveds()
         self.assertEqual(len(active_ivs.keys()), 1)
         self.assertIn('realtion1', active_ivs)
-        self.assertEqual('collection', active_ivs['realtion1'][0])
-        self.assertEqual(len(active_ivs['realtion1'][1]), 2)
-        self.assertIn(objecta, active_ivs['realtion1'][1])
-        self.assertIn(objectc, active_ivs['realtion1'][1])
+        self.assertEqual('collection', active_ivs['realtion1']['type'])
+        self.assertEqual(len(active_ivs['realtion1']['entities']), 2)
+        self.assertIn(objecta, active_ivs['realtion1']['entities'])
+        self.assertIn(objectc, active_ivs['realtion1']['entities'])
 
         relation1 = ec.involved_collections('realtion1')
         self.assertEqual(len(relation1), 2)
@@ -344,7 +342,6 @@ class TestsProcessRelations(FunctionalTests):
         self.app['objectb'] = objectb
         self.app['objectc'] = objectc
         call_actions = objecta.actions
-        actions_id = [a.action.node_id for a in call_actions]
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)
@@ -403,7 +400,6 @@ class TestsProcessRelations(FunctionalTests):
         self.app['objectb'] = objectb
         self.app['objectc'] = objectc
         call_actions = objecta.actions
-        actions_id = [a.action.node_id for a in call_actions]
         actions_y = [a.action for a in call_actions if a.action.node_id == 'y']
         action_y = actions_y[0]
         action_y.before_execution(objecta, self.request)

@@ -93,8 +93,12 @@ class ExecutionContext(Object):
             if relation_result:
                 index_key = name+'_index'
                 i = self.get_localdata(index_key)
-                result[name] = ('collection', relation_result, 
-                                name, i, True, properties[name])
+                result[name] = {'name': name,
+                            'type':'collection',
+                            'assocition_kind': properties[name],
+                            'index': i,
+                            'is_current': True,
+                            'entities': relation_result}
                 continue
 
             relation_result = self.involved_entity(name)
@@ -105,8 +109,12 @@ class ExecutionContext(Object):
             else:
                 continue
 
-            result[name] = ('element', relation_result,
-                            name, i, True, properties[name])
+            result[name] = {'name': name,
+                            'type':'element',
+                            'assocition_kind': properties[name],
+                            'index': i,
+                            'is_current': True,
+                            'entities': relation_result}
 
         return result
 
@@ -114,11 +122,11 @@ class ExecutionContext(Object):
         result = dict(self.active_involveds)
         for sec in self.sub_execution_contexts:
             sub_active = sec._sub_active_involveds()
-            for k, v in sub_active.items():
-                if k in result:
-                    result[k][1].extend(v[1])
+            for key, value in sub_active.items():
+                if key in result:
+                    result[key]['entities'].extend(value['entities'])
                 else:
-                    result[k] = v
+                    result[key] = value
 
         return result
 
@@ -139,11 +147,21 @@ class ExecutionContext(Object):
                 index = self.get_localdata(index_key)+1
                 for i in range(index)[1:]:
                     prop_name = name+'_'+str(i)
-                    self._init_property(prop_name, self.dynamic_properties_def[prop_name])
-                    result[prop_name] = ('collection', self.getproperty(prop_name), 
-                                    name, i, (i==(index-1)), properties[name])
+                    self._init_property(prop_name, 
+                            self.dynamic_properties_def[prop_name])
+                    result[prop_name] = {'name': name,
+                            'type':'collection',
+                            'assocition_kind': properties[name],
+                            'index': i,
+                            'is_current': (i==(index-1)),
+                            'entities': self.getproperty(prop_name)}
             else:
-                result[name] = ('element', self.involved_entities(name), name , -1, None, properties[name])
+                result[name] = {'name': name,
+                            'type':'element',
+                            'assocition_kind': properties[name],
+                            'index': -1,
+                            'is_current': None,
+                            'entities': self.involved_entities(name)}
 
         return result
 
@@ -151,11 +169,11 @@ class ExecutionContext(Object):
         result = dict(self.classified_involveds)
         for sec in self.sub_execution_contexts:
             sub_classified = sec._sub_classified_involveds()
-            for k, v in sub_classified.items():
-                if k in result:
-                    result[k][1].extend(v[1])
+            for key, value in sub_classified.items():
+                if key in result:
+                    result[key]['entities'].extend(value['entities'])
                 else:
-                    result[k] = v
+                    result[key] = value
 
         return result
 
