@@ -41,6 +41,9 @@ def update_relation(event):
 
 @subscribe_removed()
 def object_deleted(event):
+    if event.moving:
+        return 
+        
     registry = get_current_registry()
     request = get_current_request()
     objectmap = find_objectmap(request.root)

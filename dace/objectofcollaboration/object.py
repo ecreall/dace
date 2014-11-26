@@ -9,6 +9,7 @@ from substanced.folder import Folder
 from substanced.event import ObjectModified
 
 from dace.interfaces import IObject
+from dace.util import name_chooser
 from dace.descriptors import Descriptor, __properties__
 
 
@@ -68,35 +69,15 @@ class Object(Folder):
 
     def choose_name(self, name, object):
         container = self.data
-
-        # remove characters that checkName does not allow
-        try:
-            name = str(name)
-        except:
-            name = ''
-        name = name.replace('/', '-').lstrip('+@')
-
         if not name:
-            name = object.__class__.__name__
+            name = getattr(object, 'title', object.__class__.__name__)
+            if not name:
+                name = object.__class__.__name__
+                
             if isinstance(name, bytes):
                 name = name.decode()
-
-        # for an existing name, append a number.
-        # We should keep client's os.path.extsep (not ours), we assume it's '.'
-        dot = name.rfind('.')
-        if dot >= 0:
-            suffix = name[dot:]
-            name = name[:dot]
-        else:
-            suffix = ''
-
-        n = name + suffix
-        i = 1
-        while n in container:
-            i += 1
-            n = name + u'-' + str(i) + suffix
-
-        return n
+        new_name = name_chooser(container, name)
+        return new_name
 
     def add(self, name, other, send_events=True, reserved_names=(),
             duplicating=None, moving=None, loading=False, registry=None):

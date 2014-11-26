@@ -1,4 +1,5 @@
 
+import unicodedata
 import venusian
 import zope.copy
 from zope.interface import Interface
@@ -23,6 +24,32 @@ from dace.descriptors import (
 from dace.relations import find_relations, connect
 
 
+
+def name_chooser(container={}, name='default_name'):
+    # remove characters that checkName does not allow
+    try:
+        name = str(name)
+    except:
+        name = ''
+    name = name.replace('/', '-').lstrip('+@')
+    # for an existing name, append a number.
+    # We should keep client's os.path.extsep (not ours), we assume it's '.'
+    dot = name.rfind('.')
+    if dot >= 0:
+        suffix = name[dot:]
+        name = name[:dot]
+    else:
+        suffix = ''
+    new_name = name + suffix
+    i = 1
+    while new_name in container:
+        i += 1
+        new_name = name + u'-' + str(i) + suffix
+
+    new_name = unicodedata.normalize('NFKD', 
+                                     new_name).encode('ascii', 
+                                                     'ignore').decode()
+    return new_name
 
 def getSite(resource=None):
     request = get_current_request()
