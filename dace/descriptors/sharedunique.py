@@ -20,10 +20,10 @@ class SharedUniqueProperty(Descriptor):
 
         return self._get(obj)
 
-    def add(self, obj, value, initiator=True):
+    def add(self, obj, value, initiator=True, moving=None):
         self.__set__(obj, value, initiator)
 
-    def __set__(self, obj, value, initiator=True):
+    def __set__(self, obj, value, initiator=True, moving=None):
         self.init(obj)
         current_value = self._get(obj)
         if current_value is not None and current_value == value:
@@ -39,7 +39,7 @@ class SharedUniqueProperty(Descriptor):
 
         setattr(obj, self.key, value)
 
-    def remove(self, obj, value, initiator=True):
+    def remove(self, obj, value, initiator=True, moving=None):
         self.init(obj)
         current_value = self._get(obj)
         if current_value is not None and current_value == value:

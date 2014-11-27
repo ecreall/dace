@@ -279,3 +279,98 @@ class TestProperties(FunctionalTests):
         self.assertEqual(len(foldercopy.composition_m), 0)
         self.assertIs(foldercopy.composition_u, None)
 
+    def test_rename_composite_multiple(self):
+        self.app['object1'] = Object1()
+        self.app['object2'] = Object2()
+        self.app['object3'] = Object2()
+
+        object1 = self.app['object1']
+        object2 = self.app['object2']
+        object3 = self.app['object3']
+
+        object1.addtoproperty('composition_m', object2)
+        object1.addtoproperty('composition_m', object3)
+        self.assertEqual(len(object1.getproperty('composition_m')), 2)
+        self.assertIn(object2, object1.getproperty('composition_m'))
+        self.assertIn(object3, object1.getproperty('composition_m'))
+        self.assertEqual(object2.__name__, 'object2')
+        self.assertTrue('object2' in object1.data)
+        self.assertFalse('newname_object2' in object1.data)
+
+        object1.rename('object2', 'newname_object2')
+        self.assertEqual(len(object1.getproperty('composition_m')), 2)
+        self.assertIn(object2, object1.getproperty('composition_m'))
+        self.assertIn(object3, object1.getproperty('composition_m'))
+        self.assertEqual(object2.__name__, 'newname_object2')
+        self.assertTrue('newname_object2' in object1.data)
+        self.assertFalse('object2' in object1.data)
+
+    def test_rename_composite_unique(self):
+        self.app['object1'] = Object1()
+        self.app['object2'] = Object2()
+
+        object1 = self.app['object1']
+        object2 = self.app['object2']
+
+        object1.setproperty('composition_u', object2)
+        self.assertIs(object2, object1.getproperty('composition_u'))
+        self.assertEqual(object2.__name__, 'object2')
+        self.assertTrue('object2' in object1.data)
+        self.assertFalse('newname_object2' in object1.data)
+
+        object1.rename('object2', 'newname_object2')
+        self.assertIs(object2, object1.getproperty('composition_u'))
+        self.assertEqual(object2.__name__, 'newname_object2')
+        self.assertTrue('newname_object2' in object1.data)
+        self.assertFalse('object2' in object1.data)
+
+
+    def test_move_composite_unique(self):
+        self.app['object1'] = Object1()
+        self.app['object2'] = Object1()
+        self.app['object3'] = Object2()
+
+        object1 = self.app['object1']
+        object2 = self.app['object2']
+        object3 = self.app['object3']
+
+        object1.setproperty('composition_u', object3)
+        self.assertIs(object3, object1.getproperty('composition_u'))
+        self.assertEqual(object3.__name__, 'object3')
+        self.assertTrue('object3' in object1.data)
+        self.assertIs(None, object2.getproperty('composition_u'))
+
+        object1.move('object3', (object2, 'composition_u'), 'newname_object3')
+        self.assertIs(object3, object2.getproperty('composition_u'))
+        self.assertEqual(object3.__name__, 'newname_object3')
+        self.assertTrue('newname_object3' in object2.data)
+        self.assertIs(None, object1.getproperty('composition_u'))
+
+
+    def test_move_composite_multiple(self):
+        self.app['object1'] = Object1()
+        self.app['object2'] = Object1()
+        self.app['object3'] = Object2()
+        self.app['object4'] = Object2()
+
+        object1 = self.app['object1']
+        object2 = self.app['object2']
+        object3 = self.app['object3']
+        object4 = self.app['object4']
+
+        object1.addtoproperty('composition_m', object3)
+        object1.addtoproperty('composition_m', object4)
+        self.assertEqual(len(object1.getproperty('composition_m')), 2)
+        self.assertIn(object4, object1.getproperty('composition_m'))
+        self.assertIn(object3, object1.getproperty('composition_m'))
+        self.assertEqual(object4.__name__, 'object4')
+        self.assertTrue('object4' in object1.data)
+        self.assertEqual(len(object2.getproperty('composition_m')), 0)
+
+        object1.move('object4', (object2, 'composition_m'), 'newname_object4')
+        self.assertEqual(len(object1.getproperty('composition_m')), 1)
+        self.assertIn(object3, object1.getproperty('composition_m'))
+        self.assertEqual(len(object2.getproperty('composition_m')), 1)
+        self.assertIn(object4, object2.getproperty('composition_m'))
+        self.assertEqual(object4.__name__, 'newname_object4')
+        self.assertTrue('newname_object4' in object2.data)

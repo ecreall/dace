@@ -45,11 +45,11 @@ class Object(Folder):
     def setproperty(self, name, value):
         setattr(self, name, value)
 
-    def addtoproperty(self, name, value):
-        getattr(self.__class__, name).add(self, value)
+    def addtoproperty(self, name, value, moving=None):
+        getattr(self.__class__, name).add(self, value, moving=moving)
 
-    def delfromproperty(self, name, value):
-        getattr(self.__class__, name).remove(self, value)
+    def delfromproperty(self, name, value, moving=None):
+        getattr(self.__class__, name).remove(self, value, moving=moving)
 
     def _init_property(self, name, propertydef):
         descriptor = getattr(self.__class__, name, _marker)
@@ -73,7 +73,7 @@ class Object(Folder):
             name = getattr(object, 'title', object.__class__.__name__)
             if not name:
                 name = object.__class__.__name__
-                
+
             if isinstance(name, bytes):
                 name = name.decode()
         new_name = name_chooser(container, name)
@@ -95,6 +95,65 @@ class Object(Folder):
             result[name] = val
 
         return result
+
+    def move(self, name, other, newname=None, registry=None):
+        """
+        Move a subobject named ``name`` from this folder to the folder
+        represented by ``other``.  `other`` that represent a tuple 
+        (the object target, property name). If ``newname`` is not none, it is used as
+        the target object name; otherwise the existing subobject name is
+        used.
+
+        This operation is done in terms of a remove and an add.  The Removed
+        and WillBeRemoved events as well as the Added and WillBeAdded events
+        sent will indicate that the object is moving.
+        """
+        target = None
+        property_name = None
+        if isinstance(other, tuple):
+            target = other[0]
+            property_name = other[1]
+        else:
+            target = other
+
+        if newname is None:
+            newname = name
+        if registry is None:
+            registry = get_current_registry()
+
+        objtomove = self[name]
+        obj_property = getattr(self[name], '__property__', None)
+        if not property_name and not obj_property:
+            objtomove = super(Object, self).move(name, target, 
+                                              newname, registry)
+        elif property_name and obj_property:
+            self.delfromproperty(obj_property, objtomove, target)
+            objtomove.__name__ = newname
+            target.addtoproperty(property_name, objtomove, self)
+        elif not obj_property:
+            objtomove.__name__ = newname
+            target.addtoproperty(property_name, objtomove, self)
+        elif not property_name:
+            self.delfromproperty(obj_property, objtomove, target)
+            target.add(newname, objtomove, moving=self, registry=registry)
+
+        return objtomove
+
+    def rename(self, oldname, newname, registry=None):
+        """
+        Rename a subobject from oldname to newname.
+
+        This operation is done in terms of a remove and an add.  The Removed
+        and WillBeRemoved events sent will indicate that the object is
+        moving.
+        """
+
+        obj_property = getattr(self[oldname], '__property__', None)
+        if obj_property:
+            self.move(oldname, (self, obj_property), newname, registry)
+        else: 
+            self.move(oldname, self, newname, registry)
+
 
     def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):
         if not is_nonstr_iter(omit):

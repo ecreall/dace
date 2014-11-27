@@ -18,7 +18,7 @@ CRAWLERS = []
 
 def _call_action(action, context):
     transaction.begin()
-    request = get_current_request()
+    request = get_current_request()# TDOD pyramid.testing.DummyRequest 
     try:
         action.execute(context, request, {})
         log.info("Execute action %s", action.title)

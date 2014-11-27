@@ -27,7 +27,7 @@ class SharedMultipleProperty(Descriptor):
 
         return self._get(obj)
 
-    def add(self, obj, value, initiator=True):
+    def add(self, obj, value, initiator=True, moving=None):
         if value is None:
             return
 
@@ -43,7 +43,7 @@ class SharedMultipleProperty(Descriptor):
 
         obj.__dict__[self.key].append(value)
 
-    def __set__(self, obj, values, initiator=True):
+    def __set__(self, obj, values, initiator=True, moving=None):
         if not isinstance(values, (list, tuple, set)):
             values = [values]
 
@@ -60,7 +60,7 @@ class SharedMultipleProperty(Descriptor):
         for value_toadd in toadd:
             self.add(obj, value_toadd)
 
-    def remove(self, obj, values, initiator=True):
+    def remove(self, obj, values, initiator=True, moving=None):
         self.init(obj)
         relations = obj.__dict__[self.key]
         if not isinstance(values, (list, tuple, set)):

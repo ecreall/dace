@@ -25,10 +25,10 @@ class CompositeUniqueProperty(Descriptor):
 
         return self._get(obj)
 
-    def add(self, obj, value, initiator=True):
-        self.__set__(obj, value, initiator)
+    def add(self, obj, value, initiator=True, moving=None):
+        self.__set__(obj, value, initiator, moving)
 
-    def __set__(self, obj, value, initiator=True):
+    def __set__(self, obj, value, initiator=True, moving=None):
         self.init(obj)
 
         current_value_name = obj.__dict__[self.key]
@@ -46,13 +46,15 @@ class CompositeUniqueProperty(Descriptor):
         value_name = value.__name__
         value_parent = getattr(value, '__parent__', None)
         value_property = getattr(value, '__property__', None)
+        moved_to = (((moving is not None) and obj) or None)
         if  not(None in (value_parent, value_property)):
             getattr(value_parent.__class__, 
-                    value_property).remove(value_parent, value)
+                    value_property).remove(
+                        value_parent, value, True, moved_to)
         elif value_parent is not None:
-            value_parent.remove(value_name)
+            value_parent.remove(value_name, moving=moved_to)
 
-        obj.add(value_name, value)
+        obj.add(value_name, value, moving=moving)
         value.__property__ = self.propertyref
         setattr(obj, self.key, value.__name__)
         if initiator and self.opposite is not None:
@@ -60,7 +62,7 @@ class CompositeUniqueProperty(Descriptor):
             if opposite_property is not _marker:
                 opposite_property.add(value, obj, False)
 
-    def remove(self, obj, value, initiator=True):
+    def remove(self, obj, value, initiator=True, moving=None):
         self.init(obj)
         value_name = value.__name__
         current_value = self._get(obj)
@@ -72,7 +74,7 @@ class CompositeUniqueProperty(Descriptor):
                     opposite_property.remove(value, obj, False)
 
             setattr(obj, self.key, None)
-            obj.remove(value_name)
+            obj.remove(value_name, moving=moving)
 
     def init(self, obj):
         if getattr(obj, self.key, _marker) is _marker:

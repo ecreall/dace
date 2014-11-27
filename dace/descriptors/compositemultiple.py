@@ -27,7 +27,7 @@ class CompositeMultipleProperty(Descriptor):
 
         return self._get(obj)
 
-    def add(self, obj, value, initiator=True):
+    def add(self, obj, value, initiator=True, moving=None):
         if value is None:
             return
 
@@ -39,23 +39,25 @@ class CompositeMultipleProperty(Descriptor):
             return
 
         value_name = value.__name__
+        moved_to = (((moving is not None) and obj) or None)
         if getattr(value, '__property__', None) is not None:
             getattr(value.__parent__.__class__,
-                    value.__property__).remove(value.__parent__, value)
+                    value.__property__).remove(
+                    value.__parent__, value, moved_to)
         elif getattr(value, '__parent__', None) is not None:
-            value.__parent__.remove(value_name)
+            value.__parent__.remove(value_name,
+             moving=moved_to)
 
-        obj.add(value_name, value)
+        obj.add(value_name, value, moving=moving)
         value.__property__ = self.propertyref
         contents_keys.append(value.__name__)
         setattr(obj, self.key, contents_keys)
-
         if initiator and self.opposite is not None:
             opposite_property = getattr(value.__class__, self.opposite, _marker)
             if opposite_property is not _marker:
                 opposite_property.add(value, obj, False)
 
-    def __set__(self, obj, values, initiator=True):
+    def __set__(self, obj, values, initiator=True, moving=None):
         if not isinstance(values, (list, tuple, set)):
             values = [values]
 
@@ -71,10 +73,10 @@ class CompositeMultipleProperty(Descriptor):
         # FIXME should iterate over toremove and call self.remove
         self.remove(obj, toremove)
         for newvalue in toadd:
-            self.add(obj, newvalue)
+            self.add(obj, newvalue, moving=moving)
 
     # FIXME not the same signature as compositeunique
-    def remove(self, obj, values, initiator=True):
+    def remove(self, obj, values, initiator=True, moving=None):
         self.init(obj)
         contents_keys = obj.__dict__[self.key]
         if not isinstance(values, (list, tuple, set)):
@@ -91,7 +93,7 @@ class CompositeMultipleProperty(Descriptor):
             if value_name is not None and value_name in obj:
                 contents_keys.remove(value_name)
                 value.__property__ = None
-                obj.remove(value_name)
+                obj.remove(value_name, moving=moving)
 
     def init(self, obj):
         if getattr(obj, self.key, _marker) is _marker:
