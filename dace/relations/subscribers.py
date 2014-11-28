@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Vincent Fretin, Amen Souissi
+
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
 from pyramid.threadlocal import get_current_request

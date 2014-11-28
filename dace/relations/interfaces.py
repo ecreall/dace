@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Vincent Fretin, Amen Souissi
+
 from zope.interface import Interface, Attribute
 from zope.interface.interfaces import IObjectEvent
 

@@ -1,3 +1,9 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Vincent Fretin, Amen Souissi
+
 from zope.interface import Interface, Declaration, implementer, providedBy
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid

@@ -1,3 +1,8 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Amen Souissi
 from pyramid.threadlocal import get_current_registry, get_current_request
 
 from dace.util import utility

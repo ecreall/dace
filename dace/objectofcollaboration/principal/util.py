@@ -1,3 +1,8 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Amen Souissi
 
 import datetime
 import random
@@ -46,9 +51,6 @@ def get_current(request=None):
             request.session['dace_user'] = result
 
     return result
-
-
-#substanced.sdi.user = get_current
 
 
 def get_roles(user=None, obj=None):

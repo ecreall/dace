@@ -1,3 +1,8 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Vincent Fretin, Amen Souissi
 from hypatia.catalog import Catalog
 from hypatia.field import FieldIndex
 from hypatia.keyword import KeywordIndex

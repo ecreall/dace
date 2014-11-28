@@ -1,3 +1,9 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author:  Vincent Fretin, Amen Souissi
+
 from pyramid.threadlocal import get_current_request, get_current_registry
 from substanced.util import find_objectmap, set_oid
 from pyramid.traversal import find_root

@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Amen Souissi
+
 from zope.interface import implementer
 from persistent import Persistent
 from persistent.list import PersistentList
@@ -30,6 +36,7 @@ from .workitem import UserDecision, StartWorkItem
 
 
 ITEM_INDEX = 'item'
+
 ACTIONSTEPID = '__actionstepid__'
 
 

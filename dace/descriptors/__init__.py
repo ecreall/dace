@@ -1,3 +1,8 @@
+# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# avalaible on http://www.gnu.org/licenses/agpl.html 
+
+# licence: AGPL
+# author: Amen Souissi
 from dace.descriptors.base import Descriptor, get_oid
 from dace.descriptors.compositeunique import CompositeUniqueProperty
 from dace.descriptors.compositemultiple import CompositeMultipleProperty
