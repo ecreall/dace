@@ -52,7 +52,7 @@ def name_chooser(container={}, name='default_name'):
         new_name = name + u'-' + str(i) + suffix
 
     new_name = unicodedata.normalize('NFKD', 
-                                     new_name).encode('ascii', 
+                                     u''+new_name).encode('ascii', 
                                                      'ignore').decode()
     return new_name
 
