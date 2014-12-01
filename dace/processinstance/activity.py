@@ -124,15 +124,14 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     node_definition = NotImplemented
     context = NotImplemented
     processs_relation_id = NotImplemented
-    report =  NotImplemented
-    study =  NotImplemented
-    actionType = NotImplemented #!!
+    actionType = NotImplemented
     #validation
     relation_validation = NotImplemented
     roles_validation = NotImplemented
     processsecurity_validation = NotImplemented
     state_validation = NotImplemented
-    access_controled = False #style information 
+    #style information
+    access_controled = False  
 
     def __init__(self, workitem, **kwargs):
         super(BusinessAction, self).__init__(**kwargs)
@@ -151,10 +150,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     def get_instance(cls, context, request, **kw):
         action_uid = request.params.get('action_uid', None)
         source_action = None
-        if action_uid is not None:
+        if action_uid:
             source_action = get_obj(int(action_uid))
 
-        if source_action is not None and \
+        if source_action and \
            (source_action._class_ is cls) and \
             source_action.validate(context, request):
             return source_action
@@ -166,19 +165,13 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if instances is None:
             return None
 
-        isstart = request.params.get('isstart', None)
-        if isstart is not None:
+        isstart = request.params.get('isstart', False)
+        if isstart:
             for inst in instances:
                 if inst.isstart:
                     return inst
 
-        action_instance = instances[0]
-        #if action_instance.isstart:
-        #    request.params['isstart'] = 'True'
-        #else:
-        #    request.params['action_uid'] = get_oid(action_instance)
-
-        return action_instance
+        return instances[0]
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
@@ -186,9 +179,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
                                       cls.node_definition.process.id, 
                                       cls.node_definition.__name__, 
                                       cls.behavior_id)
-        if instance is None:
-            return None
-
         return instance
 
     @classmethod
@@ -198,7 +188,8 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     @property
     def potential_contexts_ids(self):
         try:
-            contexts = self.process.execution_context.involved_entities(self.processs_relation_id)
+            contexts = self.process.execution_context.involved_entities(
+                                               self.processs_relation_id)
             result = []
             for context in contexts:
                 try:
@@ -241,21 +232,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def isautomatic(self):
-        if self.actionType is NotImplemented:
-            return False
-        elif self.actionType == ActionType.automatic:
-            return True
-
-        return False
+        return self.actionType is ActionType.automatic
 
     @property
     def issystem(self):
-        if self.actionType is NotImplemented:
-            return False
-        elif self.actionType == ActionType.system:
-            return True
-
-        return False
+        return self.actionType is ActionType.system
 
     @property
     def isstart(self):
@@ -278,13 +259,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def assigned_to(self):
-        if hasattr(self, 'local_assigned_to') and self.local_assigned_to:
+        if getattr(self, 'local_assigned_to', []):
             return self.local_assigned_to
 
-        if hasattr(self.node, 'assigned_to'):
-            return self.node.assigned_to
-
-        return []
+        return getattr(self.node, 'assigned_to', [])
 
     def get_potential_context(self, request=None):
         if request is None:
@@ -330,8 +308,8 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             users = [users]
 
         users = [u for u in users if (u in self.local_assigned_to)]
-        for u in users:
-            self.local_assigned_to.remove(u)
+        for user in users:
+            self.local_assigned_to.remove(user)
 
     def set_assignment(self, users=None):
         self.local_assigned_to = PersistentList()
@@ -386,7 +364,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if isinstance(self.workitem, UserDecision):
             self.workitem.consume()
 
-    def start(self, context, request, appstruct, **kw):#execution
+    def start(self, context, request, appstruct, **kw):
         return True
 
     def execute(self, context, request, appstruct, **kw):
@@ -394,7 +372,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if self.isstart:
             return
 
-        if isinstance(self.node, SubProcess) and self.sub_process is None:
+        if isinstance(self.node, SubProcess) and not self.sub_process:
             self.sub_process = self.node._start_subprocess()
             self.sub_process.attachedTo = self
             if ITEM_INDEX in kw:
@@ -451,7 +429,7 @@ class ElementaryAction(BusinessAction):
         is_finished = self.start(context, request, appstruct, **kw)
         if is_finished:
             self.isexecuted = True
-            if self.sub_process is None:
+            if not self.sub_process:
                 self.finish_execution(context, request, **kw)
 
             return self.redirect(context, request, **kw)
@@ -533,8 +511,6 @@ class MultiInstanceAction(BusinessAction):
             return False
 
         return super(MultiInstanceAction, self).is_locked(request)
-
-
 
 
 class LimitedCardinality(MultiInstanceAction):
@@ -626,8 +602,6 @@ class ActionInstance(BusinessAction):
         cls.context = principalaction.context
         cls.node_definition = principalaction.node_definition
         cls.actionType =  principalaction.actionType
-        cls.report =  principalaction.report
-        cls.study =  principalaction.study
         cls.relation_validation = principalaction.relation_validation
         cls.roles_validation =  principalaction.roles_validation
         cls.processsecurity_validation = principalaction.processsecurity_validation
