@@ -209,7 +209,10 @@ class EndEvent(Throwing):
         registry.notify(ProcessFinished(self))
         if self.process.definition.isSubProcess:
             request = get_current_request()
+            root_process = self.process.attachedTo.process
             self.process.attachedTo.finish_execution(None, request)
+            root_process.execution_context.remove_sub_execution_context(
+                                          self.process.execution_context)
 
         if self.process.definition.isVolatile:
             getattr(self.process.__parent__.__class__, 
