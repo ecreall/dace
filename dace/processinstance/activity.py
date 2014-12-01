@@ -111,6 +111,13 @@ def getBusinessActionValidator(action_cls):
     return BusinessActionValidator
 
 
+def always_true(process, context):
+    return True
+
+
+MARKER_FUNC = always_true
+
+
 @implementer(ILocation, IBusinessAction)
 class BusinessAction(Wizard, LockableElement, Persistent):
 
@@ -342,35 +349,31 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if not self.workitem.validate():
             raise ValidationError(msg='Workitem is not valid')
 
-        process = self.process
-        if 'process' in kw:
-            process = kw['process']
-
         if not context.__provides__(self.context):
             raise ValidationError(msg='Context is not valid')
 
-        if not (self.relation_validation is NotImplemented) and \
-                not self.relation_validation.__func__(process, context):
+        process = kw.get('process', self.process)
+        if not getattr(self.relation_validation, 
+                       '__func__', MARKER_FUNC)(process, context):
             raise ValidationError(msg='Context is not valid')
 
-        _assigned_to = self.assigned_to
+        _assigned_to = list(self.assigned_to)
         if _assigned_to:
-            admin = getSite()['principals']['users']['admin']
+            _assigned_to.append(getSite()['principals']['users']['admin'])
             current_user = get_current(request)
-            if not( current_user in _assigned_to) and \
-               not(current_user is admin):
+            if not( current_user in _assigned_to):
                 raise ValidationError(msg='Action is assigned to an other user')
 
-        elif not(self.roles_validation is NotImplemented) and \
-             not self.roles_validation.__func__(process, context):
+        elif not getattr(self.roles_validation, 
+                         '__func__', MARKER_FUNC)(process, context):
             raise ValidationError(msg='Role is not valid')
 
-        if not(self.processsecurity_validation is NotImplemented) and \
-           not self.processsecurity_validation.__func__(process, context):
+        if not getattr(self.processsecurity_validation, 
+                       '__func__', MARKER_FUNC)(process, context):
             raise ValidationError(msg='Security is violeted')
 
-        if not(self.state_validation is NotImplemented) and \
-           not self.state_validation.__func__(process, context):
+        if not getattr(self.state_validation, 
+                       '__func__', MARKER_FUNC)(process, context):
             raise ValidationError(msg='Context state is not valid')
 
         return True

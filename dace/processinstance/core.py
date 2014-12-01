@@ -91,10 +91,8 @@ class MakerFlowNode(FlowNode):
         if not workitems:
             return
 
-        i = 0
-        for workitem in workitems.values():
-            i += 1
-            workitem.__name__ = i
+        for i, workitem in enumerate(workitems.values()):
+            workitem.__name__ = i+1
             self.addtoproperty('workitems', workitem)
 
         for decision_workitem in workitems.values():
@@ -140,10 +138,9 @@ class MakerFlowNode(FlowNode):
             if hasattr(node_to_execute, 'prepare_for_execution'):
                 node_to_execute.prepare_for_execution()
 
-        i = len(self.workitems)
-        for workitem in new_workitems:
-            i += 1
-            workitem.__name__ = i
+        len_workitems = len(self.workitems)
+        for i, workitem in enumerate(new_workitems):
+            workitem.__name__ = i+1+len_workitems
             self.addtoproperty('workitems', workitem)
 
     def get_allconcernedworkitems(self):

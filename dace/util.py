@@ -49,12 +49,13 @@ def name_chooser(container={}, name='default_name'):
     i = 1
     while new_name in container:
         i += 1
-        new_name = name + u'-' + str(i) + suffix
+        new_name = name + '-' + str(i) + suffix
 
     new_name = unicodedata.normalize('NFKD', 
                                      u''+new_name).encode('ascii', 
                                                      'ignore').decode()
     return new_name
+
 
 def getSite(resource=None):
     request = get_current_request()
