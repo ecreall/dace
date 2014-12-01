@@ -1199,9 +1199,8 @@ class TestsSubProcess(FunctionalTests):
         item = action_sp2.sub_process.execution_context.involved_entity('item')
         self.assertIs(item, objectb)
         items = proc.execution_context.find_involved_entity('item')
-        self.assertEqual(len(items), 2)
+        self.assertEqual(len(items), 1)
         self.assertIn(objectb, items)
-        self.assertIn(objecta, items)
 
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 2)
