@@ -27,6 +27,7 @@ _marker = object()
 
 class Anonymous(object):
     __name__ = 'Anonymous'
+    name = 'Anonymous'
     locale = 'fr'
 
 
