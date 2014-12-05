@@ -814,6 +814,19 @@ class Process(Entity):
                 if self._finished:
                     break
 
+    def execute_action(self, context, request, action_id, appstruct, ignor_validation=True):
+        try:
+            workitems = self.getWorkItems()
+            publication_wi = workitems[self.id+'.'+action_id]
+            action = publication_wi.actions[0]
+            if not ignor_validation:
+                action.validate(context, request)
+
+            action.execute(context, request, appstruct)
+            return True
+        except Exception:
+            return False
+
     def reindex(self):
         event = ObjectModified(self)
         registry = get_current_registry()
