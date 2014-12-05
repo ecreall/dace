@@ -188,7 +188,7 @@ class ExecutionContext(Object):
         root = self.root_execution_context()
         return root._sub_classified_involveds()
 
-#entity
+    #entity
     def add_involved_entity(self, name, value, type='involved'):
         self.addtoproperty('involveds', value)
         if name in self.dynamic_properties_def:
@@ -401,7 +401,7 @@ class ExecutionContext(Object):
         return False
     # has relation_entity end
 
-#collections
+    #collections
     def add_involved_collection(self, name, values, type='involved'):
         prop_name = name
         index_key = name+'_index'
@@ -595,7 +595,7 @@ class ExecutionContext(Object):
     # created_collections end
 
 
-#Data
+    #Data
     def add_data(self, name, data):
         if not hasattr(self, name):
             setattr(self, name, PersistentList())
@@ -787,10 +787,11 @@ class Process(Entity):
         registry.notify(ProcessStarted(self))
 
     def execute(self):
-        start_events = [self[s.__name__] for s in self.definition._get_start_events()]
-        for s in start_events:
-            s.prepare()
-            s.prepare_for_execution()
+        start_events = [self[s.__name__] for s in \
+                        self.definition._get_start_events()]
+        for start_event in start_events:
+            start_event.prepare()
+            start_event.prepare_for_execution()
             if self._started:
                 break
 
@@ -798,19 +799,19 @@ class Process(Entity):
         registry = get_current_registry()
         if transitions:
             for transition in transitions:
-                next = transition.target
+                next_node = transition.target
                 registry.notify(transition)
-                next.prepare()
-                if isinstance(next, Event):
-                    next.prepare_for_execution()
+                next_node.prepare()
+                if isinstance(next_node, Event):
+                    next_node.prepare_for_execution()
 
             for transition in transitions:
-                next = transition.target
+                next_node = transition.target
                 starttransaction = self.global_transaction.start_subtransaction(
                                             'Start',
                                             transitions=(transition,),
                                             initiator=transition.source)
-                next(starttransaction)
+                next_node(starttransaction)
                 if self._finished:
                     break
 
@@ -822,6 +823,7 @@ class Process(Entity):
             if not ignor_validation:
                 action.validate(context, request)
 
+            action.before_execution(context, request)
             action.execute(context, request, appstruct)
             return True
         except Exception:
