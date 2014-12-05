@@ -705,7 +705,7 @@ class Process(Entity):
             next_transitions = next_transitions.union(
                                   set(path.next(transition)))
 
-        for next_transition in next_transitions:
+        for next_transition in set(next_transitions):
             if next_transition in executed_transitions:
                 next_transitions.remove(next_transition)
 
@@ -815,7 +815,8 @@ class Process(Entity):
                 if self._finished:
                     break
 
-    def execute_action(self, context, request, action_id, appstruct, ignor_validation=True):
+    def execute_action(self, context, request, 
+                       action_id, appstruct, ignor_validation=True):
         try:
             workitems = self.getWorkItems()
             publication_wi = workitems[self.id+'.'+action_id]

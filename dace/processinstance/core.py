@@ -107,7 +107,7 @@ class MakerFlowNode(FlowNode):
             transitions = self.outgoing
 
         for transition in transitions:
-            if transition.sync or transition.condition(self.process):
+            if transition.sync or transition.validate(self.process):
                 node = transition.target
                 initial_path = Path([transition])
                 global_transaction.start_subtransaction(type='Find', 
@@ -224,7 +224,7 @@ class BehavioralFlowNode(MakerFlowNode):
         registry.notify(ActivityStarted(self))
 
     def finish_behavior(self, work_item):
-        if work_item is not None and not isinstance(work_item, StartWorkItem):
+        if work_item  and not isinstance(work_item, StartWorkItem):
             self.delfromproperty('workitems', work_item)
 
         registry = get_current_registry()
@@ -239,7 +239,7 @@ class BehavioralFlowNode(MakerFlowNode):
         self.decide(self.process.global_transaction)
 
     def finish_decisions(self, work_item):
-        first_transition = work_item.path._get_transitions_source(self)
+        first_transitions = work_item.path._get_transitions_source(self)
         if work_item is not None :
             work_item.validations.append(self)
             if work_item.is_finished:
@@ -249,7 +249,7 @@ class BehavioralFlowNode(MakerFlowNode):
         allconcernedworkitems = self.get_allconcernedworkitems()
         all_stoped_wis = []
         for cdecision in allconcernedworkitems:
-            for f_t in first_transition:
+            for f_t in first_transitions:
                 if cdecision.path.contains_transition(f_t):
                     if not (cdecision in all_stoped_wis) and \
                             cdecision is not work_item:

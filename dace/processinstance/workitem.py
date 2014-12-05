@@ -127,7 +127,7 @@ class StartWorkItem(UserDecision):
             return True
         else:
             for transition in transitions:
-                if transition.sync and not transition.condition(self.process):
+                if transition.sync and not transition.validate(self.process):
                     return False
 
         return True
@@ -258,7 +258,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
             return True and not self.is_locked(global_request)
         else:
             for transition in transitions:
-                if transition.sync and not transition.condition(self.process):
+                if transition.sync and not transition.validate(self.process):
                     return False
 
         return True and not self.is_locked(global_request)

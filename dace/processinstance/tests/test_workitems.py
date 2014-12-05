@@ -26,6 +26,12 @@ from dace.processdefinition.eventdef import (
 from dace.testing import FunctionalTests
 
 
+def g_b_condition(process):
+    return getattr(process, 'validation_b', True)
+
+def g_c_condition(process):
+    return getattr(process, 'validation_c', True)
+
 class TestsWorkItems(FunctionalTests):
 
     def tearDown(self):
@@ -818,11 +824,14 @@ class TestsWorkItems(FunctionalTests):
                 c = ActivityDefinition(),
                 e = EndEventDefinition(),
         )
+        gb_transition = TransitionDefinition('g', 'b', g_b_condition)
+        gc_transition = TransitionDefinition('g', 'c', g_c_condition)
         pd.defineTransitions(
                 TransitionDefinition('s', 'a'),
                 TransitionDefinition('a', 'g'),
-                TransitionDefinition('g', 'b'),
-                TransitionDefinition('g', 'c'),
+                gb_transition,
+                gc_transition,
+                TransitionDefinition('c', 'e'),
                 TransitionDefinition('b', 'e'),
         )
         self.config.scan(example)
@@ -843,6 +852,52 @@ class TestsWorkItems(FunctionalTests):
         b_wi.consume().start_test_activity()
         self.assertEqual(len(proc.getWorkItems()), 0)
 
+    def test_condition_not_sync_transition(self):
+        pd = self._process_a_pg_bc()
+        self.def_container.add_definition(pd)
+        proc = pd()
+        self.app['proc'] = proc
+        self.assertEqual(len(proc.getWorkItems()), 0)
+        start_wi = pd.start_process('a')['a']
+        wi, proc = start_wi.consume()
+        proc.validation_c = False
+        wi.start_test_activity()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 1)
+        b_wi = workitems['sample.b']
+        self.assertTrue(b_wi.validate())
+        proc.validation_c = True
+        proc.validation_b = False 
+        #Transition is not sync. b_wi must be valid
+        self.assertTrue(b_wi.validate())
+        b_wi.consume().start_test_activity()
+        self.assertEqual(len(proc.getWorkItems()), 0)
+
+
+    def test_condition_sync_transition(self):
+        pd = self._process_a_pg_bc()
+        pd['g-c'].sync = True
+        pd['g-b'].sync = True
+        self.def_container.add_definition(pd)
+        proc = pd()
+        self.app['proc'] = proc
+        self.assertEqual(len(proc.getWorkItems()), 0)
+        start_wi = pd.start_process('a')['a']
+        wi, proc = start_wi.consume()
+        proc.validation_c = False
+        wi.start_test_activity()
+        workitems = proc.getWorkItems()
+        self.assertEqual(len(workitems), 2)
+        b_wi = workitems['sample.b']
+        self.assertTrue(b_wi.validate())
+        proc.validation_c = True
+        proc.validation_b = False 
+        #Transition is sync. b_wi must be not valid
+        self.assertFalse(b_wi.validate())
+        c_wi = workitems['sample.c']
+        self.assertTrue(c_wi.validate())
+        c_wi.consume().start_test_activity()
+        self.assertEqual(len(proc.getWorkItems()), 0)
 
     def  _process_start_refresh_decision(self):
         """

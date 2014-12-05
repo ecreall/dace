@@ -33,6 +33,13 @@ class Transition(Object):
     def sync(self):
         return self.definition.sync
 
+    def validate(self, process):
+        if not self.sync and hasattr(self, 'condition_result'):
+            return self.condition_result
+
+        self.condition_result = self.condition(process)
+        return self.condition_result
+
     def equal(self, transition):
         return self.source is transition.source and \
                 self.target is transition.target

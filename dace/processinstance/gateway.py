@@ -27,7 +27,7 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
 
     def find_executable_paths(self, source_path, source):
         for transition in self.outgoing:
-            if transition.sync or transition.condition(self.process):
+            if transition.sync or transition.validate(self.process):
                 node = transition.target
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
@@ -107,7 +107,7 @@ class ParallelGateway(Gateway):
 
         if validated:
             for transition in self.outgoing:
-                if transition.sync or transition.condition(self.process):
+                if transition.sync or transition.validate(self.process):
                     node = transition.target
                     for path in list(paths):
                         initial_path = path.clone()
