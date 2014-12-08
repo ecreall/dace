@@ -46,15 +46,15 @@ def name_chooser(container={}, name='default_name'):
     else:
         suffix = ''
 
-    new_name = name + suffix
-    new_name = unicodedata.normalize('NFKD', 
-                                     u''+new_name).encode('ascii', 
-                                                     'ignore').decode()
+    unicodedname = unicodedata.normalize('NFKD', 
+                                         u''+name).encode('ascii', 
+                                                          'ignore').decode()
+    new_name = unicodedname + suffix
     i = 1
     while new_name in container:
         i += 1
-        new_name = name + '-' + str(i) + suffix
-        
+        new_name = unicodedname + '-' + str(i) + suffix
+
     return new_name
 
 
