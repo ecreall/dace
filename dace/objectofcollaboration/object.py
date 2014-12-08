@@ -81,6 +81,7 @@ class Object(Folder):
 
             if isinstance(name, bytes):
                 name = name.decode()
+                
         new_name = name_chooser(container, name)
         return new_name
 
