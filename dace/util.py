@@ -45,15 +45,16 @@ def name_chooser(container={}, name='default_name'):
         name = name[:dot]
     else:
         suffix = ''
+
     new_name = name + suffix
+    new_name = unicodedata.normalize('NFKD', 
+                                     u''+new_name).encode('ascii', 
+                                                     'ignore').decode()
     i = 1
     while new_name in container:
         i += 1
         new_name = name + '-' + str(i) + suffix
-
-    new_name = unicodedata.normalize('NFKD', 
-                                     u''+new_name).encode('ascii', 
-                                                     'ignore').decode()
+        
     return new_name
 
 
