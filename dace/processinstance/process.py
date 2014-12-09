@@ -663,7 +663,11 @@ class Process(Entity):
         self.setproperty('execution_context', execution_context)
         # do a commit so all events have a _p_oid
         # mail delivery doesn't support savepoint
-        transaction.commit()
+        try:
+            transaction.commit()
+        except Exception:
+            transaction.abort()
+        
 
     def defineGraph(self, definition):
         for nodedef in definition.nodes:
