@@ -46,13 +46,15 @@ class role(object):
 
 class Role(object):
     name = NotImplemented
-    superiors = NotImplemented
-    all_superiors = NotImplemented
-    islocal = NotImplemented
+    superiors = []
+    all_superiors = []
+    islocal = False
+
 
 @role(name='Admin')
 class Administrator(Role):
     pass
+
 
 @role(name='Collaborator', superiors=[Administrator])
 class Collaborator(Role):
