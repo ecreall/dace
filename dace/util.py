@@ -291,14 +291,12 @@ def getAllBusinessAction(context,
     context_id_index = dace_catalog['context_id']
     potential_contexts_ids = dace_catalog['potential_contexts_ids']
     object_provides_index = dace_catalog['object_provides']
+    isautomatic_index = dace_catalog['isautomatic']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(tuple([d.__identifier__ \
                                    for d in context.__provides__.__iro__])) & \
-            potential_contexts_ids.any(['any', context_oid])
-
-    if isautomatic:
-        isautomatic_index = dace_catalog['isautomatic']
-        query = query & isautomatic_index.eq(True)
+            potential_contexts_ids.any(['any', context_oid]) & \
+            isautomatic_index.eq(isautomatic)
 
     if process_id:
         process_id_index = dace_catalog['process_id']
