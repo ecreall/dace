@@ -296,9 +296,9 @@ def getAllBusinessAction(context,
                                    for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any', context_oid])
 
-    if not isautomatic:
+    if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']
-        query = query & isautomatic_index.eq(False)
+        query = query & isautomatic_index.eq(True)
 
     if process_id:
         process_id_index = dace_catalog['process_id']
