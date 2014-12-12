@@ -79,6 +79,7 @@ class CompositeUniqueProperty(Descriptor):
                     opposite_property.remove(value, obj, False)
 
             setattr(obj, self.key, None)
+            value.__property__ = None
             obj.remove(value_name, moving=moving)
 
     def init(self, obj):

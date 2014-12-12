@@ -44,17 +44,22 @@ class Object(Folder):
             if descriptor is not _marker and isinstance(descriptor, Descriptor):
                 descriptor.__set__(self, value)
 
-    def getproperty(self, name):
-        return getattr(self, name)
+    def __delitem__(self, name):
+        """ Remove the object from this folder stored under ``name``.
 
-    def setproperty(self, name, value):
-        setattr(self, name, value)
+        ``name`` must be a Unicode object or a bytestring object.
 
-    def addtoproperty(self, name, value, moving=None):
-        getattr(self.__class__, name).add(self, value, moving=moving)
+        If ``name`` is a bytestring object, it must be decodable using the
+        system default encoding.
 
-    def delfromproperty(self, name, value, moving=None):
-        getattr(self.__class__, name).remove(self, value, moving=moving)
+        If no object is stored in the folder under ``name``, raise a
+        :exc:`KeyError`.
+        """
+        obj_property = getattr(self[name], '__property__', None)
+        if obj_property:
+            self.delfromproperty(obj_property, self[name])
+        else: 
+            self.remove(name)
 
     def _init_property(self, name, propertydef):
         descriptor = getattr(self.__class__, name, _marker)
@@ -73,7 +78,6 @@ class Object(Folder):
             self._init_property(name, propertydef)
 
     def choose_name(self, name, object):
-        container = self.data
         if not name:
             name = getattr(object, 'title', object.__class__.__name__)
             if not name:
@@ -82,7 +86,7 @@ class Object(Folder):
             if isinstance(name, bytes):
                 name = name.decode()
                 
-        new_name = name_chooser(container, name)
+        new_name = name_chooser(self.data, name)
         return new_name
 
     def add(self, name, other, send_events=True, reserved_names=(),
@@ -90,17 +94,6 @@ class Object(Folder):
         name = self.choose_name(name, other)
         super(Object, self).add(name, other, send_events, reserved_names,
                 duplicating, moving, loading, registry)
-
-    def get_data(self, node):
-        """return values of attributes descibed in
-           the colander schema node 'node' """
-        result = {}
-        for child in node:
-            name = child.name
-            val = getattr(self, name, colander.null)
-            result[name] = val
-
-        return result
 
     def move(self, name, other, newname=None, registry=None):
         """
@@ -160,7 +153,6 @@ class Object(Folder):
         else: 
             self.move(oldname, self, newname, registry)
 
-
     def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):
         if not is_nonstr_iter(omit):
             omit = (omit,)
@@ -180,3 +172,26 @@ class Object(Folder):
             event = ObjectModified(self)
             registry = get_current_registry()
             registry.subscribers((event, self), None)
+
+    def get_data(self, node):
+        """return values of attributes descibed in
+           the colander schema node 'node' """
+        result = {}
+        for child in node:
+            name = child.name
+            val = getattr(self, name, colander.null)
+            result[name] = val
+
+        return result
+
+    def getproperty(self, name):
+        return getattr(self, name)
+
+    def setproperty(self, name, value):
+        setattr(self, name, value)
+
+    def addtoproperty(self, name, value, moving=None):
+        getattr(self.__class__, name).add(self, value, moving=moving)
+
+    def delfromproperty(self, name, value, moving=None):
+        getattr(self.__class__, name).remove(self, value, moving=moving)

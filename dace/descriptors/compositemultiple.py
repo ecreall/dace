@@ -45,6 +45,7 @@ class CompositeMultipleProperty(Descriptor):
 
         value_name = value.__name__
         moved_to = (((moving is not None) and obj) or None)
+        #if the parent is a substanced container
         if getattr(value, '__property__', None) is not None:
             getattr(value.__parent__.__class__,
                     value.__property__).remove(
