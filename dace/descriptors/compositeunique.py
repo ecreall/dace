@@ -20,7 +20,7 @@ class CompositeUniqueProperty(Descriptor):
     def _get(self, obj):
         current_value_name = obj.__dict__.get(self.key, None)
         if current_value_name is not None:
-            return obj[current_value_name]
+            return obj.get(current_value_name, None)
 
         return None
 
@@ -52,6 +52,7 @@ class CompositeUniqueProperty(Descriptor):
         value_parent = getattr(value, '__parent__', None)
         value_property = getattr(value, '__property__', None)
         moved_to = (((moving is not None) and obj) or None)
+        #if the parent is a substanced container
         if  not(None in (value_parent, value_property)):
             getattr(value_parent.__class__, 
                     value_property).remove(

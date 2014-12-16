@@ -20,11 +20,9 @@ class SharedMultipleProperty(Descriptor):
         self.key = '_'+propertyref + '_value'
 
     def _get(self, obj):
-        current_values = obj.__dict__.get(self.key, None)
-        if current_values is not None:
-            return current_values
-
-        return []
+        current_values = [o for o in obj.__dict__.get(self.key, []) \
+                          if o.__parent__]
+        return current_values
 
     def __get__(self, obj, objtype=None):
         if obj is None:
