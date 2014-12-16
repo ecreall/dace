@@ -27,7 +27,7 @@ class SharedMultipleProperty(Descriptor):
 
     def _get(self, obj):
         self._remove_deprecated(obj)
-        return obj.__dict__.get(self.key, [])
+        return list(obj.__dict__.get(self.key, []))
 
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -52,7 +52,7 @@ class SharedMultipleProperty(Descriptor):
         obj.__dict__[self.key].append(value)
 
     def __set__(self, obj, values, initiator=True, moving=None):
-        if not isinstance(values, (list, tuple, set)):
+        if not isinstance(values, (list, tuple, set, PersistentList)):
             values = [values]
 
         oldvalues = self._get(obj)
