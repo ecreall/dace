@@ -4,8 +4,8 @@
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
 
-from dace.descriptors import Descriptor
-from dace.util import is_removed
+from dace.descriptors import Descriptor, is_removed
+
 
 _marker = object()
 

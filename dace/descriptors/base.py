@@ -14,5 +14,12 @@ def get_oid(obj):
         return None
 
 
+def is_removed(resource):
+    if not resource:
+        return False
+        
+    return getattr(resource, '__parent__', None) is None
+    
+
 class Descriptor(object):
     pass
