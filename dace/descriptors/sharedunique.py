@@ -5,6 +5,7 @@
 # author: Amen Souissi, Vincent Fretin
 
 from dace.descriptors import Descriptor
+from dace.util import is_removed
 
 _marker = object()
 
@@ -15,14 +16,17 @@ class SharedUniqueProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = '_'+propertyref + '_value'
+        self.key = '_' + propertyref + '_value'
+
+
+    def _remove_deprecated(self, obj):
+        value = obj.__dict__.get(self.key, None)
+        if is_removed(value):
+            self.remove(obj, value)
 
     def _get(self, obj):
-        value = obj.__dict__.get(self.key, None)
-        if value and getattr(value, '__parent__', None):
-            return value
-
-        return None
+        self._remove_deprecated(obj)
+        return obj.__dict__.get(self.key, None)
         
     def __get__(self, obj, objtype=None):
         if obj is None:

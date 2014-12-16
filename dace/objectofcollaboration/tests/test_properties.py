@@ -4,7 +4,7 @@
 # licence: AGPL
 # author: Amen Souissi
 from dace.testing import FunctionalTests
-from .example.objects import Object1, Object2
+from .example.objects import Object1, Object2, ObjectShared
 
 
 class TestProperties(FunctionalTests):
@@ -379,3 +379,34 @@ class TestProperties(FunctionalTests):
         self.assertIn(object4, object2.getproperty('composition_m'))
         self.assertEqual(object4.__name__, 'newname_object4')
         self.assertTrue('newname_object4' in object2.data)
+
+    def test_composition_multiple_opposite_shared_unique_remove(self):
+        self.app['object1'] = Object1()
+        self.app['object2'] = Object2()
+        self.app['object3'] = ObjectShared()
+
+        object1 = self.app['object1']
+        object2 = self.app['object2']
+        object3 = self.app['object3']
+
+        object1.addtoproperty('composition_m', object2)
+        self.assertEqual(len(object1.getproperty('composition_m')), 1)
+        self.assertIs(object1.getproperty('composition_m')[0], object2)
+
+        self.assertTrue(isinstance(object2.getproperty('shared21_u'), Object1))
+        self.assertIs(object2.getproperty('shared21_u'), object1)
+
+        object1.addtoproperty('composition_m', object3)
+
+        self.assertEqual(len(object1.getproperty('composition_m')), 2)
+        self.assertIn(object3, object1.getproperty('composition_m'))
+
+        object3.setproperty('shared', object2)
+        object3.addtoproperty('shared_m', object2)
+        self.assertIs(object3.getproperty('shared'), object2)
+        self.assertEqual(len(object3.getproperty('shared_m')), 1)
+        self.assertIn(object2, object3.getproperty('shared_m'))
+
+        object1.delfromproperty('composition_m', object2)
+        self.assertIs(object3.getproperty('shared'), None)
+        self.assertEqual(len(object3.getproperty('shared_m')), 0)

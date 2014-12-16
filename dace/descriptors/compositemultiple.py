@@ -8,6 +8,7 @@ from persistent.list import PersistentList
 
 from dace.descriptors import Descriptor
 
+
 _marker = object()
 
 
@@ -17,7 +18,7 @@ class CompositeMultipleProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = '_'+propertyref + '_value'
+        self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
         contents_keys = obj.__dict__.get(self.key, None)

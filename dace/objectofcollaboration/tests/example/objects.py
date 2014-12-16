@@ -30,6 +30,11 @@ class Object2(Object):
     shared23_u = SharedUniqueProperty('shared23_u', 'shared_m', False)
 
 
+class ObjectShared(Object):
+    shared = SharedUniqueProperty('shared', None, False)
+    shared_m = SharedMultipleProperty('shared_m', None, False)
+
+
 class IObjectA(IObject):
     pass
 

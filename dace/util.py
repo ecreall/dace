@@ -58,6 +58,13 @@ def name_chooser(container={}, name='default_name'):
     return new_name
 
 
+def is_removed(resource):
+    if not resource:
+        return False
+        
+    return getattr(resource, '__parent__', None) is None
+
+
 def getSite(resource=None):
     request = get_current_request()
     if resource is not None:

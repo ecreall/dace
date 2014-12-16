@@ -7,6 +7,8 @@
 from persistent.list import PersistentList
 
 from dace.descriptors import Descriptor
+from dace.util import is_removed
+
 
 _marker = object()
 
@@ -17,12 +19,16 @@ class SharedMultipleProperty(Descriptor):
         self.propertyref = propertyref
         self.opposite = opposite
         self.isunique = isunique
-        self.key = '_'+propertyref + '_value'
+        self.key = '_' + propertyref + '_value'
+
+    def _remove_deprecated(self, obj):
+        [self.remove(obj, value) \
+        for value in obj.__dict__.get(self.key, []) \
+        if is_removed(value)]
 
     def _get(self, obj):
-        current_values = [o for o in obj.__dict__.get(self.key, []) \
-                          if getattr(o, '__parent__', None)]
-        return current_values
+        self._remove_deprecated(obj)
+        return obj.__dict__.get(self.key, [])
 
     def __get__(self, obj, objtype=None):
         if obj is None:
