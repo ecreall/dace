@@ -27,6 +27,7 @@ class ProcessDefinitionContainer(Entity):
     def add_definition(self, definition):
         definition.__name__ = definition.id
         self.addtoproperty('definitions', definition)
+        definition._init_definition()
 
     def get_definition(self, name):
         for definition in self.definitions:
@@ -34,6 +35,7 @@ class ProcessDefinitionContainer(Entity):
                 return definition
 
         return None
+
 
 class process_definition(object):
 
@@ -48,7 +50,6 @@ class process_definition(object):
                 component = ob
             else:
                 component = ob(**self.kw)
-                component._init_definition()
 
             try:
                 db = scanner.config.registry._zodb_databases['']

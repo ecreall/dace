@@ -17,9 +17,3 @@ from .processdef_container import create_process_definition_container
 def add_process_definition_container(event):
     root = event.object
     create_process_definition_container(root)
-
-
-@subscriber(IProcessDefinitionAdded)
-def add_process_def(event):
-    definition = event.object
-    definition._init_definition()

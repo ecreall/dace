@@ -18,6 +18,7 @@ from dace.util import find_catalog
 from dace.objectofcollaboration.entity import Entity
 
 
+
 @implementer(IProcessDefinition)
 class ProcessDefinition(Entity):
 
@@ -35,6 +36,9 @@ class ProcessDefinition(Entity):
         self.id = None
         if 'id' in kwargs:
             self.id = kwargs['id']
+
+    def _init_definition(self):
+        pass
 
     def __call__(self, **kwargs):
         return Process(self, self._startTransition, **kwargs)
