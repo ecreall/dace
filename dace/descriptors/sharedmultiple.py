@@ -21,7 +21,7 @@ class SharedMultipleProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _remove_deprecated(self, obj):
-        [self.remove(obj, value) \
+        [obj.__dict__[self.key].remove(value) \
         for value in obj.__dict__.get(self.key, []) \
         if is_removed(value)]
 

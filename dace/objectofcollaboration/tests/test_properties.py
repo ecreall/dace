@@ -380,7 +380,7 @@ class TestProperties(FunctionalTests):
         self.assertEqual(object4.__name__, 'newname_object4')
         self.assertTrue('newname_object4' in object2.data)
 
-    def test_composition_multiple_opposite_shared_unique_remove(self):
+    def test_composition_multiple_opposite_shared_remove(self):
         self.app['object1'] = Object1()
         self.app['object2'] = Object2()
         self.app['object3'] = ObjectShared()
@@ -410,3 +410,5 @@ class TestProperties(FunctionalTests):
         object1.delfromproperty('composition_m', object2)
         self.assertIs(object3.getproperty('shared'), None)
         self.assertEqual(len(object3.getproperty('shared_m')), 0)
+        #Test if object2 is removed from _shared_m_value property 
+        self.assertEqual(len(object3.__dict__['_shared_m_value']), 0)

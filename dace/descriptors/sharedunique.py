@@ -21,7 +21,7 @@ class SharedUniqueProperty(Descriptor):
     def _remove_deprecated(self, obj):
         value = obj.__dict__.get(self.key, None)
         if is_removed(value):
-            self.remove(obj, value)
+            setattr(obj, self.key, None)
 
     def _get(self, obj):
         self._remove_deprecated(obj)
