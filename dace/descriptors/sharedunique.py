@@ -18,8 +18,8 @@ class SharedUniqueProperty(Descriptor):
         self.key = '_'+propertyref + '_value'
 
     def _get(self, obj):
-        value = obj.__dict__.get(self.key, _marker)
-        if value is not _marker and value.__parent__:
+        value = obj.__dict__.get(self.key, None)
+        if value and getattr(value, '__parent__', None):
             return value
 
         return None

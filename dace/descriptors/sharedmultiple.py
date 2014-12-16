@@ -21,7 +21,7 @@ class SharedMultipleProperty(Descriptor):
 
     def _get(self, obj):
         current_values = [o for o in obj.__dict__.get(self.key, []) \
-                          if o.__parent__]
+                          if getattr(o, '__parent__', None)]
         return current_values
 
     def __get__(self, obj, objtype=None):
