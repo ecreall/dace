@@ -6,7 +6,7 @@
 
 from persistent.list import PersistentList
 
-from dace.descriptors import Descriptor, is_removed
+from dace.descriptors.base import Descriptor, ref, get_ref
 
 
 _marker = object()
@@ -20,14 +20,10 @@ class SharedMultipleProperty(Descriptor):
         self.isunique = isunique
         self.key = '_' + propertyref + '_value'
 
-    def _remove_deprecated(self, obj):
-        [obj.__dict__[self.key].remove(value) \
-        for value in obj.__dict__.get(self.key, []) \
-        if is_removed(value)]
-
     def _get(self, obj):
-        self._remove_deprecated(obj)
-        return list(obj.__dict__.get(self.key, []))
+        return [get_ref(o) for o \
+                in obj.__dict__.get(self.key, []) \
+                if get_ref(o)]
 
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -44,12 +40,12 @@ class SharedMultipleProperty(Descriptor):
         if self.isunique and value in current_values:
             return
 
-        if initiator and self.opposite is not None:
+        if initiator and self.opposite:
             opposite_property = getattr(value.__class__, self.opposite, _marker)
             if opposite_property is not _marker:
                 opposite_property.add(value, obj, False)
 
-        obj.__dict__[self.key].append(value)
+        obj.__dict__[self.key].append(ref(value))
 
     def __set__(self, obj, values, initiator=True, moving=None):
         if not isinstance(values, (list, tuple, set, PersistentList)):
@@ -75,13 +71,16 @@ class SharedMultipleProperty(Descriptor):
             values = [values]
 
         for value in values:
-            if initiator and self.opposite is not None:
+            if initiator and self.opposite:
                 opposite_property = getattr(value.__class__, 
                                        self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 
-            if value in relations:
+            value_ref = ref(value)
+            if value_ref in relations:
+                relations.remove(value_ref)
+            elif value in relations:
                 relations.remove(value)
 
     def init(self, obj):

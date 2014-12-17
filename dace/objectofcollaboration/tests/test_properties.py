@@ -410,5 +410,3 @@ class TestProperties(FunctionalTests):
         object1.delfromproperty('composition_m', object2)
         self.assertIs(object3.getproperty('shared'), None)
         self.assertEqual(len(object3.getproperty('shared_m')), 0)
-        #Test if object2 is removed from _shared_m_value property 
-        self.assertEqual(len(object3.__dict__['_shared_m_value']), 0)

@@ -4,7 +4,7 @@
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
 
-from dace.descriptors import Descriptor, is_removed
+from dace.descriptors.base import Descriptor, ref, get_ref
 
 
 _marker = object()
@@ -18,14 +18,8 @@ class SharedUniqueProperty(Descriptor):
         self.isunique = isunique
         self.key = '_' + propertyref + '_value'
 
-    def _remove_deprecated(self, obj):
-        value = obj.__dict__.get(self.key, None)
-        if is_removed(value):
-            setattr(obj, self.key, None)
-
     def _get(self, obj):
-        self._remove_deprecated(obj)
-        return obj.__dict__.get(self.key, None)
+        return get_ref(obj.__dict__.get(self.key, None))
         
     def __get__(self, obj, objtype=None):
         if obj is None:
@@ -39,24 +33,24 @@ class SharedUniqueProperty(Descriptor):
     def __set__(self, obj, value, initiator=True, moving=None):
         self.init(obj)
         current_value = self._get(obj)
-        if current_value is not None and current_value == value:
+        if current_value and current_value == value:
             return
 
-        if initiator and self.opposite is not None:
+        if initiator and self.opposite:
             opposite_property = getattr(value.__class__, self.opposite, _marker)
             if opposite_property is not _marker:
                 opposite_property.add(value, obj, False)
 
-        if current_value is not None:
+        if current_value:
             self.remove(obj, current_value)
 
-        setattr(obj, self.key, value)
+        setattr(obj, self.key, ref(value))
 
     def remove(self, obj, value, initiator=True, moving=None):
         self.init(obj)
         current_value = self._get(obj)
-        if current_value is not None and current_value == value:
-            if initiator and self.opposite is not None:
+        if current_value and current_value == value:
+            if initiator and self.opposite:
                 opposite_property = getattr(value.__class__,
                                       self.opposite, _marker)
                 if opposite_property is not _marker:
