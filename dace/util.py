@@ -72,7 +72,7 @@ def get_obj(oid, only_exists=False):
     root = getSite()
     objectmap = find_objectmap(root)
     obj = objectmap.object_for(oid)
-    if only_exists and obj is not None and obj.__parent__ is None:
+    if only_exists and obj and obj.__parent__ is None:
         return None
 
     return obj
