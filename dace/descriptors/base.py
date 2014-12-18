@@ -9,7 +9,7 @@ from pyramid.traversal import find_root
 from pyramid.threadlocal import get_current_request
 
 from substanced.util import get_oid, find_objectmap
-    
+
 
 class Descriptor(object):
     pass
@@ -24,18 +24,20 @@ class ResourceRef(object):
             self.ref = resource
 
     def __call__(self):
+        obj = None
         if isinstance(self.ref, WeakRef):
-            obj = self.ref()
-            oid = get_oid(obj, None)
+            ref = self.ref()
+            oid = get_oid(ref, None)
             if oid:
                 request = get_current_request()
-                root = getattr(request, 'root', find_root(obj))
+                root = getattr(request, 'root', find_root(ref))
                 objectmap = find_objectmap(root)
-                return objectmap.object_for(oid)
+                obj = objectmap.object_for(oid)
 
-            return oid
         else :
-            return self.ref  
+            obj = self.ref
+
+        return obj
 
     def __eq__(self, other):
         return isinstance(other, ResourceRef) and \
