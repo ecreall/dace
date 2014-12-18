@@ -7,8 +7,8 @@
 import unicodedata
 import venusian
 import zope.copy
-from zope.interface import Interface
-from zope.interface import providedBy, implementedBy
+from zope.interface import providedBy, implementedBy, Interface
+from ZODB.interfaces import IBroken
 from pyramid.exceptions import Forbidden
 from pyramid.traversal import find_root
 from pyramid.testing import DummyRequest
@@ -17,8 +17,12 @@ from pyramid.threadlocal import (
 
 from substanced.interfaces import IUserLocator
 from substanced.principal import DefaultUserLocator
-from substanced.util import find_objectmap, find_catalog as fcsd, get_oid
-from substanced.util import find_service as fssd
+from substanced.util import (
+    find_objectmap,
+    find_catalog as fcsd,
+    get_oid,
+    find_service as fssd,
+    BrokenWrapper)
 
 from dace.interfaces import (
         IEntity,
@@ -28,6 +32,10 @@ from dace.descriptors import (
     Descriptor, CompositeUniqueProperty, CompositeMultipleProperty)
 from dace.relations import find_relations, connect
 
+
+def is_broken(resource):
+    return isinstance(resource, BrokenWrapper) or \
+           IBroken.providedBy(resource)
 
 
 def name_chooser(container={}, name='default_name'):
