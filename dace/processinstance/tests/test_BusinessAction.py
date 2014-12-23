@@ -970,6 +970,37 @@ class TestsPotentialActions(FunctionalTests):
         for i in range(4): # 4 process
             self.test_potential_actions(i)
 
+    def test_action_call(self):
+        self.logAdmin()
+        objecta= ObjectA()
+        self.app['myobject'] = objecta
+        pd = self._process_cycle()
+        self.def_container.add_definition(pd)
+        start_wi = pd.start_process('a')['a']
+        actiona = start_wi.actions[0]
+        actiona.execute(objecta, self.request, {'object':objecta})
+        process = actiona.process
+        process.execute_action(objecta, self.request, 'b', {}, False)
+        wis = process.getWorkItems()
+        actions_ids = list(wis.keys())
+        self.assertEqual(len(actions_ids), 2)
+        self.assertIn('sample.a', actions_ids)
+        self.assertIn('sample.c', actions_ids)
+        process.execute_action(objecta, self.request, 
+                               'a', {'object':objecta}, False)
+        wis = process.getWorkItems()
+        actions_ids = list(wis.keys())
+        self.assertEqual(len(actions_ids), 1)
+        self.assertIn('sample.b', actions_ids)
+        process.execute_action(objecta, self.request, 'b', {}, False)
+        process.execute_action(objecta, self.request, 'c', {}, False)
+        wis = process.getWorkItems()
+        actions_ids = list(wis.keys())
+        self.assertEqual(len(actions_ids), 0)
+
+
+
+
 
 class TestsSubProcess(FunctionalTests):
 
