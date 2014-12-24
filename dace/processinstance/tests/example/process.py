@@ -54,7 +54,7 @@ class ActionA(ElementaryAction):
 
     def start(self, context, request, appstruct, **kw):
         self.process.execution_context.add_created_entity('objecta', appstruct['object'])
-        return True
+        return {}
 
 class ActionB(ElementaryAction):
     #identification et classification
@@ -70,7 +70,7 @@ class ActionB(ElementaryAction):
     state_validation = state_validationA
 
     def start(self, context, request, appstruct, **kw):
-        return True
+        return {}
 
 
 def condition(obj):
@@ -177,7 +177,7 @@ class ActionYD(DataInput):
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
         item.is_executed = True
-        return True
+        return {}
 
 
 class ActionYDp(DataInput):
@@ -199,7 +199,7 @@ class ActionYDp(DataInput):
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
         item.is_executed = True
-        return True
+        return {}
 
 def loppdata(context, request, process, appstruct):
     return request.objects
@@ -222,7 +222,7 @@ class ActionYLD(LoopActionDataInput):
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
         item.is_executed = True
-        return True
+        return {}
 
 def loppcondition(context, request, process, appstruct):
     return request.bool
@@ -249,7 +249,7 @@ class ActionYLC(LoopActionCardinality):
 
     def start(self, context, request, appstruct, **kw):
         request.ylc = request.ylc+1
-        return True
+        return {}
 
 class ActionZ(ElementaryAction):
     #identification et classification
@@ -275,7 +275,7 @@ class Step1(StartStep):
 
     def start(self, context, request, appstruct, **kw):
         request.steps.append('step1')
-        return False
+        return {}
 
 class Step2(Behavior):
     behavior_id = 'step2'
@@ -284,7 +284,7 @@ class Step2(Behavior):
 
     def start(self, context, request, appstruct, **kw):
         request.steps.append('step2')
-        return False
+        return {}
 
 class Step3(EndStep):
     behavior_id = 'step3'
@@ -293,7 +293,7 @@ class Step3(EndStep):
 
     def start(self, context, request, appstruct, **kw):
         request.steps.append('step3')
-        return True
+        return {}
 
 class ActionYSteps(ElementaryAction):
     steps = {'s1':Step1 , 's2':Step2 , 's3': Step3}
@@ -343,4 +343,4 @@ class ActionSPMI(DataInput):
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
         item.is_executed = True
-        return True
+        return {}

@@ -310,6 +310,14 @@ class ValidationError(Error):
     template = 'templates/message.pt'
 
 
+class ExecutionError(Error):
+    principalmessage = u""
+    causes = []
+    solutions = []
+    type = 'danger'
+    template = 'templates/message.pt'
+
+
 class Validator(object):
 
     @classmethod
@@ -385,10 +393,16 @@ class Behavior(Step):
 
     def execute(self, context, request, appstruct, **kw):
         """Execution policy"""
-        is_finished = self.start(context, request, appstruct, **kw)
-        if is_finished:
+        result_execution = {}
+        try:
+            result_execution = self.start(context, request, appstruct, **kw)
+        except ExecutionError as error:
             self.after_execution(context, request, **kw)
-            return self.redirect(context, request, **kw)
+            raise error
+
+        kw.update(result_execution)
+        self.after_execution(context, request, **kw)
+        return self.redirect(context, request, **kw)
 
     def after_execution(self, context, request, **kw):
         pass  # pragma: no cover

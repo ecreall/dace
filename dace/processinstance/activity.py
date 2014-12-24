@@ -24,6 +24,7 @@ from .core import (
         Behavior,
         Validator,
         ValidationError,
+        ExecutionError,
         DEFAULTMAPPING_ACTIONS_VIEWS)
 from .lock import LockableElement
 from dace.util import getBusinessAction, getAllBusinessAction, getSite
@@ -365,7 +366,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             self.workitem.consume()
 
     def start(self, context, request, appstruct, **kw):
-        return True
+        return {}
 
     def execute(self, context, request, appstruct, **kw):
         self._consume_decision()
@@ -405,7 +406,14 @@ class StartStep(Behavior, Persistent):
 
     def execute(self, context, request, appstruct, **kw):
         BusinessAction.execute(self.wizard, context, request, appstruct, **kw)
-        self.start(context, request, appstruct, **kw)
+        result_execution = {}
+        try:
+            result_execution = self.start(context, request, appstruct, **kw)
+        except ExecutionError as error:
+            self.after_execution(context, request, **kw)
+            raise error
+
+        kw.update(result_execution)
         self.after_execution(context, request, **kw)
 
 class EndStep(Behavior, Persistent):
@@ -414,8 +422,14 @@ class EndStep(Behavior, Persistent):
         super(EndStep, self).__init__(**kwargs)
 
     def execute(self, context, request, appstruct, **kw):
-        self.start(context, request, appstruct, **kw)
-        self.after_execution(context, request, **kw)
+        result_execution = {}
+        try:
+            result_execution = self.start(context, request, appstruct, **kw)
+        except ExecutionError as error:
+            self.after_execution(context, request, **kw)
+            raise error
+
+        kw.update(result_execution)
         self.wizard.isexecuted = True
         if self.wizard.sub_process is None:
             self.wizard.finish_execution(context, request, **kw)
@@ -426,13 +440,19 @@ class ElementaryAction(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
         super(ElementaryAction, self).execute(context, request, appstruct, **kw)
-        is_finished = self.start(context, request, appstruct, **kw)
-        if is_finished:
-            self.isexecuted = True
-            if not self.sub_process:
-                self.finish_execution(context, request, **kw)
+        result_execution = {}
+        try:
+            result_execution = self.start(context, request, appstruct, **kw)
+        except ExecutionError as error:
+            self.finish_execution(context, request, **kw)
+            raise error
+            
+        kw.update(result_execution)
+        self.isexecuted = True
+        if not self.sub_process:
+            self.finish_execution(context, request, **kw)
 
-            return self.redirect(context, request, **kw)
+        return self.redirect(context, request, **kw)
 
 
 # Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
@@ -448,29 +468,45 @@ class LoopActionCardinality(BusinessAction):
 
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
+        result_execution = {}
         while self.loopCondition.__func__(context, request, 
                                     self.process, appstruct) and \
               nbloop < self.loopMaximum:
-            self.start(context, request, appstruct, **kw)
+            result = self.start(context, request, appstruct, **kw)
+            result_execution.update(result)
             nbloop += 1
+
+        return result_execution
 
     def _executeAfter(self, context, request, appstruct, **kw):
         nbloop = 0
+        result_execution = {}
         while nbloop < self.loopMaximum:
-            self.start(context, request, appstruct, **kw)
+            result = self.start(context, request, appstruct, **kw)
+            result_execution.update(result)
             nbloop += 1
             if not self.loopCondition.__func__(context, request, 
                                         self.process, appstruct):
                 break
 
+        return result_execution
+
     def execute(self, context, request, appstruct, **kw):
         super(LoopActionCardinality, self).execute(context, request,
                                                    appstruct, **kw)
-        if self.testBefore:
-            self._executeBefore(context, request, appstruct, **kw)
-        else:
-            self._executeAfter(context, request, appstruct, **kw)
+        result_execution = {}
+        try:
+            if self.testBefore:
+                result_execution = self._executeBefore(
+                                          context, request, appstruct, **kw)
+            else:
+                result_execution = self._executeAfter(
+                                          context, request, appstruct, **kw)
+        except ExecutionError as error:
+            self.finish_execution(context, request, **kw)
+            raise error
 
+        kw.update(result_execution)
         self.isexecuted = True
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
@@ -487,13 +523,17 @@ class LoopActionDataInput(BusinessAction):
                                                  appstruct, **kw)
         instances = self.loopDataInputRef.__func__(context, request,
                                              self.process, appstruct)
+        result_execution = {}
         for item in instances:
             if kw:
                 kw[ITEM_INDEX] = item
             else:
                 kw = {ITEM_INDEX: item}
-            self.start(context, request, appstruct, **kw)
 
+            result = self.start(context, request, appstruct, **kw)
+            result_execution.update(result)
+
+        kw.update(result_execution)
         self.isexecuted = True
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
@@ -547,7 +587,8 @@ class InfiniteCardinality(MultiInstanceAction):
     def execute(self, context, request, appstruct, **kw):
         super(InfiniteCardinality, self).execute(context, request,
                                                  appstruct, **kw)
-        self.start(context, request, appstruct, **kw)
+        result_execution = self.start(context, request, appstruct, **kw)    
+        kw.update(result_execution)
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
 
@@ -653,13 +694,22 @@ class ActionInstance(BusinessAction):
 
     def execute(self, context, request, appstruct, **kw):
         super(ActionInstance, self).execute(context, request, appstruct, **kw)
-        is_finished = self.start(context, request, appstruct, **kw)
-        if is_finished:
-            self.isexecuted = True
-            if self.sub_process is None:
-                self.finish_execution(context, request, **kw)
+        result_execution = {}
+        try:
+            result_execution = self.start(context, request, appstruct, **kw)
+        except ExecutionError as error:
+            self.unlock(request)
+            if self.principalaction.isSequential:
+                self.workitem.unlock(request)
 
-            return self.principalaction.redirect(context, request, **kw)
+            raise error
+            
+        kw.update(result_execution)
+        self.isexecuted = True
+        if self.sub_process is None:
+            self.finish_execution(context, request, **kw)
+
+        return self.principalaction.redirect(context, request, **kw)
 
     def finish_execution(self, context, request, **kw):
         self.principalaction.instances.remove(self.item)

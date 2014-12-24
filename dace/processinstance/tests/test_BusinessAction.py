@@ -663,7 +663,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(action_x.node_id, 'x')
         self.assertEqual(isinstance(action_x, ActionX), True)
 
-        objecta= ObjectA()
+        objecta = ObjectA()
         self.app['objecta'] = objecta
         call_actions = objecta.actions
         self.assertEqual(len(call_actions), 3)
