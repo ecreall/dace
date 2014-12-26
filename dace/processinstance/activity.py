@@ -74,7 +74,7 @@ class SubProcess(Activity):
 
     def __init__(self, definition):
         super(SubProcess, self).__init__(definition)
-        self.sub_processes = []
+        self.sub_processes = PersistentList()
 
     def _start_subprocess(self):
         def_container = find_service('process_definition_container')
@@ -89,6 +89,16 @@ class SubProcess(Activity):
         proc.execute()
         self.sub_processes.append(proc)
         return proc
+
+    def stop(self):
+        runtime = find_service('runtime')
+        for process in self.sub_processes:
+            process._finished = True
+            for node in process.nodes:
+                node.stop()
+                node.setproperty('workitems', [])
+
+            runtime.delfromproperty('processes', process)
 
 
 class ActionType:
