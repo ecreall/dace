@@ -207,17 +207,18 @@ class EndEvent(Throwing):
         self.process._finished = True
         registry = get_current_registry()
         registry.notify(ProcessFinished(self))
-        if self.process.definition.isSubProcess:
+        current_process = self.process
+        if current_process.definition.isSubProcess:
             request = get_current_request()
-            root_process = self.process.attachedTo.process
-            self.process.attachedTo.finish_execution(None, request)
+            root_process = current_process.attachedTo.process
+            current_process.attachedTo.finish_execution(None, request)
             root_process.execution_context.remove_sub_execution_context(
-                                          self.process.execution_context)
+                                          current_process.execution_context)
 
-        if self.process.definition.isVolatile:
-            getattr(self.process.__parent__.__class__, 
-                    self.process.__property__).remove(self.process.__parent__, 
-                                                      self.process)
+        if current_process.definition.isVolatile:
+            getattr(current_process.__parent__.__class__, 
+                    current_process.__property__).remove(current_process.__parent__, 
+                                                      current_process)
 
 
 class EventKind(object):
