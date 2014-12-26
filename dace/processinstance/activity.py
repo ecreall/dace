@@ -403,6 +403,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if self.isexecuted:
             self.workitem.node.finish_behavior(self.workitem)
 
+    def cancel_execution(self, context, request, **kw):
+        self.unlock(request)
+        self.workitem.unlock(request)
+
     def reindex(self):
         event = ObjectModified(self)
         registry = get_current_registry()
@@ -594,6 +598,11 @@ class InfiniteCardinality(MultiInstanceAction):
             self.unlock(request)
             self.workitem.unlock(request)
 
+    def cancel_execution(self, context, request, **kw):
+        if self.isSequential:
+            self.unlock(request)
+            self.workitem.unlock(request)
+
     def execute(self, context, request, appstruct, **kw):
         super(InfiniteCardinality, self).execute(context, request,
                                                  appstruct, **kw)
@@ -695,6 +704,11 @@ class ActionInstance(BusinessAction):
         if  not self.principalaction.instances:
             self.workitem.node.finish_behavior(self.workitem)
 
+    def cancel_execution(self, context, request, **kw):
+        self.unlock(request)
+        if self.principalaction.isSequential:
+            self.workitem.unlock(request)
+            
     def start(self, context, request, appstruct, **kw):
         if kw:
             kw[ITEM_INDEX] = self.item

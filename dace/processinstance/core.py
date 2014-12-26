@@ -407,6 +407,9 @@ class Behavior(Step):
     def after_execution(self, context, request, **kw):
         pass  # pragma: no cover
 
+    def cancel_execution(self, context, request, **kw):
+        pass
+        
     def redirect(self, context, request, **kw):
         pass  # pragma: no cover
 
