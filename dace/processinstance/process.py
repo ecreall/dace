@@ -834,6 +834,14 @@ class Process(Entity):
         except Exception:
             return False
 
+    def get_actions(self, action_id):
+        try:
+            workitems = self.getWorkItems()
+            publication_wi = workitems[self.id+'.'+action_id]
+            return publication_wi.actions
+        except Exception:
+            return []
+
     def reindex(self):
         event = ObjectModified(self)
         registry = get_current_registry()
