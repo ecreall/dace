@@ -33,6 +33,22 @@ from dace.descriptors import (
 from dace.relations import find_relations, connect
 
 
+
+def get_system_request():
+    request = get_current_request()
+    if isinstance(request, DummyRequest) and \
+       not hasattr(request, 'is_system_request'):
+        registry = get_current_registry()
+        application_url = registry.settings.get('application.url', None)
+        if application_url:
+            request.url = application_url
+            request.path_url = application_url
+            request.host_url = application_url
+            request.application_url = application_url
+
+    return request
+
+
 def is_broken(resource):
     return isinstance(resource, BrokenWrapper) or \
            IBroken.providedBy(resource)

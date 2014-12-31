@@ -6,11 +6,10 @@
 
 import transaction
 
-from pyramid.threadlocal import get_current_request
 from substanced.util import get_oid
 
 from dace.processinstance.event import DelayedCallback
-from dace.util import find_catalog, getAllSystemActions
+from dace.util import find_catalog, getAllSystemActions, get_system_request
 from dace.z3 import BaseJob
 from dace import log
 
@@ -23,7 +22,7 @@ CRAWLERS = []
 
 def _call_action(action, context):
     transaction.begin()
-    request = get_current_request()# TDOD pyramid.testing.DummyRequest 
+    request = get_system_request()# TDOD pyramid.testing.DummyRequest 
     try:
         action.execute(context, request, {})
         log.info("Execute action %s", action.title)
@@ -34,7 +33,7 @@ def _call_action(action, context):
 
 
 def _get_cache_key():
-    request = get_current_request()
+    request = get_system_request()
     return str(get_oid(request.user))
 #    from dace.objectofcollaboration.principal.util import get_current
 #    return str(get_oid(get_current()))#request.user))

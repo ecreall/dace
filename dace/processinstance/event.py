@@ -9,7 +9,7 @@ import threading
 import transaction
 import datetime
 
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import get_current_registry
 
 import zmq
 from zmq.eventloop.ioloop import IOLoop
@@ -17,10 +17,15 @@ from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
 from dace.z3 import Job
+from dace.util import get_system_request
+
 
 # shared between threads
 callbacks = {}
+
+
 callbacks_lock = threading.Lock()
+
 
 class DelayedCallback(object):
     """Schedule the given callback to be called once.
@@ -209,7 +214,7 @@ class EndEvent(Throwing):
         registry.notify(ProcessFinished(self))
         current_process = self.process
         if current_process.definition.isSubProcess:
-            request = get_current_request()
+            request = get_system_request()
             root_process = current_process.attachedTo.process
             current_process.attachedTo.finish_execution(None, request)
             root_process.execution_context.remove_sub_execution_context(
