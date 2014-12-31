@@ -45,6 +45,7 @@ def get_system_request():
             request.path_url = application_url
             request.host_url = application_url
             request.application_url = application_url
+            request.is_system_request = True
 
     return request
 
