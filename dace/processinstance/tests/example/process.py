@@ -3,27 +3,21 @@
 
 # licence: AGPL
 # author: Amen Souissi
-from pyramid.threadlocal import get_current_registry, get_current_request
+from pyramid.threadlocal import get_current_request
 
-from dace.util import utility
-from dace.processinstance import workitem
-from dace.processdefinition.processdef import ProcessDefinition
-from dace.processdefinition.activitydef import ActivityDefinition
-from dace.processdefinition.gatewaydef import GatewayDefinition
-from dace.processdefinition.transitiondef import TransitionDefinition
-from dace.interfaces import IProcessDefinition
-
-from substanced.content import content
-from substanced.property import PropertySheet
-from substanced.schema import NameSchemaNode
-from substanced.util import renamer
-
-from pontus.schema import Schema
-from dace.objectofcollaboration.application import Application
-from dace.processinstance.core import Wizard, Behavior
-from pontus.core import VisualisableElement, VisualisableElementSchema
-from ...activity import ElementaryAction, LimitedCardinality, InfiniteCardinality, DataInput, LoopActionCardinality, LoopActionDataInput, StartStep, EndStep
+from dace.processinstance.core import  Behavior
+from ...activity import (
+    ElementaryAction, 
+    LimitedCardinality, 
+    InfiniteCardinality, 
+    DataInput, 
+    LoopActionCardinality, 
+    LoopActionDataInput, 
+    StartStep, 
+    EndStep,
+    ActionType)
 from dace.objectofcollaboration.tests.example.objects import IObjectA
+from dace.objectofcollaboration.principal.util import has_role
 
 
 def relation_validationA(process, context):
@@ -55,6 +49,7 @@ class ActionA(ElementaryAction):
     def start(self, context, request, appstruct, **kw):
         self.process.execution_context.add_created_entity('objecta', appstruct['object'])
         return {}
+
 
 class ActionB(ElementaryAction):
     #identification et classification
@@ -91,6 +86,12 @@ class ActionX(ElementaryAction):
     roles_validation = roles_validationA
     processsecurity_validation = processsecurity_validationA
     state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+        if appstruct and 'object' in appstruct:
+            self.process.execution_context.add_created_entity('systemobject', appstruct['object'])
+            
+        return {}
 
 def cardB(process):
     return 3
@@ -343,4 +344,27 @@ class ActionSPMI(DataInput):
     def start(self, context, request, appstruct, **kw):
         item  = kw['item']
         item.is_executed = True
+        return {}
+
+
+def system_roles_validation(process, context):
+    return has_role(role=('System',))
+
+
+class ActionSystem(ElementaryAction):
+    #identification et classification
+    process_id = 'sample'
+    node_id = 'system'
+    title = 'action system'
+    context = IObjectA
+    processs_relation_id = 'systemobject'
+    actionType = ActionType.system
+    #validation
+    relation_validation = relation_validationA
+    roles_validation = system_roles_validation
+    processsecurity_validation = processsecurity_validationA
+    state_validation = state_validationA
+
+    def start(self, context, request, appstruct, **kw):
+
         return {}

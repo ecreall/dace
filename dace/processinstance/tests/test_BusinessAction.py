@@ -32,7 +32,8 @@ from dace.processinstance.tests.example.process import (
     ActionSP,
     ActionSPMI,
     ActionA,
-    ActionB)
+    ActionB,
+    ActionSystem)
 from dace.processinstance.workitem import StartWorkItem
 from dace.objectofcollaboration.tests.example.objects import ObjectA
 from dace.testing import FunctionalTests
@@ -875,6 +876,48 @@ class TestsBusinessAction(FunctionalTests):
         self.logAdmin()
         self.assertEqual(action_x.validate(objecta, self.request), True)
 
+    def test_actions_system(self):
+        self.logAdmin()
+        y, pd = self._process_valid_actions()
+        y._init_contexts([ActionSystem]) # system action
+        self.def_container.add_definition(pd)
+        objectc = ObjectA()
+        self.app['objectc'] = objectc
+
+        start_wi = pd.start_process('x')['x']
+        actions_x = start_wi.actions
+        self.assertEqual(len(actions_x), 1)
+        action_x = actions_x[0]
+        self.assertIs(action_x.workitem, start_wi)
+        self.assertEqual(action_x.node_id, 'x')
+        self.assertEqual(isinstance(action_x, ActionX), True)
+
+        call_actions = objectc.actions
+        self.assertEqual(len(call_actions), 3)
+        actions_id = [a.action.node_id for a in call_actions]
+        self.assertIn('x', actions_id)
+        self.assertIn('z', actions_id)
+        self.assertIn('system', actions_id)
+        action_x = [a.action for a in call_actions \
+                    if a.action.node_id == 'x'][0]
+        action_x.before_execution(objectc, self.request)
+        action_x.execute(objectc, self.request, 
+                         {'object': objectc}, **{})
+        proc = action_x.process
+        workitems = proc.getWorkItems()
+        workitems_ids = list(workitems.keys())
+        self.assertEqual(len(workitems_ids), 1)
+        self.assertIn('sample.y', workitems_ids)
+        import transaction
+        transaction.commit()
+        import time
+        time.sleep(6)
+        transaction.begin()
+        workitems = proc.getWorkItems()
+        workitems_ids = list(workitems.keys())
+        self.assertEqual(len(workitems_ids), 0)
+        self.assertEqual(proc._finished, True)
+
 
 class TestsPotentialActions(FunctionalTests):
 
@@ -892,7 +935,7 @@ class TestsPotentialActions(FunctionalTests):
     def logBob(self):
         self.request.user = self.users['bob']
 
-    def  _process_cycle(self):
+    def _process_cycle(self):
         """
         S: start event
         E: end event
@@ -997,7 +1040,6 @@ class TestsPotentialActions(FunctionalTests):
         wis = process.getWorkItems()
         actions_ids = list(wis.keys())
         self.assertEqual(len(actions_ids), 0)
-
 
 
 
@@ -1257,3 +1299,4 @@ class TestsSubProcess(FunctionalTests):
         wi_sb.start_test_activity()
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 0)
+

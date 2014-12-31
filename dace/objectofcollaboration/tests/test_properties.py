@@ -410,3 +410,39 @@ class TestProperties(FunctionalTests):
         object1.delfromproperty('composition_m', object2)
         self.assertIs(object3.getproperty('shared'), None)
         self.assertEqual(len(object3.getproperty('shared_m')), 0)
+
+
+    def test_set_get_data(self):
+        self.app['object1'] = Object1()
+        object1 = self.app['object1']
+        class Node:
+            pass
+
+        namenode = Node()
+        namenode.name = 'name'
+        compu_node = Node()
+        compu_node.name = 'composition_u'
+        schema = [namenode, compu_node]
+        self.assertEqual(hasattr(object1, 'name'), False)
+        object1.set_data({'name': 'object1_name'})
+        self.assertEqual(hasattr(object1, 'name'), True)
+        self.assertEqual(object1.name, 'object1_name')
+
+        data = object1.get_data(schema)
+        self.assertIn('name', data)
+        self.assertEqual(data['name'], 'object1_name')
+        self.assertIn('composition_u', data)
+        self.assertEqual(data['composition_u'], None)
+
+        self.app['object2'] = Object1()
+        object2 = self.app['object2']
+        object1.set_data({'composition_u': object2})
+
+        data = object1.get_data(schema)
+        self.assertIn('composition_u', data)
+        self.assertEqual(data['composition_u'], object2)
+
+
+
+
+
