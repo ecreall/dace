@@ -57,9 +57,8 @@ def run():
                 context = action.get_potential_context()
             except Exception:
                 continue
-
-            if getattr(action, '__parent__', None) is not None and \
-               context is not None:
+            #getattr(action, '__parent__', None) is not None and \
+            if context is not None:
                 _call_action(action, context)
 
         log.info("checked")
