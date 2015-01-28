@@ -27,14 +27,10 @@ class ResourceRef(object):
         obj = None
         if isinstance(self.ref, WeakRef):
             ref = self.ref()
-            oid = get_oid(ref, None)
-            if oid:
-                request = get_current_request()
-                root = getattr(request, 'root', find_root(ref))
-                objectmap = find_objectmap(root)
-                obj = objectmap.object_for(oid)
-
-        else :
+            name = getattr(ref, '__name__', None)
+            if name is not None:
+                obj = ref
+        else:
             obj = self.ref
 
         return obj
