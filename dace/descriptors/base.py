@@ -31,9 +31,26 @@ class ResourceRef(object):
 
         return obj
 
+    def __hash__(self):
+        self = self()
+        if self is None:
+            raise TypeError('Weakly-referenced object has gone away')
+
+        return hash(self)
+
     def __eq__(self, other):
-        return isinstance(other, ResourceRef) and \
-               other() is self.ref()
+        if not isinstance(other, ResourceRef):
+            return False
+
+        self = self()
+        if self is None:
+            raise TypeError('Weakly-referenced object has gone away')
+
+        other = other()
+        if other is None:
+            raise TypeError('Weakly-referenced object has gone away')
+
+        return self == other
 
 
 def ref(resource):
