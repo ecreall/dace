@@ -1,14 +1,10 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
 
 from persistent.wref import WeakRef
-from pyramid.traversal import find_root
-from pyramid.threadlocal import get_current_request
-
-from substanced.util import get_oid, find_objectmap
 
 
 class Descriptor(object):
@@ -37,7 +33,7 @@ class ResourceRef(object):
 
     def __eq__(self, other):
         return isinstance(other, ResourceRef) and \
-               other() is self.ref() 
+               other() is self.ref()
 
 
 def ref(resource):
@@ -48,4 +44,4 @@ def get_ref(obj):
     if isinstance(obj, ResourceRef):
         return obj()
     else :
-        return obj	
+        return obj
