@@ -12,6 +12,7 @@ import transaction
 from pyramid.events import subscriber
 from pyramid.interfaces import IApplicationCreated
 from pyramid.testing import DummyRequest
+from pyramid.threadlocal import manager
 from zope.processlifetime import DatabaseOpenedWithRoot
 from zope.processlifetime import IDatabaseOpenedWithRoot
 
@@ -122,8 +123,10 @@ def application_created(event):
     db = registry._zodb_databases['']
     # Create app_root if it doesn't exist yet.
     request = DummyRequest()
+    manager.push({'registry': registry, 'request': request})
     from substanced.db import root_factory
     event.app.root_factory = root_factory
     event.app.root_factory(request)
     # there is a commit done in root_factory if app_root was created
     registry.notify(DatabaseOpenedWithRoot(db))
+    manager.pop()

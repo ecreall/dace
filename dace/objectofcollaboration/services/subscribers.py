@@ -6,6 +6,7 @@
 # author: Amen Souissi
 
 from pyramid.events import subscriber
+from pyramid.threadlocal import get_current_request
 
 from substanced.event import RootAdded
 
@@ -16,4 +17,6 @@ from .processdef_container import create_process_definition_container
 @subscriber(RootAdded)
 def add_process_definition_container(event):
     root = event.object
+    request = get_current_request()
+    request.root = root
     create_process_definition_container(root)
