@@ -6,6 +6,7 @@
 
 from persistent import Persistent
 from zope.interface import Attribute
+from pyramid.decorator import reify
 
 from dace.descriptors import SharedUniqueProperty, SharedMultipleProperty
 from dace.objectofcollaboration.entity import Entity
@@ -160,7 +161,7 @@ class Transaction(Persistent):
             if transitions:
                 if not isinstance(transitions, (tuple, list)):
                     transitions = [transitions]
-
+                    
                 Path(transitions, transaction)
 
         self.add_subtransactions(transaction)
@@ -192,34 +193,66 @@ class Path(Persistent):
         else:
             self.transitions = tuple(transitions)
 
+    def _dirty(self):
+        try:
+            del self.source
+        except AttributeError:
+            pass
+
+        try:
+            del self.targets
+        except AttributeError:
+            pass
+
+        try:
+            del self.is_a_cycle
+        except AttributeError:
+            pass
+
+        try:
+            del self.first
+        except AttributeError:
+            pass
+
+        try:
+            del self.latest
+        except AttributeError:
+            pass
+
+        try:
+            del self.get_multiple_target
+        except AttributeError:
+            pass
+
     def set_transaction(self, transaction):
         self.transaction = transaction
 
     def add_transition(self, transition):
+        self._dirty()
         if not isinstance(transition, (list, tuple)):
             transition = (transition, )
 
         self.transitions += transition
 
-    @property
+    @reify
     def sources(self):
         if self.is_a_cycle:
             return [self.transitions[0].source]
 
         return [t.source for t in self.first]
 
-    @property
+    @reify
     def targets(self):
         if self.is_a_cycle:
             return [self.transitions[-1].target]
 
         return [t.target for t in self.latest]
 
-    @property
+    @reify
     def is_a_cycle(self):
         return self.transitions and not self.first and not self.latest
 
-    @property
+    @reify
     def first(self):
         if self.transitions:
             source_transitions = []
@@ -237,7 +270,7 @@ class Path(Persistent):
 
         return []
 
-    @property
+    @reify
     def latest(self):
         if self.transitions:
             target_transitions = []
@@ -288,29 +321,15 @@ class Path(Persistent):
         return False
 
     def _get_transitions_source(self, node):
-        result = [t for t in self.transitions if t.source is node]
-        result_set = []
-        if result:
-            result_set = [result.pop()]
-            for transition in result:
-                eqs = [t for t in result_set if t.equal(transition)]
-                if not eqs:
-                    result_set.append(transition)
+        return list(dict([((t.source, t.target), t) for t in self.transitions \
+                            if t.source is node]).values())
 
-        return result_set
 
     def _get_transitions_target(self, node):
-        result = [t for t in self.transitions if t.target is node]
-        result_set = []
-        if result:
-            result_set = [result.pop()]
-            for transition in result:
-                eqs = [t for t in result_set if t.equal(transition)]
-                if not eqs:
-                    result_set.append(transition)
+        return list(dict([((t.source, t.target), t) for t in self.transitions \
+                            if t.target is node]).values())
 
-        return result_set
-
+    @reify
     def get_multiple_target(self):
         results = set()
         for transition in self.transitions:

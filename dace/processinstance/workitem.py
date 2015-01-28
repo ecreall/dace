@@ -101,6 +101,7 @@ class StartWorkItem(UserDecision):
         self.process = proc
         self.path.transitions = [proc[t.__name__] \
                                 for t in self.path.transitions]
+        self.path._dirty()
         start_transaction = proc.global_transaction.start_subtransaction(
                             'Start', (self.path.first[0]), initiator=self)
         proc[self.path.sources[0].__name__].start(start_transaction)

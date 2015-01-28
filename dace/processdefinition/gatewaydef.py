@@ -46,7 +46,7 @@ class ParallelGatewayDefinition(GatewayDefinition):
         for path in paths:
             test_path.add_transition(path.transitions)
 
-        multiple_target = test_path.get_multiple_target()
+        multiple_target = test_path.get_multiple_target
         if multiple_target:
             for node in multiple_target:
                 if isinstance(self.process[node.__name__], ExclusiveGatewayDefinition):
