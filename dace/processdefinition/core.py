@@ -321,13 +321,13 @@ class Path(Persistent):
         return False
 
     def _get_transitions_source(self, node):
-        return list(dict([((t.source, t.target), t) for t in self.transitions \
-                            if t.source is node]).values())
+        return list({(t.source, t.target): t for t in self.transitions \
+                      if t.source is node}.values())
 
 
     def _get_transitions_target(self, node):
-        return list(dict([((t.source, t.target), t) for t in self.transitions \
-                            if t.target is node]).values())
+        return list({(t.source, t.target): t for t in self.transitions \
+                            if t.target is node}.values())
 
     @reify
     def get_multiple_target(self):
