@@ -33,8 +33,8 @@ class ResourceRef(object):
 
     def __hash__(self):
         self = self()
-        if self is None:
-            raise TypeError('Weakly-referenced object has gone away')
+        # if self is None:
+        #     raise TypeError('Weakly-referenced object has gone away')
 
         return hash(self)
 
@@ -43,12 +43,12 @@ class ResourceRef(object):
             return False
 
         self = self()
-        if self is None:
-            raise TypeError('Weakly-referenced object has gone away')
+        # if self is None:
+        #     raise TypeError('Weakly-referenced object has gone away')
 
         other = other()
-        if other is None:
-            raise TypeError('Weakly-referenced object has gone away')
+        # if other is None:
+        #     raise TypeError('Weakly-referenced object has gone away')
 
         return self == other
 
