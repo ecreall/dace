@@ -25,18 +25,27 @@ class role(object):
         def callback(scanner, name, ob):
             ob.name = self.name
             ob.islocal = self.islocal
-            ob.superiors = self.superiors
-            def get_allsuperiors(ob):
-                superiors = list(ob.superiors)
-                for sup in ob.superiors:
+            ob.superiors = list(ob.superiors)
+            ob.superiors.extend(self.superiors)
+            ob.superiors = list(set(ob.superiors))
+            def get_allsuperiors(role_ob):
+                superiors = list(role_ob.superiors)
+                for sup in role_ob.superiors:
                     superiors.extend(get_allsuperiors(sup))
 
                 return list(set(superiors))
 
-            ob.all_superiors = get_allsuperiors(ob)
+            ob.all_superiors = list(ob.all_superiors)
+            ob.all_superiors.extend(get_allsuperiors(ob))
+            ob.all_superiors = list(set(ob.all_superiors))
             for role in self.lowers:
+                role.superiors = list(role.superiors)
                 role.superiors.append(ob)
-                role.all_superiors = get_allsuperiors(role)
+                role.superiors = list(set(role.superiors))
+                role.all_superiors = list(role.all_superiors)
+                role.all_superiors.append(ob)
+                role.all_superiors.extend(ob.all_superiors)
+                role.all_superiors = list(set(role.all_superiors))
 
             DACE_ROLES[ob.name] = ob
  
