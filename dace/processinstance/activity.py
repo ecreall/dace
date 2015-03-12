@@ -172,7 +172,9 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         instances = getBusinessAction(context, request, 
                                       cls.node_definition.process.id, 
                                       cls.node_definition.__name__, 
-                                      cls.behavior_id)
+                                      cls.behavior_id,
+                                      action_type=cls)
+
         if instances is None:
             return None
 

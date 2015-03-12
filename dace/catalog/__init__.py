@@ -68,6 +68,14 @@ class DaceCatalogViews(object):
         return adapter.object_type()
 
     @indexview()
+    def object_type_class(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
+        if adapter is None:
+            return default
+
+        return adapter.object_type_class()
+
+    @indexview()
     def container_oid(self, default):
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
@@ -169,6 +177,7 @@ class DaceIndexes(object):
 
     object_provides = Keyword()
     object_type = Field()
+    object_type_class = Field()
     object_title = Text()
     object_states = Keyword()
     object_description = Text()
@@ -209,6 +218,9 @@ class SearchableObject(Adapter):
             return providedBy(self.context).declared[0].__identifier__
 
         return ''
+
+    def object_type_class(self):
+        return self.context.__class__.__name__
 
     def containers_oids(self):
         if type(self.context) == Root:

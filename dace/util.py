@@ -221,7 +221,8 @@ def getBusinessAction(context,
                       request,
                       process_id, 
                       node_id, 
-                      behavior_id=None):
+                      behavior_id=None,
+                      action_type=None):
     allactions = []
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
@@ -238,6 +239,10 @@ def getBusinessAction(context,
                                     for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any',context_oid])
 
+    if action_type:
+        object_type_class_index = dace_catalog['object_type_class']
+        query = query & object_type_class_index.eq(action_type.__name__)
+
     for action in query.execute().all():
         try:
             action.validate(context, request)
@@ -251,7 +256,9 @@ def getBusinessAction(context,
     if not pd.isControlled:
         s_wi = pd.start_process(node_id)[node_id]
         if s_wi:
-            swisactions = s_wi.actions
+            swisactions = [action for action in s_wi.actions \
+                           if action_type is None or \
+                              action._class_.__name__ == action_type.__name__]
             for action in swisactions:
                 try:
                     action.validate(context, request)
@@ -265,7 +272,8 @@ def getBusinessAction(context,
         return None
 
 
-def getAllSystemActions(request=None):
+def getAllSystemActions(request=None,
+                        action_type=None):
     if request is None:
         request = get_current_request()
 
@@ -293,9 +301,10 @@ def queryBusinessAction(context,
                         request, 
                         process_id, 
                         node_id, 
-                        behavior_id=None):
+                        behavior_id=None,
+                        action_type=None):
     return getBusinessAction(context, request,
-                        process_id, node_id, behavior_id)
+                        process_id, node_id, behavior_id, IBusinessAction)
 
 
 def getAllBusinessAction(context, 
@@ -304,7 +313,8 @@ def getAllBusinessAction(context,
                          process_id=None,
                          node_id=None,
                          behavior_id=None,
-                         process_discriminator=None):
+                         process_discriminator=None,
+                         action_type=None):
     if request is None:
         request = get_current_request()
 
@@ -320,6 +330,10 @@ def getAllBusinessAction(context,
             context_id_index.any(tuple([d.__identifier__ \
                                    for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any', context_oid])
+
+    if action_type:
+        object_type_class_index = dace_catalog['object_type_class']
+        query = query & object_type_class_index.eq(action_type.__name__)
 
     if isautomatic:
         isautomatic_index = dace_catalog['isautomatic']
@@ -359,8 +373,10 @@ def getAllBusinessAction(context,
         wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
         for wi in wis:
             swisactions = [action for action in wi.actions \
-                           if not isautomatic or \
-                             (isautomatic and action.isautomatic)]
+                           if (not isautomatic or \
+                               (isautomatic and action.isautomatic)) and \
+                              (action_type is None or \
+                              action._class_.__name__ == action_type.__name__)]
             for action in swisactions:
                 try:
                     action.validate(context, request)
