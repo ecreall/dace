@@ -13,6 +13,7 @@ from dace.interfaces import IProcessDefinitionContainer
 from ..entity import Entity
 from dace.descriptors import CompositeMultipleProperty
 
+
 DEFINITIONS = {}
 
 
@@ -53,7 +54,8 @@ class process_definition(object):
 
             try:
                 db = scanner.config.registry._zodb_databases['']
-                def_container = db.open().root()['app_root']['process_definition_container']
+                root = db.open().root()['app_root']
+                def_container = root['process_definition_container']
                 old_def = def_container.get_definition(component.id)
                 if old_def is not None:
                     def_container.delfromproperty('definitions', old_def)

@@ -13,8 +13,7 @@ from pyramid.events import subscriber
 from pyramid.interfaces import IApplicationCreated
 from pyramid.testing import DummyRequest
 from pyramid.threadlocal import manager
-from zope.processlifetime import DatabaseOpenedWithRoot
-from zope.processlifetime import IDatabaseOpenedWithRoot
+from zope.processlifetime import DatabaseOpenedWithRoot, IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime

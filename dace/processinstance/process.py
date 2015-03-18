@@ -686,7 +686,10 @@ class Process(Entity):
 
     def definition(self):
         def_container = find_service('process_definition_container')
-        pd = def_container.get_definition(self.id)
+        pd = None
+        if def_container is not None:
+            pd = def_container.get_definition(self.id)
+            
         return pd
 
     definition = property(definition)

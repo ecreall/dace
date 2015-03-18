@@ -22,7 +22,7 @@ class User(OriginUser, Entity):
         OriginUser.__init__(self, password, email, tzname, locale)
         Entity.__init__(self, **kwargs)
 
-    def email_password_reset(self, request):
+    def email_password_reset(self, request, message=None):
         """ Sends a password reset email."""
         root = request.virtual_root
         sitename = acquire(root, 'title', None) or 'Dace'
@@ -32,14 +32,17 @@ class User(OriginUser, Entity):
         reseturl = request.resource_url(reset)
         if not self.email:
             raise ValueError('User does not possess a valid email address.')
-        message = Message(
-            subject = 'Account information for %s' % sitename,
-            recipients = [self.email],
-            body = render('dace:objectofcollaboration/principal/templates/resetpassword_email.pt',
-                          dict(reseturl=reseturl))
-            )
+
+        _message = message
+        if _message is None:
+            _message = Message(
+                subject = 'Account information for %s' % sitename,
+                recipients = [self.email],
+                body = render('dace:objectofcollaboration/principal/templates/resetpassword_email.pt',
+                              dict(reseturl=reseturl))
+                )
         mailer = get_mailer(request)
-        mailer.send(message)
+        mailer.send(_message)
 
 
 class Machine(User):
