@@ -387,13 +387,14 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
         if isinstance(self.node, SubProcess) and not self.sub_process:
             self.sub_process = self.node._start_subprocess()
-            self.sub_process.attachedTo = self
-            if ITEM_INDEX in kw:
-                self.sub_process.execution_context.add_involved_entity(
-                                             ITEM_INDEX, kw[ITEM_INDEX])
+            if self.sub_process:
+                self.sub_process.attachedTo = self
+                if ITEM_INDEX in kw:
+                    self.sub_process.execution_context.add_involved_entity(
+                                                 ITEM_INDEX, kw[ITEM_INDEX])
 
-            self.process.execution_context.add_sub_execution_context(
-                                   self.sub_process.execution_context)
+                self.process.execution_context.add_sub_execution_context(
+                                       self.sub_process.execution_context)
 
     def finish_execution(self, context, request, **kw):
         self.after_execution(context, request, **kw)
