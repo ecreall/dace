@@ -331,7 +331,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             self.assigne_to(users)
 
     def validate(self, context, request, **kw):
-        #TODO optimization: add activity validators
         is_valid, message = self.validate_mini(context, request, **kw)
         if not is_valid:
             raise ValidationError(msg=message)
@@ -754,14 +753,13 @@ class ActionInstance(BusinessAction):
 
 class ActionInstanceAsPrincipal(ActionInstance):
 
-    def validate(self, context, request, **kw):
+
+    def validate_mini(self, context, request, **kw):
         if not (context is self.item):
-            raise ValidationError(msg='Context not valid')
-        try:
-            return super(ActionInstanceAsPrincipal, self).validate(
+            return False, _('Context not valid')
+        
+        return super(ActionInstanceAsPrincipal, self).validate_mini(
                                              context, request, **kw)
-        except ValidationError as error:
-            raise error
 
     def execute(self, context, request, appstruct, **kw):
         if kw is not None:
