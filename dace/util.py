@@ -243,12 +243,8 @@ def getBusinessAction(context,
         object_type_class_index = dace_catalog['object_type_class']
         query = query & object_type_class_index.eq(action_type.__name__)
 
-    for action in query.execute().all():
-        try:
-            action.validate(context, request)
-            allactions.append(action)
-        except Exception:
-            continue
+    allactions = [action for action in  query.execute().all() \
+              if action.validate_mini(context, request)[0]]
 
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
@@ -259,12 +255,8 @@ def getBusinessAction(context,
             swisactions = [action for action in s_wi.actions \
                            if action_type is None or \
                               action._class_.__name__ == action_type.__name__]
-            for action in swisactions:
-                try:
-                    action.validate(context, request)
-                    allactions.append(action)
-                except Exception:
-                    continue
+            allactions.extend([action for action in swisactions \
+                               if action.validate_mini(context, request)[0]])
 
     if allactions:
         return allactions
@@ -361,13 +353,8 @@ def getAllBusinessAction(context,
         process_discriminator_index = dace_catalog['process_discriminator']
         query = query & process_discriminator_index.eq(process_discriminator)
 
-    for action in query.execute().all():
-        try:
-            action.validate(context, request)
-            allactions.append(action)
-        except Exception:
-            continue
-
+    allactions = [action for action in  query.execute().all() \
+                  if action.validate_mini(context, request)[0]]
     # Add start workitem
     for name, pd in allprocessdef:
         wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
@@ -376,13 +363,10 @@ def getAllBusinessAction(context,
                            if (not isautomatic or \
                                (isautomatic and action.isautomatic)) and \
                               (action_type is None or \
-                              action._class_.__name__ == action_type.__name__)]
-            for action in swisactions:
-                try:
-                    action.validate(context, request)
-                    allactions.append(action)
-                except Exception:
-                    continue
+                               action._class_.__name__ == action_type.__name__)]
+
+            allactions.extend([action for action in swisactions \
+                               if action.validate_mini(context, request)[0]])
 
     return allactions
 

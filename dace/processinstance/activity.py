@@ -15,8 +15,10 @@ from pyramid.interfaces import ILocation
 from substanced.event import ObjectModified
 from substanced.util import get_oid
 
-from dace.util import find_service, get_obj, find_entities
-
+from dace.util import (
+    find_service, get_obj, find_entities,  
+    getBusinessAction, getAllBusinessAction, getSite)
+from dace import _
 from .core import (
         EventHandler,
         BehavioralFlowNode,
@@ -27,7 +29,6 @@ from .core import (
         ExecutionError,
         DEFAULTMAPPING_ACTIONS_VIEWS)
 from .lock import LockableElement
-from dace.util import getBusinessAction, getAllBusinessAction, getSite
 from dace.interfaces import (
     IActivity,
     IBusinessAction)
@@ -331,43 +332,51 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     def validate(self, context, request, **kw):
         #TODO optimization: add activity validators
+        is_valid, message = self.validate_mini(context, request, **kw)
+        if not is_valid:
+            raise ValidationError(msg=message)
+
+        return True
+
+    def validate_mini(self, context, request, **kw):
+        #TODO optimization: add activity validators
         if self.isexecuted:
-            raise ValidationError(msg='Action is executed')
+            return False, _('Action is executed')
 
         if self.is_locked(request):
-            raise ValidationError(msg='Action is locked')
+            return False, _('Action is locked')
 
         if not self.workitem.validate():
-            raise ValidationError(msg='Workitem is not valid')
+            return False, _('Workitem is not valid')
 
         if not context.__provides__(self.context):
-            raise ValidationError(msg='Context is not valid')
+            return False, _('Context is not valid')
 
         process = kw.get('process', self.process)
         if not getattr(self.relation_validation, 
                        '__func__', MARKER_FUNC)(process, context):
-            raise ValidationError(msg='Context is not valid')
+            return False, _('Context is not valid')
 
         _assigned_to = list(self.assigned_to)
         if _assigned_to:
             _assigned_to.append(getSite()['principals']['users']['admin'])
             current_user = get_current(request)
             if not( current_user in _assigned_to):
-                raise ValidationError(msg='Action is assigned to an other user')
+                return False, _('Action is assigned to an other user')
 
         elif not getattr(self.roles_validation, 
                          '__func__', MARKER_FUNC)(process, context):
-            raise ValidationError(msg='Role is not valid')
+            return False, _('Role is not valid')
 
         if not getattr(self.processsecurity_validation, 
                        '__func__', MARKER_FUNC)(process, context):
-            raise ValidationError(msg='Security is violeted')
+            return False, _('Security is violeted')
 
         if not getattr(self.state_validation, 
                        '__func__', MARKER_FUNC)(process, context):
-            raise ValidationError(msg='Context state is not valid')
+            return False, _('Context state is not valid')
 
-        return True
+        return True, _('Valid action')
 
     def before_execution(self, context, request, **kw):
         self.lock(request)
