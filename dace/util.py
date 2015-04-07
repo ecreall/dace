@@ -31,6 +31,7 @@ from dace.interfaces import (
 from dace.descriptors import (
     Descriptor, CompositeUniqueProperty, CompositeMultipleProperty)
 from dace.relations import find_relations, connect
+from dace import _
 
 
 
@@ -217,6 +218,10 @@ def get_current_process_uid(request):
     return None
 
 
+def always_false(context, request):
+    return False, _('Default validation')
+
+
 def getBusinessAction(context,
                       request,
                       process_id, 
@@ -244,7 +249,8 @@ def getBusinessAction(context,
         query = query & object_type_class_index.eq(action_type.__name__)
 
     allactions = [action for action in  query.execute().all() \
-              if action.validate_mini(context, request)[0]]
+              if getattr(action, 'validate_mini', always_false)(
+                      context, request)[0]]
 
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
@@ -354,7 +360,8 @@ def getAllBusinessAction(context,
         query = query & process_discriminator_index.eq(process_discriminator)
 
     allactions = [action for action in  query.execute().all() \
-                  if action.validate_mini(context, request)[0]]
+                  if getattr(action, 'validate_mini', always_false)(
+                            context, request)[0]]
     # Add start workitem
     for name, pd in allprocessdef:
         wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
