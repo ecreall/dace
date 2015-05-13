@@ -55,6 +55,9 @@ class process_definition(object):
             try:
                 db = scanner.config.registry._zodb_databases['']
                 root = db.open().root()['app_root']
+                if hasattr(root, '__Broken_state__'):
+                    root = db.open().root()['app_root']
+
                 def_container = root['process_definition_container']
                 old_def = def_container.get_definition(component.id)
                 if old_def is not None:
