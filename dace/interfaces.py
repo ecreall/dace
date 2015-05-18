@@ -4,15 +4,31 @@
 # licence: AGPL
 # author: Amen Souissi
 
-from zope.interface import Interface, Attribute
+from zope.interface import Interface, Attribute as SourceAttribute
 from substanced.interfaces import IPrincipal, IFolder, IRoot
 
 
+
+class Attribute(SourceAttribute):
+
+    def __init__(self, __name__, __doc__='', **kwargs):
+        super(Attribute, self).__init__(__name__, __doc__='')
+        for name in kwargs:
+            setattr(self, name, kwargs.get(name))
+
+
 class IObject(IFolder):
-    pass
+
+    title = Attribute("title")
+
+    created_at = Attribute("created_at")
+
+    modified_at = Attribute("modified_at")
 
 
 class IEntity(IObject):
+
+    state = Attribute("title", multiplicity='*')
 
     def getCreator():
         """Get creator with `tag` relation.
@@ -34,7 +50,8 @@ class IProfile(IPrincipal, IEntity):
 
 
 class IUser(IProfile):
-    pass
+
+    email = Attribute("email")
 
 
 class IMachine(IProfile):
