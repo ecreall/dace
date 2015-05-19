@@ -304,7 +304,7 @@ def get_objects_with_role(user=None, role=None):
     return objects
 
 
-def get_acces_keys(user):
+def get_access_keys(user):
     if isinstance(user, Anonymous):
         return ['anonymous']
 
