@@ -108,6 +108,9 @@ def grant_roles(user=None, roles=(), root=None):
                 if not(obj is root):
                     connect(user, root, **opts)
 
+    if hasattr(user, 'reindex'):
+        user.reindex()
+
 
 def revoke_roles(user=None, roles=()):
     if not roles:
@@ -140,6 +143,9 @@ def revoke_roles(user=None, roles=()):
 
         for relation in relations:
             disconnect(relation)
+
+    if hasattr(user, 'reindex'):
+        user.reindex()
 
 
 def _get_allsuperiors(role_id, root):
@@ -296,3 +302,24 @@ def get_objects_with_role(user=None, role=None):
         objects.remove(root)
 
     return objects
+
+
+def get_acces_keys(user):
+    if isinstance(user, Anonymous):
+        return ['anonymous']
+
+    principals = find_service(user, 'principals')
+    sd_admin = principals['users']['admin']
+    if sd_admin is user:
+        return ['admin']
+
+    root = getSite()
+    root_oid = get_oid(root)
+    opts = {u'source_id': get_oid(user)}
+    opts[u'reftype'] = 'Role'
+    relations = find_relations(user, opts).all()
+    result = [(t.relation_id+'_'+str(t.target_id)).lower() \
+              for t in relations if t.target_id != root_oid]
+    result.extend([t.relation_id.lower() \
+                   for t in relations if t.target_id == root_oid])
+    return list(set(result))
