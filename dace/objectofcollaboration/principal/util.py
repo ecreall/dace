@@ -184,7 +184,7 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
                 u'target_id': get_oid(context)}
         opts[u'relation_id'] = role
         opts[u'reftype'] = 'Role'
-        if find_relations(context, opts):
+        if find_relations(root, opts):
             return True
 
     return False
@@ -229,7 +229,7 @@ def has_any_roles(user=None,
                 u'target_id': get_oid(context)}
         opts[u'relation_id'] = role
         opts[u'reftype'] = 'Role'
-        if find_relations(context, opts):
+        if find_relations(root, opts):
             return True
 
     return False
