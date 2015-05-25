@@ -317,7 +317,7 @@ def get_access_keys(user):
     root_oid = get_oid(root)
     opts = {u'source_id': get_oid(user)}
     opts[u'reftype'] = 'Role'
-    relations = find_relations(user, opts).all()
+    relations = list(find_relations(user, opts).all())
     result = [(t.relation_id+'_'+str(t.target_id)).lower() \
               for t in relations if t.target_id != root_oid]
     result.extend([t.relation_id.lower() \
