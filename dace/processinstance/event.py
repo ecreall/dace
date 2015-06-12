@@ -219,9 +219,13 @@ class EndEvent(Throwing):
             current_process.attachedTo.finish_execution(None, request)
             root_process.execution_context.remove_sub_execution_context(
                                           current_process.execution_context)
+            parent_node = current_process.attachedTo.node
+            if current_process in parent_node.sub_processes:
+                parent_node.sub_processes.remove(current_process)
 
-        if current_process.definition.isVolatile:
-            getattr(current_process.__parent__.__class__, 
+        if current_process.definition.isVolatile and \
+           getattr(current_process, '__property__', None):
+            getattr(current_process.__parent__.__class__,
                     current_process.__property__).remove(current_process.__parent__, 
                                                       current_process)
 
