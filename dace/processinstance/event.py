@@ -206,8 +206,11 @@ class EndEvent(Throwing):
             return
         # Remove all workitems from process
         for node in self.process.nodes:
-            node.stop()
-            node.setproperty('workitems', [])
+            try:
+                node.stop()
+                node.setproperty('workitems', [])
+            except:
+                pass
 
         self.process._finished = True
         registry = get_current_registry()
