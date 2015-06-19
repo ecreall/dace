@@ -58,6 +58,10 @@ class IMachine(IProfile):
     pass
 
 
+class IGroup(IEntity):
+    pass
+
+
 class IProcess(IEntity):
 
     definition = Attribute("Process definition")

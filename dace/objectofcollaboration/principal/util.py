@@ -10,8 +10,10 @@ import random
 from pyramid.threadlocal import get_current_request
 
 from substanced.util import get_oid, find_service
+from substanced.principal import User
 
 from dace.relations import connect, disconnect, find_relations
+from dace.objectofcollaboration.principal import Group
 from dace.util import getSite
 from .role import DACE_ROLES, Anonymous as RoleAnonymous
 
@@ -54,27 +56,33 @@ def get_current(request=None):
     return result
 
 
-def get_roles(user=None, obj=None):
+def get_roles(user=None, obj=None, root=None):
     if user is None:
         user = get_current()
 
     if isinstance(user, Anonymous):
         return [RoleAnonymous.name] #TODO use cookies to find roles
 
+    if root is None:
+        root = getSite()
+
     if obj is None:
-        obj = getSite()
+        obj = root
 
     opts = {u'source_id': get_oid(user),
             u'target_id': get_oid(obj)}
     opts[u'reftype'] = 'Role'
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
-    root = getSite()
     principals = find_service(root, 'principals')
     sd_admin = principals['users']['admin']
     if sd_admin is user and not ('Admin' in roles):
         roles.append('Admin')
 
-    return roles
+    groups = getattr(user, 'groups', [])
+    for group in groups:
+        roles.extend(get_roles(group, obj, root))
+
+    return list(set(roles))
 
 
 def grant_roles(user=None, roles=(), root=None):
@@ -112,7 +120,7 @@ def grant_roles(user=None, roles=(), root=None):
         user.reindex()
 
 
-def revoke_roles(user=None, roles=()):
+def revoke_roles(user=None, roles=(), root=None):
     if not roles:
         return
 
@@ -123,7 +131,9 @@ def revoke_roles(user=None, roles=()):
         return #TODO use cookies to revoke roles
 
     normalized_roles = []
-    root = getSite()
+    if root is None:
+        root = getSite()
+
     for role in roles:
         if isinstance(role, basestring):
             normalized_roles.append((role, root))
@@ -178,14 +188,17 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         if sd_admin is user:
             return True
 
+    groups = list(getattr(user, 'groups', []))
+    groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
-        opts = {u'source_id': get_oid(user),
-                u'target_id': get_oid(context)}
-        opts[u'relation_id'] = role
-        opts[u'reftype'] = 'Role'
-        if find_relations(root, opts):
-            return True
+        for group in groups:
+            opts = {u'source_id': get_oid(group),
+                    u'target_id': get_oid(context)}
+            opts[u'relation_id'] = role
+            opts[u'reftype'] = 'Role'
+            if find_relations(root, opts):
+                return True
 
     return False
 
@@ -223,14 +236,17 @@ def has_any_roles(user=None,
         if sd_admin is user:
             return True
 
+    groups = list(getattr(user, 'groups', []))
+    groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
-        opts = {u'source_id': get_oid(user),
-                u'target_id': get_oid(context)}
-        opts[u'relation_id'] = role
-        opts[u'reftype'] = 'Role'
-        if find_relations(root, opts):
-            return True
+        for group in groups:
+            opts = {u'source_id': get_oid(group),
+                    u'target_id': get_oid(context)}
+            opts[u'relation_id'] = role
+            opts[u'reftype'] = 'Role'
+            if find_relations(root, opts):
+                return True
 
     return False
 
@@ -266,22 +282,29 @@ def has_all_roles(user=None,
     return True
 
 
-def get_users_with_role(role=None):
+def get_users_with_role(role=None, root=None):
     if role is None:
         return []
 
+    if root is None:
+        root = getSite()
+
     normalized_role = role
     if isinstance(role, basestring):
-        normalized_role = (role, getSite())
+        normalized_role = (role, root)
 
     opts = {u'target_id': get_oid(normalized_role[1])}
     opts[u'relation_id'] = normalized_role[0]
     opts[u'reftype'] = 'Role'
-    users = [r.source for r in find_relations(normalized_role[1], opts).all()]
-    return list(set(users))
+    users = list(set([r.source for r in find_relations(normalized_role[1], opts).all()]))
+    result = [u for u in users if isinstance(u, User)]
+    groups = [g.members for g in users if isinstance(g, Group)]
+    groups = [item for sublist in groups for item in sublist]
+    result.extend(groups)
+    return list(set(result))
 
 
-def get_objects_with_role(user=None, role=None):
+def get_objects_with_role(user=None, role=None, root=None):
     if role is None:
         return []
 
@@ -292,7 +315,9 @@ def get_objects_with_role(user=None, role=None):
         return False 
         #TODO use cookies to find objects
 
-    root = getSite()
+    if root is None:
+        root = getSite()
+
     opts = {u'source_id': get_oid(user)}
     opts[u'relation_id'] = role
     opts[u'reftype'] = 'Role'
@@ -304,7 +329,7 @@ def get_objects_with_role(user=None, role=None):
     return objects
 
 
-def get_access_keys(user):
+def get_access_keys(user, root=None):
     if isinstance(user, Anonymous):
         return ['anonymous']
 
@@ -313,13 +338,20 @@ def get_access_keys(user):
     if sd_admin is user:
         return ['admin']
 
-    root = getSite()
+    if root is None:
+        root = getSite()
+
     root_oid = get_oid(root)
-    opts = {u'source_id': get_oid(user)}
-    opts[u'reftype'] = 'Role'
-    relations = list(find_relations(user, opts).all())
+    groups = list(getattr(user, 'groups', []))
+    groups.append(user)
+    relations = []
+    for group in groups:
+        opts = {u'source_id': get_oid(group)}
+        opts[u'reftype'] = 'Role'
+        relations.extend(list(find_relations(group, opts).all()))
+
     result = [(t.relation_id+'_'+str(t.target_id)).lower() \
               for t in relations if t.target_id != root_oid]
-    result.extend([t.relation_id.lower() \
+    result.extend([(t.relation_id+'_'+str(root_oid)).lower() \
                    for t in relations if t.target_id == root_oid])
     return list(set(result))

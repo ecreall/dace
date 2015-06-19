@@ -38,7 +38,12 @@ class role(object):
             ob.all_superiors = list(ob.all_superiors)
             ob.all_superiors.extend(get_allsuperiors(ob))
             ob.all_superiors = list(set(ob.all_superiors))
-            for role in self.lowers:
+            for role in ob.all_superiors:
+                role.lowers = list(set(getattr(role, 'lowers', [])))
+                role.lowers.append(ob)
+                role.lowers = list(set(role.lowers))
+
+            for role in getattr(ob, 'lowers', self.lowers):
                 role.superiors = list(role.superiors)
                 role.superiors.append(ob)
                 role.superiors = list(set(role.superiors))

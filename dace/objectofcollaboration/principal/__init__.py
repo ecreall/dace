@@ -3,20 +3,25 @@
 
 # licence: AGPL
 # author: Amen Souissi
+from zope.interface import implementer
 from pyramid_mailer import get_mailer
 from pyramid_mailer.message import Message
 from pyramid.renderers import render
+
+from dace.descriptors import SharedMultipleProperty
 
 from substanced.principal import User as OriginUser
 from substanced.util import (
     find_service,
     acquire,
     )
-
+from dace.interfaces import IGroup
 from ..entity import Entity
 
 
 class User(OriginUser, Entity):
+
+    groups = SharedMultipleProperty('groups', 'members')
 
     def __init__(self, password=None, email=None, tzname=None, locale=None, **kwargs):
         OriginUser.__init__(self, password, email, tzname, locale)
@@ -47,3 +52,18 @@ class User(OriginUser, Entity):
 
 class Machine(User):
     pass
+
+
+@implementer(IGroup)
+class Group(Entity):
+
+    members = SharedMultipleProperty('members', 'groups')
+
+    def __init__(self, **kwargs):
+        super(Group, self).__init__(**kwargs)
+        self.set_data(kwargs)
+
+    def reindex(self):
+        super(Group, self).reindex()
+        for member in self.members:
+            member.reindex()
