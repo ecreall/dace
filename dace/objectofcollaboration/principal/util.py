@@ -335,13 +335,13 @@ def get_access_keys(user, root=None):
 
     principals = find_service(user, 'principals')
     sd_admin = principals['users']['admin']
-    if sd_admin is user:
-        return ['admin']
-
     if root is None:
         root = getSite()
 
     root_oid = get_oid(root)
+    if sd_admin is user:
+        return [('admin'+'_'+str(root_oid)).lower()]
+
     groups = list(getattr(user, 'groups', []))
     groups.append(user)
     relations = []
