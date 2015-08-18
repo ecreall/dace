@@ -335,12 +335,15 @@ def get_access_keys(user, root=None):
 
     principals = find_service(user, 'principals')
     sd_admin = principals['users']['admin']
+    pricipal_root = getSite()
     if root is None:
-        root = getSite()
+        root = pricipal_root
 
     root_oid = get_oid(root)
+    principal_root_oid = get_oid(pricipal_root)
     if sd_admin is user:
-        return [('admin'+'_'+str(root_oid)).lower()]
+        return list(set([('admin'+'_'+str(root_oid)).lower(),
+                ('admin'+'_'+str(principal_root_oid)).lower()]))
 
     groups = list(getattr(user, 'groups', []))
     groups.append(user)
@@ -351,7 +354,10 @@ def get_access_keys(user, root=None):
         relations.extend(list(find_relations(group, opts).all()))
 
     result = [(t.relation_id+'_'+str(t.target_id)).lower() \
-              for t in relations if t.target_id != root_oid]
-    result.extend([(t.relation_id+'_'+str(root_oid)).lower() \
-                   for t in relations if t.target_id == root_oid])
+              for t in relations]
+    for relation in relation:
+        if relation.relation_id == 'Admin':
+            result.append(('Admin'+'_'+str(principal_root_oid)).lower())
+            break
+
     return list(set(result))
