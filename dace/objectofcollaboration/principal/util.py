@@ -355,7 +355,7 @@ def get_access_keys(user, root=None):
 
     result = [(t.relation_id+'_'+str(t.target_id)).lower() \
               for t in relations]
-    for relation in relation:
+    for relation in relations:
         if relation.relation_id == 'Admin':
             result.append(('Admin'+'_'+str(principal_root_oid)).lower())
             break
