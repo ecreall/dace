@@ -370,7 +370,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
         if not getattr(self.processsecurity_validation, 
                        '__func__', MARKER_FUNC)(process, context):
-            return False, _('Security is violeted')
+            return False, _('Security is violated')
 
         if not getattr(self.state_validation, 
                        '__func__', MARKER_FUNC)(process, context):
