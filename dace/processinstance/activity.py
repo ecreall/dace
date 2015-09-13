@@ -295,7 +295,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
                 entities = find_entities((self.context,))
 
         for entity in entities:
-            if (self.validate(entity, request)):
+            if self.validate(entity, request):
                 return entity
 
         return None
