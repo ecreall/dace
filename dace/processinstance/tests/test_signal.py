@@ -170,7 +170,7 @@ class TestsSignal(FunctionalTests):
         self.assertEqual(len(event_callbacks), 0)
 
         # simulate application startup
-        event = DatabaseOpenedWithRoot(self.app._p_jar.db())
+        event = DatabaseOpenedWithRoot(self.app)
         self.registry.notify(event)
         self.assertEqual(len(event_callbacks), 1)
 
