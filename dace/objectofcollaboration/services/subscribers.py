@@ -8,6 +8,7 @@
 from zope.processlifetime import IDatabaseOpenedWithRoot
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_request
+import transaction
 
 from substanced.event import RootAdded
 
@@ -33,4 +34,5 @@ def remove_definitions(event):
             def_container.remove(name, send_events=False)
             def_container._definitions_value.remove(name)
 
+    transaction.commit()
     root._p_jar.close()
