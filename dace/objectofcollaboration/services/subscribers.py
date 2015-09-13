@@ -11,7 +11,6 @@ from pyramid.threadlocal import get_current_request
 
 from substanced.event import RootAdded
 
-from .interfaces import IProcessDefinitionAdded
 from .processdef_container import create_process_definition_container
 
 
@@ -23,7 +22,6 @@ def add_process_definition_container(event):
     create_process_definition_container(root)
 
 
-
 @subscriber(IDatabaseOpenedWithRoot)
 def remove_definitions(event):
     db = event.database
@@ -31,6 +29,6 @@ def remove_definitions(event):
     def_container = root['process_definition_container']
     for definition in list(def_container.definitions):
         if hasattr(definition, '_broken_object'):
-        	name = definition.__name__
-        	def_container.remove(name, send_events=False)
-        	def_container._definitions_value.remove(name)
+            name = definition.__name__
+            def_container.remove(name, send_events=False)
+            def_container._definitions_value.remove(name)
