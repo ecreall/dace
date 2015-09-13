@@ -1,5 +1,5 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -72,8 +72,8 @@ def name_chooser(container={}, name='default_name'):
     else:
         suffix = ''
 
-    unicodedname = unicodedata.normalize('NFKD', 
-                                         u''+name).encode('ascii', 
+    unicodedname = unicodedata.normalize('NFKD',
+                                         u''+name).encode('ascii',
                                                           'ignore').decode()
     new_name = unicodedname + suffix
     i = 1
@@ -186,9 +186,9 @@ def subobjectsOfKind(root=None, interface=None):
     return query.execute().all()
 
 
-def find_entities(interfaces=None, 
-                  states=None, 
-                  all_states_relation=False, 
+def find_entities(interfaces=None,
+                  states=None,
+                  all_states_relation=False,
                   not_any=False):
     if interfaces is None:
         interfaces = [IEntity]
@@ -199,7 +199,7 @@ def find_entities(interfaces=None,
     query = object_provides_index.any([i.__identifier__ for i in interfaces])
     if states is not None:
         if not_any:
-            query = query & states_index.notany(states) 
+            query = query & states_index.notany(states)
         else:
             if all_states_relation:
                 query = query & states_index.all(states)
@@ -224,8 +224,8 @@ def always_false(context, request):
 
 def getBusinessAction(context,
                       request,
-                      process_id, 
-                      node_id, 
+                      process_id,
+                      node_id,
                       behavior_id=None,
                       action_type=None):
     allactions = []
@@ -295,18 +295,18 @@ def getAllSystemActions(request=None,
     return allactions
 
 
-def queryBusinessAction(context, 
-                        request, 
-                        process_id, 
-                        node_id, 
+def queryBusinessAction(context,
+                        request,
+                        process_id,
+                        node_id,
                         behavior_id=None,
                         action_type=None):
     return getBusinessAction(context, request,
                         process_id, node_id, behavior_id, IBusinessAction)
 
 
-def getAllBusinessAction(context, 
-                         request=None, 
+def getAllBusinessAction(context,
+                         request=None,
                          isautomatic=False,
                          process_id=None,
                          node_id=None,
@@ -342,7 +342,7 @@ def getAllBusinessAction(context,
         query = query & process_id_index.eq(process_id)
         pd = def_container.get_definition(process_id)
         allprocessdef = [(process_id, pd)]
-    else:       
+    else:
         if process_discriminator:
             allprocessdef = [(pd.id, pd) for pd in def_container.definitions \
                              if pd.discriminator == process_discriminator and \
@@ -416,7 +416,7 @@ def getWorkItem(context, request, process_id, node_id):
 
 def queryWorkItem(context, request, process_id, node_id):
     try:
-        wi = getWorkItem(context, request, 
+        wi = getWorkItem(context, request,
             process_id, node_id)
         return wi
     except Forbidden:
@@ -438,9 +438,9 @@ class adapter(object):
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
             mprovided = list(ob.__implemented__.interfaces())[0]
-            scanner.config.registry.registerAdapter(factory=ob, 
-                                                    required=(self.context,), 
-                                                    provided=mprovided, 
+            scanner.config.registry.registerAdapter(factory=ob,
+                                                    required=(self.context,),
+                                                    provided=mprovided,
                                                     name=self.name)
 
         venusian.attach(wrapped, callback)
@@ -478,7 +478,7 @@ class utility(object):
 _marker = object()
 OMIT_ATTRIBUTES = ('data', 'dynamic_properties_def')
 #'created_at', 'modified_at'
-                   
+
 
 def copy(obj, container, new_name=None, shared_properties=False,
         composite_properties=False, roles=False,
