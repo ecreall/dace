@@ -22,7 +22,7 @@ CRAWLERS = []
 
 def _call_action(action, context):
     transaction.begin()
-    request = get_system_request()# TDOD pyramid.testing.DummyRequest 
+    request = get_system_request()
     try:
         action.execute(context, request, {})
         log.info("Execute action %s", action.title)
@@ -35,8 +35,6 @@ def _call_action(action, context):
 def _get_cache_key():
     request = get_system_request()
     return str(get_oid(request.user))
-#    from dace.objectofcollaboration.principal.util import get_current
-#    return str(get_oid(get_current()))#request.user))
 
 
 def run():
@@ -57,7 +55,6 @@ def run():
                 context = action.get_potential_context()
             except Exception:
                 continue
-            #getattr(action, '__parent__', None) is not None and \
             if context is not None:
                 _call_action(action, context)
 
