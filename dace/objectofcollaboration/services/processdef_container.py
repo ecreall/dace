@@ -12,6 +12,7 @@ from substanced.interfaces import IService
 from dace.interfaces import IProcessDefinitionContainer
 from ..entity import Entity
 from dace.descriptors import CompositeMultipleProperty
+import transaction
 
 
 DEFINITIONS = {}
@@ -64,7 +65,6 @@ class process_definition(object):
                     def_container.delfromproperty('definitions', old_def)
 
                 def_container.add_definition(component)
-                import transaction
                 transaction.commit()
                 def_container._p_jar.close()
             except Exception:  # if app_root doesn't exist

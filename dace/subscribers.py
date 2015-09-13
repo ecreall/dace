@@ -96,6 +96,7 @@ def start_intermediate_events(event):
     if 'system' in app_root['principals']['users']:
         execute_callback(app_root, start_intermediate_events_callback, 'system')
         execute_callback(app_root, run_crawler, 'system')
+
     app_root._p_jar.close()
 
 

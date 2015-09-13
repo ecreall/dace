@@ -32,3 +32,5 @@ def remove_definitions(event):
             name = definition.__name__
             def_container.remove(name, send_events=False)
             def_container._definitions_value.remove(name)
+
+    root._p_jar.close()
