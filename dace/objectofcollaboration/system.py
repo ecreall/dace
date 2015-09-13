@@ -58,7 +58,6 @@ def run():
             if context is not None:
                 _call_action(action, context)
 
-        log.info("checked")
         log.info("actions to check: done")
     run_crawler()
 
