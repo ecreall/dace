@@ -12,6 +12,7 @@ from pyramid.request import Request
 from pyramid.threadlocal import get_current_request, manager
 import transaction
 
+from zope.processlifetime import DatabaseOpenedWithRoot
 from substanced.event import RootAdded
 
 from .processdef_container import ProcessDefinitionContainer
@@ -47,6 +48,7 @@ def add_process_definitions(event):
             'substanced.catalogs.autosync',
             settings.get('substanced.autosync_catalogs', False) # bc
             )))
+    autosync = True  # FIXME
     def_container = root['process_definition_container']
     if autosync:
         for definition in def_container.definitions:
@@ -66,7 +68,6 @@ def add_process_definitions(event):
 
     processdef_container.DEFINITIONS.clear()
 
-    # other init functions goes here
-
     transaction.commit()
+    registry.notify(DatabaseOpenedWithRoot(root))
     manager.pop()

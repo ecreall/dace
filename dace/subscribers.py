@@ -10,10 +10,7 @@ import zmq.eventloop.ioloop
 
 import transaction
 from pyramid.events import subscriber
-from pyramid.interfaces import IApplicationCreated
-from pyramid.testing import DummyRequest
-from pyramid.threadlocal import manager
-from zope.processlifetime import DatabaseOpenedWithRoot, IDatabaseOpenedWithRoot
+from zope.processlifetime import IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime
@@ -91,13 +88,10 @@ def start_intermediate_events_callback():
 
 @subscriber(IDatabaseOpenedWithRoot)
 def start_intermediate_events(event):
-    db = event.database
-    app_root = db.open().root()['app_root']
-    if 'system' in app_root['principals']['users']:
-        execute_callback(app_root, start_intermediate_events_callback, 'system')
-        execute_callback(app_root, run_crawler, 'system')
-
-    app_root._p_jar.close()
+    root = event.database  # database is actually the root
+    if 'system' in root['principals']['users']:
+        execute_callback(root, start_intermediate_events_callback, 'system')
+        execute_callback(root, run_crawler, 'system')
 
 
 def add_system_machine(root):
@@ -113,18 +107,3 @@ def add_catalogs(event):
     catalogs.add_catalog('dace')
     root['runtime'] = Runtime(title='Runtime')
     add_system_machine(root)
-
-
-@subscriber(IApplicationCreated)
-def application_created(event):
-    """Called after config.make_wsgi_app()
-    """
-    registry = event.app.registry
-    db = registry._zodb_databases['']
-    # Create app_root if it doesn't exist yet.
-    request = DummyRequest()
-    manager.push({'registry': registry, 'request': request})
-    event.app.root_factory(request)
-    # there is a commit done in root_factory if app_root was created
-    registry.notify(DatabaseOpenedWithRoot(db))
-    manager.pop()
