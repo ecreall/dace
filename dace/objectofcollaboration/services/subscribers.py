@@ -38,27 +38,28 @@ def add_process_definitions(event):
     root = app.root_factory(request)
     request.root = root
 
+    # use same env variable as substanced catalog to determine
+    # if we want to recreate process definitions
+    autosync = asbool(
+        os.environ.get(
+        'SUBSTANCED_CATALOGS_AUTOSYNC',
+        settings.get(
+            'substanced.catalogs.autosync',
+            settings.get('substanced.autosync_catalogs', False) # bc
+            )))
     def_container = root['process_definition_container']
-    for definition in def_container.definitions:
-        if hasattr(definition, '_broken_object'):
-            name = definition.__name__
-            def_container.remove(name, send_events=False)
-            def_container._definitions_value.remove(name)
+    if autosync:
+        for definition in def_container.definitions:
+            if hasattr(definition, '_broken_object'):
+                name = definition.__name__
+                def_container.remove(name, send_events=False)
+                def_container._definitions_value.remove(name)
 
     for definition in processdef_container.DEFINITIONS.values():
         old_def = def_container.get(definition.id, None)
         if old_def is None:
             def_container.add_definition(definition)
         else:
-            # use same env variable as substanced catalog to determine
-            # if we want to recreate process definitions
-            autosync = asbool(
-                os.environ.get(
-                'SUBSTANCED_CATALOGS_AUTOSYNC',
-                settings.get(
-                    'substanced.catalogs.autosync',
-                    settings.get('substanced.autosync_catalogs', False) # bc
-                    )))
             if autosync:
                 def_container.delfromproperty('definitions', old_def)
                 def_container.add_definition(definition)
