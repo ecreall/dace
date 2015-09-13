@@ -1,18 +1,21 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
 
-from zope.processlifetime import IDatabaseOpenedWithRoot
-from pyramid.events import subscriber
-from pyramid.threadlocal import get_current_request
+import os
+from pyramid.events import ApplicationCreated, subscriber
+from pyramid.settings import asbool
+from pyramid.request import Request
+from pyramid.threadlocal import get_current_request, manager
 import transaction
 
 from substanced.event import RootAdded
 
-from .processdef_container import create_process_definition_container
+from .processdef_container import ProcessDefinitionContainer
+from . import processdef_container
 
 
 @subscriber(RootAdded)
@@ -20,19 +23,49 @@ def add_process_definition_container(event):
     root = event.object
     request = get_current_request()
     request.root = root
-    create_process_definition_container(root)
+    def_container = ProcessDefinitionContainer(title='Process Definitions')
+    root['process_definition_container'] = def_container
 
 
-@subscriber(IDatabaseOpenedWithRoot)
-def remove_definitions(event):
-    db = event.database
-    root = db.open().root()['app_root']
+@subscriber(ApplicationCreated)
+def add_process_definitions(event):
+    app = event.object
+    registry = app.registry
+    settings = getattr(registry, 'settings', {})
+    request = Request.blank('/application_created') # path is meaningless
+    request.registry = registry
+    manager.push({'registry': registry, 'request': request})
+    root = app.root_factory(request)
+    request.root = root
+
     def_container = root['process_definition_container']
-    for definition in list(def_container.definitions):
+    for definition in def_container.definitions:
         if hasattr(definition, '_broken_object'):
             name = definition.__name__
             def_container.remove(name, send_events=False)
             def_container._definitions_value.remove(name)
 
+    for definition in processdef_container.DEFINITIONS.values():
+        old_def = def_container.get(definition.id, None)
+        if old_def is None:
+            def_container.add_definition(definition)
+        else:
+            # use same env variable as substanced catalog to determine
+            # if we want to recreate process definitions
+            autosync = asbool(
+                os.environ.get(
+                'SUBSTANCED_CATALOGS_AUTOSYNC',
+                settings.get(
+                    'substanced.catalogs.autosync',
+                    settings.get('substanced.autosync_catalogs', False) # bc
+                    )))
+            if autosync:
+                def_container.delfromproperty('definitions', old_def)
+                def_container.add_definition(definition)
+
+    processdef_container.DEFINITIONS.clear()
+
+    # other init functions goes here
+
     transaction.commit()
-    root._p_jar.close()
+    manager.pop()

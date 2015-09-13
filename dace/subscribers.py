@@ -124,8 +124,6 @@ def application_created(event):
     # Create app_root if it doesn't exist yet.
     request = DummyRequest()
     manager.push({'registry': registry, 'request': request})
-    from substanced.db import root_factory
-    event.app.root_factory = root_factory
     event.app.root_factory(request)
     # there is a commit done in root_factory if app_root was created
     registry.notify(DatabaseOpenedWithRoot(db))

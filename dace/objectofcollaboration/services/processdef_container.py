@@ -12,7 +12,6 @@ from substanced.interfaces import IService
 from dace.interfaces import IProcessDefinitionContainer
 from ..entity import Entity
 from dace.descriptors import CompositeMultipleProperty
-import transaction
 
 
 DEFINITIONS = {}
@@ -53,28 +52,7 @@ class process_definition(object):
             else:
                 component = ob(**self.kw)
 
-            try:
-                db = scanner.config.registry._zodb_databases['']
-                root = db.open().root()['app_root']
-                def_container = root['process_definition_container']
-                old_def = def_container.get_definition(component.id)
-                if old_def is not None:
-                    def_container.delfromproperty('definitions', old_def)
-
-                def_container.add_definition(component)
-                transaction.commit()
-                def_container._p_jar.close()
-            except Exception:  # if app_root doesn't exist
-                DEFINITIONS[component.id] = component
+            DEFINITIONS[component.id] = component
 
         venusian.attach(wrapped, callback)
         return wrapped
-
-
-def create_process_definition_container(root):
-    def_container = ProcessDefinitionContainer(title='Process Definitions')
-    root['process_definition_container'] = def_container
-    for definition in DEFINITIONS.values():
-        def_container.add_definition(definition)
-
-    DEFINITIONS.clear()
