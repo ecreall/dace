@@ -14,4 +14,5 @@ _ =  TranslationStringFactory('dace')
 
 def includeme(config):
     config.scan()
+    config.include('.system')
 #    config.add_request_method(user, reify=True)

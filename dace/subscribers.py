@@ -10,7 +10,6 @@ import zmq.eventloop.ioloop
 
 import transaction
 from pyramid.events import subscriber
-from zope.processlifetime import IDatabaseOpenedWithRoot
 
 from . import log
 from dace.objectofcollaboration.runtime import Runtime
@@ -42,7 +41,7 @@ class ConsumeTasks(threading.Thread):
 consumetasks = None
 
 
-@subscriber(IDatabaseOpenedWithRoot)
+# executed when 'system' app is started
 def start_ioloop(event):
     """Start loop."""
     global consumetasks
@@ -86,7 +85,7 @@ def start_intermediate_events_callback():
     transaction.commit()
 
 
-@subscriber(IDatabaseOpenedWithRoot)
+# executed when 'system' app is started
 def start_intermediate_events(event):
     root = event.database  # database is actually the root
     if 'system' in root['principals']['users']:
