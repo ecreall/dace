@@ -48,7 +48,6 @@ def add_process_definitions(event):
             'substanced.catalogs.autosync',
             settings.get('substanced.autosync_catalogs', False) # bc
             )))
-    autosync = True  # FIXME
     def_container = root['process_definition_container']
     if autosync:
         for definition in def_container.definitions:
