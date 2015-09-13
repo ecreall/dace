@@ -20,10 +20,14 @@ last_transaction_by_machine = {}
 CRAWLERS = []
 
 
-def _call_action(action, context):
+def _call_action(action):
     transaction.begin()
-    request = get_system_request()
     try:
+        context = action.get_potential_context()
+        if context is None:
+            return
+
+        request = get_system_request()
         action.execute(context, request, {})
         log.info("Execute action %s", action.title)
         transaction.commit()
@@ -50,13 +54,7 @@ def run():
         log.info("new zodb transactions, actions to check: %s",
                  len(system_actions))
         for action in system_actions:
-            context = None
-            try:
-                context = action.get_potential_context()
-            except Exception:
-                continue
-            if context is not None:
-                _call_action(action, context)
+            _call_action(action)
 
         log.info("actions to check: done")
     run_crawler()
