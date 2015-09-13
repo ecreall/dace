@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -16,7 +16,7 @@ from substanced.event import ObjectModified
 from substanced.util import get_oid
 
 from dace.util import (
-    find_service, get_obj, find_entities,  
+    find_service, get_obj, find_entities,
     getBusinessAction, getAllBusinessAction, getSite)
 from dace import _
 from .core import (
@@ -79,7 +79,7 @@ class SubProcess(Activity):
 
     def _start_subprocess(self, action):
         def_container = find_service('process_definition_container')
-        pd = def_container.get_definition(getattr(self.definition.sub_process_definition, 
+        pd = def_container.get_definition(getattr(self.definition.sub_process_definition,
                                                   'id', self.definition.sub_process_definition))
         proc = pd()
         proc.__name__ = proc.id
@@ -144,7 +144,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     processsecurity_validation = NotImplemented
     state_validation = NotImplemented
     #style information
-    access_controled = False  
+    access_controled = False
 
     def __init__(self, workitem, **kwargs):
         super(BusinessAction, self).__init__(**kwargs)
@@ -171,9 +171,9 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             source_action.validate(context, request):
             return source_action
 
-        instances = getBusinessAction(context, request, 
-                                      cls.node_definition.process.id, 
-                                      cls.node_definition.__name__, 
+        instances = getBusinessAction(context, request,
+                                      cls.node_definition.process.id,
+                                      cls.node_definition.__name__,
                                       cls.behavior_id,
                                       action_type=cls)
 
@@ -190,9 +190,9 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
-        instance = getBusinessAction(context, request, 
-                                      cls.node_definition.process.id, 
-                                      cls.node_definition.__name__, 
+        instance = getBusinessAction(context, request,
+                                      cls.node_definition.process.id,
+                                      cls.node_definition.__name__,
                                       cls.behavior_id)
         return instance
 
@@ -211,11 +211,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
                     result.append(str(get_oid(context)))
                 except Exception:
                     pass
-            
+
             return result
         except Exception:
             return ['any']
-          
+
     @property
     def actions(self):
         allactions = getAllBusinessAction(self)
@@ -308,7 +308,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         except AttributeError:
             query = {'isstart':'True'}
 
-        return get_current_request().resource_url(obj, 
+        return get_current_request().resource_url(obj,
                       '@@'+self.view_name,  query=query)
 
     def assigne_to(self, users):
@@ -353,7 +353,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             return False, _('Context is not valid')
 
         process = kw.get('process', self.process)
-        if not getattr(self.relation_validation, 
+        if not getattr(self.relation_validation,
                        '__func__', MARKER_FUNC)(process, context):
             return False, _('Context is not valid')
 
@@ -364,15 +364,15 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             if not( current_user in _assigned_to):
                 return False, _('Action is assigned to an other user')
 
-        elif not getattr(self.roles_validation, 
+        elif not getattr(self.roles_validation,
                          '__func__', MARKER_FUNC)(process, context):
             return False, _('Role is not valid')
 
-        if not getattr(self.processsecurity_validation, 
+        if not getattr(self.processsecurity_validation,
                        '__func__', MARKER_FUNC)(process, context):
             return False, _('Security is violated')
 
-        if not getattr(self.state_validation, 
+        if not getattr(self.state_validation,
                        '__func__', MARKER_FUNC)(process, context):
             return False, _('Context state is not valid')
 
@@ -471,7 +471,7 @@ class ElementaryAction(BusinessAction):
         except ExecutionError as error:
             self.finish_execution(context, request, **kw)
             raise error
-            
+
         kw.update(result_execution)
         self.isexecuted = True
         if not self.sub_process:
@@ -494,7 +494,7 @@ class LoopActionCardinality(BusinessAction):
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
         result_execution = {}
-        while self.loopCondition.__func__(context, request, 
+        while self.loopCondition.__func__(context, request,
                                     self.process, appstruct) and \
               nbloop < self.loopMaximum:
             result = self.start(context, request, appstruct, **kw)
@@ -510,7 +510,7 @@ class LoopActionCardinality(BusinessAction):
             result = self.start(context, request, appstruct, **kw)
             result_execution.update(result)
             nbloop += 1
-            if not self.loopCondition.__func__(context, request, 
+            if not self.loopCondition.__func__(context, request,
                                         self.process, appstruct):
                 break
 
@@ -544,7 +544,7 @@ class LoopActionDataInput(BusinessAction):
     loopDataInputRef = None
 
     def execute(self, context, request, appstruct, **kw):
-        super(LoopActionDataInput, self).execute(context, request, 
+        super(LoopActionDataInput, self).execute(context, request,
                                                  appstruct, **kw)
         instances = self.loopDataInputRef.__func__(context, request,
                                              self.process, appstruct)
@@ -617,7 +617,7 @@ class InfiniteCardinality(MultiInstanceAction):
     def execute(self, context, request, appstruct, **kw):
         super(InfiniteCardinality, self).execute(context, request,
                                                  appstruct, **kw)
-        result_execution = self.start(context, request, appstruct, **kw)    
+        result_execution = self.start(context, request, appstruct, **kw)
         kw.update(result_execution)
         if self.sub_process is None:
             self.finish_execution(context, request, **kw)
@@ -719,7 +719,7 @@ class ActionInstance(BusinessAction):
         self.unlock(request)
         if self.principalaction.isSequential:
             self.workitem.unlock(request)
-            
+
     def start(self, context, request, appstruct, **kw):
         if kw:
             kw[ITEM_INDEX] = self.item
@@ -738,7 +738,7 @@ class ActionInstance(BusinessAction):
                 self.workitem.unlock(request)
 
             raise error
-            
+
         kw.update(result_execution)
         self.isexecuted = True
         if self.sub_process is None:
@@ -757,7 +757,7 @@ class ActionInstanceAsPrincipal(ActionInstance):
     def validate_mini(self, context, request, **kw):
         if not (context is self.item):
             return False, _('Context not valid')
-        
+
         return super(ActionInstanceAsPrincipal, self).validate_mini(
                                              context, request, **kw)
 
