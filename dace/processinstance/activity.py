@@ -27,7 +27,8 @@ from .core import (
         Validator,
         ValidationError,
         ExecutionError,
-        DEFAULTMAPPING_ACTIONS_VIEWS)
+        DEFAULTMAPPING_ACTIONS_VIEWS,
+        BPMNElement)
 from .lock import LockableElement
 from dace.interfaces import (
     IActivity,
@@ -234,12 +235,20 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return self.workitem.process_id
 
     @property
+    def definition(self):
+        if self.node_definition is not NotImplemented:
+            return self.node_definition
+
+        return self.node.definition if isinstance(self.node, BPMNElement)\
+               else self.node
+
+    @property
     def node_id(self):
-        return self.node_definition.__name__
+        return self.definition.__name__
 
     @property
     def groups(self):
-        return self.node_definition.groups
+        return self.definition.groups
 
     @property
     def view_name(self):

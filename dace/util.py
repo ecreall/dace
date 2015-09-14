@@ -89,7 +89,7 @@ def getSite(resource=None):
     if resource is not None:
         return find_root(resource)
     elif request is not None:
-        return request.root
+        return getattr(request, 'root', None)
 
     return None
 

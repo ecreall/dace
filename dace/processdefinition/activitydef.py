@@ -5,6 +5,7 @@
 # author: Amen Souissi
 
 from zope.interface import implementer
+from persistent.list import PersistentList
 
 from dace.interfaces import IActivityDefinition
 from dace.processinstance.activity import Activity, SubProcess
@@ -17,10 +18,11 @@ class ActivityDefinition(EventHandlerDefinition):
 
     def __init__(self, contexts=(), **kwargs):
         super(ActivityDefinition, self).__init__(**kwargs)
+        self.contexts = PersistentList([])
         self._init_contexts(contexts)
 
     def _init_contexts(self, contexts):
-        self.contexts = contexts
+        self.contexts = PersistentList(contexts)
         for context in contexts:
             context.node_definition = self
 

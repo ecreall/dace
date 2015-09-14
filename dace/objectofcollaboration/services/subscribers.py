@@ -22,6 +22,9 @@ from . import processdef_container
 @subscriber(RootAdded)
 def add_process_definition_container(event):
     root = event.object
+    if hasattr(root, 'reindex'):
+        root.reindex()
+
     def_container = ProcessDefinitionContainer(title='Process Definitions')
     root['process_definition_container'] = def_container
 
@@ -63,7 +66,13 @@ def add_process_definitions(event):
                 def_container.delfromproperty('definitions', old_def)
                 def_container.add_definition(definition)
 
-    processdef_container.DEFINITIONS.clear()
+    for definition in def_container.definitions:
+        for node in definition.nodes:
+            for context in getattr(node, 'contexts', []):
+                context.node_definition = node
+
+    if autosync:
+        processdef_container.DEFINITIONS.clear()
 
     transaction.commit()
     registry.notify(DatabaseOpenedWithRoot(root))

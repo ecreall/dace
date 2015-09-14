@@ -48,10 +48,13 @@ def update_relation(event):
 @subscribe_removed()
 def object_deleted(event):
     if event.moving:
-        return 
-        
+        return
+
     registry = get_current_registry()
     request = get_current_request()
+    if not request:
+        return
+
     objectmap = find_objectmap(request.root)
     ob = event.object
     catalog = get_relations_catalog(request.root)
