@@ -22,8 +22,6 @@ from . import processdef_container
 @subscriber(RootAdded)
 def add_process_definition_container(event):
     root = event.object
-    request = get_current_request()
-    request.root = root
     def_container = ProcessDefinitionContainer(title='Process Definitions')
     root['process_definition_container'] = def_container
 
