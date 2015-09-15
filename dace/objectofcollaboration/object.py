@@ -4,6 +4,7 @@
 # licence: AGPL
 # author: Amen Souissi
 
+import pytz
 import datetime
 from zope.interface import implementer
 import colander
@@ -30,8 +31,8 @@ class Object(Folder):
     def __init__(self, **kwargs):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
-        self.created_at = datetime.datetime.today()
-        self.modified_at = datetime.datetime.today()
+        self.created_at = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        self.modified_at = datetime.datetime.today().replace(tzinfo=pytz.UTC)
         if 'title' in kwargs:
             self.title = kwargs['title']
 
@@ -195,3 +196,8 @@ class Object(Folder):
 
     def delfromproperty(self, name, value, moving=None):
         getattr(self.__class__, name).remove(self, value, moving=moving)
+
+    def reindex(self):
+        event = ObjectModified(self)
+        registry = get_current_registry()
+        registry.subscribers((event, self), None)
