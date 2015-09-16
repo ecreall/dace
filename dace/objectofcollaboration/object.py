@@ -4,8 +4,9 @@
 # licence: AGPL
 # author: Amen Souissi
 
-import pytz
 import datetime
+import pytz
+
 from zope.interface import implementer
 import colander
 from pyramid.compat import is_nonstr_iter
@@ -31,8 +32,8 @@ class Object(Folder):
     def __init__(self, **kwargs):
         super(Object, self).__init__()
         self.dynamic_properties_def = {}
-        self.created_at = datetime.datetime.today().replace(tzinfo=pytz.UTC)
-        self.modified_at = datetime.datetime.today().replace(tzinfo=pytz.UTC)
+        self.created_at = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
+        self.modified_at = datetime.datetime.utcnow().replace(tzinfo=pytz.UTC)
         if 'title' in kwargs:
             self.title = kwargs['title']
 
