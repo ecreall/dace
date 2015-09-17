@@ -43,8 +43,7 @@ def utc_converter(root, registry):
     for obj in result:
         obj.created_at = obj.created_at.replace(tzinfo=pytz.UTC)
         obj.modified_at = obj.modified_at.replace(tzinfo=pytz.UTC)
-        obj.reindex()
-
+        
     log.info('utc evolved.')
 
 
