@@ -39,11 +39,17 @@ class ConsumeTasks(threading.Thread):
 
 
 consumetasks = None
+curr_sigint_handler = signal.getsignal(signal.SIGINT)
 
+
+def sigint_handler(*args):
+    stop_ioloop()
+    curr_sigint_handler(*args)
 
 # executed when 'system' app is started
 def start_ioloop(event):
     """Start loop."""
+    signal.signal(signal.SIGINT, sigint_handler)
     global consumetasks
     if consumetasks is None:
         consumetasks = ConsumeTasks()
@@ -57,18 +63,6 @@ def stop_ioloop():
         consumetasks.stop()
         consumetasks.join(3)
         consumetasks = None
-
-
-curr_sigint_handler = signal.getsignal(signal.SIGINT)
-
-
-
-def sigint_handler(*args):
-    stop_ioloop()
-    curr_sigint_handler(*args)
-
-
-signal.signal(signal.SIGINT, sigint_handler)
 
 
 def start_intermediate_events_callback():
