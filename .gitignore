@@ -1,5 +1,4 @@
 *.egg-info
-*.mo
 *.pyc
 *.pyo
 *.so
