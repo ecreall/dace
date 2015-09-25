@@ -36,28 +36,31 @@ class DelayedCallback(object):
 
     The timeout is calculated from when `start` is called.
     """
-    def __init__(self, callback, callback_time, io_loop=None):
+    def __init__(self, callback, callback_time):
         self.callback = callback
         self.callback_time = callback_time
-        self.io_loop = io_loop or IOLoop.instance()
         self._timeout = None
 
     def start(self):
+        s = get_socket()
+        s.send_pyobj(('start_in_ioloop', self))
+
+    def start_in_ioloop(self):
         """Start the timer."""
-        def start_delayed_callback(dc):
-            ioloop = IOLoop.current()
-            dc._timeout = ioloop.add_timeout(
-                ioloop.time() + self.callback_time / 1000.0, self.callback)
-        self.io_loop.add_callback(start_delayed_callback, self)
+        ioloop = IOLoop.current()
+        self._timeout = ioloop.add_timeout(
+            ioloop.time() + self.callback_time / 1000.0, self.callback)
 
     def stop(self):
+        s = get_socket()
+        s.send_pyobj(('stop_in_ioloop', self))
+
+    def stop_in_ioloop(self):
         """Stop the timer."""
         if self._timeout is not None:
-            def stop_delayed_callback(dc):
-                ioloop = IOLoop.current()
-                ioloop.remove_timeout(dc._timeout)
-                dc._timeout = None
-            self.io_loop.add_callback(stop_delayed_callback, self)
+            ioloop = IOLoop.current()
+            ioloop.remove_timeout(self._timeout)
+            self._timeout = None
 
 
 def push_callback_after_commit(event, callback, callback_params, deadline):
@@ -298,16 +301,34 @@ class TerminateEvent(EventKind):
 # http://learning-0mq-with-pyzmq.readthedocs.org/en/latest/pyzmq/multisocket/tornadoeventloop.html
 
 _ctx = None
+_socket = None
+
 
 def get_zmq_context():
     global _ctx
     if _ctx is None:
         _ctx = zmq.Context()
+
     return _ctx
 
 
 def get_socket_url():
     return 'tcp://127.0.0.1:12345'
+
+
+def get_socket():
+    global _socket
+    if _socket is None:
+        ctx = get_zmq_context()
+        _socket = ctx.socket(zmq.PUSH)
+        _socket.setsockopt(zmq.LINGER, 0)
+        _socket.connect(get_socket_url())
+
+    return _socket
+
+
+def get_signal_socket_url():
+    return 'tcp://127.0.0.1:12346'
 
 
 class SignalEvent(EventKind):
@@ -321,7 +342,7 @@ class SignalEvent(EventKind):
         ctx = get_zmq_context()
         s = ctx.socket(zmq.SUB)
         s.setsockopt_string(zmq.SUBSCRIBE, u'')
-        s.connect(get_socket_url())
+        s.connect(get_signal_socket_url())
         stream = ZMQStream(s)
         job = Job('system')
         transaction.commit()  # needed to have self.event._p_oid
@@ -346,16 +367,18 @@ class SignalEvent(EventKind):
 
         with callbacks_lock:
             callbacks[event_oid] = stream
+        # TODO get_socket().send_pyobj
         stream.on_recv(execute_next)
 
     def stop(self):
         if self.event._p_oid in callbacks:
-            # Stop ZMQStream
+            # Close ZMQStream
             stream = callbacks[self.event._p_oid]
-            def stop_stream_callback(stream):
-                stream.stop()
+            def close_stream_callback(stream):
+                stream.close()
+
             io_loop = IOLoop.instance()
-            io_loop.add_callback(stop_stream_callback, stream)
+            io_loop.add_callback(close_stream_callback, stream)
             with callbacks_lock:
                 del callbacks[self.event._p_oid]
 
@@ -373,7 +396,7 @@ class SignalEvent(EventKind):
         ref = self.definition.refSignal(self.event.process)
         ctx = get_zmq_context()
         s = ctx.socket(zmq.PUB)
-        s.bind(get_socket_url())
+        s.bind(get_signal_socket_url())
         # Sleep to allow sockets to connect.
         time.sleep(0.2)
         s.send_string(ref)
