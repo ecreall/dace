@@ -7,7 +7,6 @@
 import pickle
 import signal
 import threading
-import time
 import zmq
 from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
@@ -67,10 +66,12 @@ class ConsumeTasks(threading.Thread):
         root = db.open().root()['app_root']
         start_intermediate_events(root)
         root._p_jar.close()
-        # we need to write a pdb here to activate a pdb in a Job...
         try:
             loop.start()
         except zmq.ZMQError:
+            # only needed for tests isolation
+            # we go here only if we try to close the stream in the stop method
+            # below
             loop._callbacks = []
             loop._timeouts = []
             raise
