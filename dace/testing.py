@@ -17,7 +17,6 @@ from substanced.db import root_factory
 
 from dace.util import get_userid_by_login
 from dace.subscribers import stop_ioloop
-from dace.processinstance.event import get_socket
 
 
 def main(global_config, **settings):
@@ -80,7 +79,6 @@ class FunctionalTests(unittest.TestCase):
         self.def_container = self.app['process_definition_container']
 
     def tearDown(self):
-#        get_socket().close()
         stop_ioloop()
         import shutil
         testing.tearDown()
