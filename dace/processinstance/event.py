@@ -5,7 +5,6 @@
 # author: Amen Souissi
 
 import time
-import threading
 import transaction
 import datetime
 
@@ -21,9 +20,6 @@ from dace.util import get_system_request
 
 
 callbacks = {}
-
-
-callbacks_lock = threading.Lock()
 
 
 class DelayedCallback(object):
@@ -265,8 +261,7 @@ class ConditionalEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+            del callbacks[self.event._p_oid]
 
         if self.validate():
             #log.info('%s %s', self.event, "validate ok")
@@ -341,8 +336,7 @@ class Listener(object):
             # it will never commit in this thread (eventloop)
             if identifier in callbacks:
                 callbacks[identifier].close()
-                with callbacks_lock:
-                    del callbacks[identifier]
+                del callbacks[identifier]
 
             job.args = (msg, )
             # wait 2s that the throw event transaction has committed
@@ -354,9 +348,7 @@ class Listener(object):
         s.setsockopt_string(zmq.SUBSCRIBE, u'')
         s.connect(get_signal_socket_url())
         stream = ZMQStream(s)
-        with callbacks_lock:
-            callbacks[identifier] = stream
-
+        callbacks[identifier] = stream
         stream.on_recv(execute_next)
 
 
@@ -438,8 +430,7 @@ class TimerEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+            del callbacks[self.event._p_oid]
 
         if self.validate():
             wi = self.event._get_workitem()

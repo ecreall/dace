@@ -97,17 +97,16 @@ class ConsumeTasks(threading.Thread):
             for timeout in loop._timeouts:
                 timeout.callback = None
 
-        with event_mod.callbacks_lock:
-            for dc_or_stream in event_mod.callbacks.values():
-                if hasattr(dc_or_stream, 'close'):
-                    def close_stream_callback(stream):
-                        stream.close()
+        for dc_or_stream in event_mod.callbacks.values():
+            if hasattr(dc_or_stream, 'close'):
+                def close_stream_callback(stream):
+                    stream.close()
 
-                    loop.add_callback(close_stream_callback, dc_or_stream)
-                else:
-                    dc_or_stream.stop()
+                loop.add_callback(close_stream_callback, dc_or_stream)
+            else:
+                dc_or_stream.stop()
 
-            event_mod.callbacks = {}
+        event_mod.callbacks = {}
 
 #        if getattr(self, 'stream', None) is not None:
 #            self.stream.close()
