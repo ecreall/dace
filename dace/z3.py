@@ -80,10 +80,6 @@ class Job(BaseJob):
     _callable_oid = _callable_name = None
 
     @property
-    def identifier(self):
-        return self._callable_oid
-
-    @property
     def callable(self):
         request = get_current_request()
         site = request.root

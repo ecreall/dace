@@ -31,9 +31,10 @@ class DelayedCallback(object):
 
     The timeout is calculated from when `start` is called.
     """
-    def __init__(self, callback, callback_time):
+    def __init__(self, callback, callback_time, identifier=None):
         self.callback = callback
         self.callback_time = callback_time
+        self.identifier = identifier
         self._timeout = None
 
     def start(self):
@@ -53,10 +54,6 @@ class DelayedCallback(object):
             ioloop.remove_timeout(self._timeout)
             self._timeout = None
 
-    @property
-    def identifier(self):
-        return getattr(self.callback, 'identifier', None)
-
 
 def push_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
@@ -69,7 +66,7 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
             event, callback, callback_params, deadline, job = args
             job.callable = callback
             job.args = callback_params
-            dc = DelayedCallback(job, deadline)
+            dc = DelayedCallback(job, deadline, event._p_oid)
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook, 
@@ -320,9 +317,9 @@ def get_signal_socket_url():
 
 
 class Listener(object):
-    def __init__(self, event_oid, job):
-        self.identifier = event_oid
+    def __init__(self, job, identifier):
         self.job = job
+        self.identifier = identifier
 
     def start(self):
         identifier = self.identifier
@@ -340,7 +337,7 @@ class Listener(object):
 
             job.args = (msg, )
             # wait 2s that the throw event transaction has committed
-            dc = DelayedCallback(job, 2000)
+            dc = DelayedCallback(job, 2000, identifier)
             dc.start()
 
         ctx = get_zmq_context()
@@ -364,7 +361,7 @@ class SignalEvent(EventKind):
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
         event_oid = self.event._p_oid
-        listener = Listener(event_oid, job)
+        listener = Listener(job, event_oid)
         get_socket().send_pyobj(('start', listener))
 
     def stop(self):
