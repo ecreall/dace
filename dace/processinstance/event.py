@@ -1,5 +1,5 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -69,7 +69,7 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
             dc = DelayedCallback(job, deadline, event._p_oid)
             dc.start()
 
-    transaction.get().addAfterCommitHook(after_commit_hook, 
+    transaction.get().addAfterCommitHook(after_commit_hook,
             args=(event, callback, callback_params, deadline, job))
 
 
@@ -222,7 +222,7 @@ class EndEvent(Throwing):
         if current_process.definition.isVolatile and \
            getattr(current_process, '__property__', None):
             getattr(current_process.__parent__.__class__,
-                    current_process.__property__).remove(current_process.__parent__, 
+                    current_process.__property__).remove(current_process.__parent__,
                                                       current_process)
 
 
@@ -399,7 +399,7 @@ class TimerEvent(EventKind):
 
     def _prepare_time(self, time, restart=False):
         if getattr(self, time, None) is None or not restart:
-            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO 
+            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO
 
     def _start_time(self, restart=False):
         """Return start time in milliseconds.
