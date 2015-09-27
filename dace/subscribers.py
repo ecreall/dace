@@ -63,6 +63,7 @@ class ConsumeTasks(threading.Thread):
                         del event_mod.callbacks[oid]
                 else:
                     # system crawler doesn't have an identifier
+                    # and so the DelayedCallback started from a SignalEvent
                     if obj.identifier is not None:
                         event_mod.callbacks[obj.identifier] = obj
 

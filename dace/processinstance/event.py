@@ -337,7 +337,7 @@ class Listener(object):
 
             job.args = (msg, )
             # wait 2s that the throw event transaction has committed
-            dc = DelayedCallback(job, 2000, identifier)
+            dc = DelayedCallback(job, 2000)
             dc.start()
 
         ctx = get_zmq_context()
