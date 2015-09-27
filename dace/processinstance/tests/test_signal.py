@@ -165,9 +165,13 @@ class TestsSignal(FunctionalTests):
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
         # simulate application shutdown
+        import time
+        # we need to wait ZMQStream to start on ioloop side and read
+        # the Listener from the socket so we have the listener in
+        # event.callbacks
+        time.sleep(2.2)
         self.assertEqual(len(event.callbacks), 1)
         stop_ioloop()
-        import time
         time.sleep(1)
         self.assertEqual(len(event.callbacks), 0)
 

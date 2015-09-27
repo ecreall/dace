@@ -324,6 +324,42 @@ def get_signal_socket_url():
     return 'tcp://127.0.0.1:12346'
 
 
+class Listener(object):
+    def __init__(self, event_oid, job):
+        self.identifier = event_oid
+        self.job = job
+
+    def start(self):
+        identifier = self.identifier
+        job = self.job
+        def execute_next(msg):
+            # We can't use zodb object from outside here because
+            # this code is executed in another thread (eventloop)
+            # We don't have site or interaction, so the job must be created
+            # before.
+            # we can't use push_callback_after_commit here because
+            # it will never commit in this thread (eventloop)
+            if identifier in callbacks:
+                callbacks[identifier].close()
+                with callbacks_lock:
+                    del callbacks[identifier]
+
+            job.args = (msg, )
+            # wait 2s that the throw event transaction has committed
+            dc = DelayedCallback(job, 2000)
+            dc.start()
+
+        ctx = get_zmq_context()
+        s = ctx.socket(zmq.SUB)
+        s.setsockopt_string(zmq.SUBSCRIBE, u'')
+        s.connect(get_signal_socket_url())
+        stream = ZMQStream(s)
+        with callbacks_lock:
+            callbacks[identifier] = stream
+
+        stream.on_recv(execute_next)
+
+
 class SignalEvent(EventKind):
 
     _msg = None
@@ -332,39 +368,15 @@ class SignalEvent(EventKind):
         return self.definition.refSignal(self.event.process) == self._msg
 
     def prepare_for_execution(self, restart=False):
-        ctx = get_zmq_context()
-        s = ctx.socket(zmq.SUB)
-        s.setsockopt_string(zmq.SUBSCRIBE, u'')
-        s.connect(get_signal_socket_url())
-        stream = ZMQStream(s)
         job = Job('system')
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
         event_oid = self.event._p_oid
-        def execute_next(msg):
-            # We can't use zodb object from outside here because
-            # this code is executed in another thread (eventloop)
-            # We don't have site or interaction, so the job must be created
-            # before.
-            # we can't use push_callback_after_commit here because
-            # it will never commit in this thread (eventloop)
-            if event_oid in callbacks:
-                callbacks[event_oid].close()
-                with callbacks_lock:
-                    del callbacks[event_oid]
-
-            job.args = (msg, )
-            # wait 2s that the throw event transaction has committed
-            dc = DelayedCallback(job, 2000)
-            dc.start()
-
-        with callbacks_lock:
-            callbacks[event_oid] = stream  # TODO:should be done in ioloop side
-        # TODO: get_socket().send_pyobj
-        stream.on_recv(execute_next)
+        listener = Listener(event_oid, job)
+        get_socket().send_pyobj(('start', listener))
 
     def stop(self):
-        # Close ZMQStream
+        # close ZMQStream
         get_socket().send_pyobj(('close', self.event._p_oid))
 
     def _callback(self, msg):

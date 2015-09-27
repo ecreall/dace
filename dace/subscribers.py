@@ -53,7 +53,8 @@ class ConsumeTasks(threading.Thread):
             def execute_next(action):
                 # action is a list with one pickle
                 method, obj = pickle.loads(action[0])
-                # obj can be an oid or dc (DelayedCallback object)
+                # obj can be an oid, dc (DelayedCallback object) or
+                # Listener object
                 if method in ('stop', 'close'):
                     oid = obj
                     dc = event_mod.callbacks.get(oid, None)
@@ -61,6 +62,7 @@ class ConsumeTasks(threading.Thread):
                         getattr(dc, method)()
                         del event_mod.callbacks[oid]
                 else:
+                    # system crawler doesn't have an identifier
                     if obj.identifier is not None:
                         event_mod.callbacks[obj.identifier] = obj
 
