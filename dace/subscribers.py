@@ -29,6 +29,7 @@ from dace.objectofcollaboration.principal import Machine
 from dace.objectofcollaboration.principal.util import grant_roles
 from dace.objectofcollaboration.system import run_crawler
 from dace.util import execute_callback, find_catalog
+from dace.processinstance import event as event_mod
 
 
 class ConsumeTasks(threading.Thread):
@@ -51,8 +52,19 @@ class ConsumeTasks(threading.Thread):
             s.bind(get_socket_url())
             def execute_next(action):
                 # action is a list with one pickle
-                method, dc = pickle.loads(action[0])
-                getattr(dc, method)()
+                method, obj = pickle.loads(action[0])
+                # obj can be an oid or dc (DelayedCallback object)
+                if method in ('stop', 'close'):
+                    oid = obj
+                    dc = event_mod.callbacks.get(oid, None)
+                    if dc is not None:
+                        getattr(dc, method)()
+                        del event_mod.callbacks[oid]
+                else:
+                    if obj.identifier is not None:
+                        event_mod.callbacks[obj.identifier] = obj
+
+                    getattr(obj, method)()
 
             self.stream = ZMQStream(s)
             self.stream.on_recv(execute_next)
@@ -83,9 +95,8 @@ class ConsumeTasks(threading.Thread):
             for timeout in loop._timeouts:
                 timeout.callback = None
 
-        from dace.processinstance import event
-        with event.callbacks_lock:
-            for dc_or_stream in event.callbacks.values():
+        with event_mod.callbacks_lock:
+            for dc_or_stream in event_mod.callbacks.values():
                 if hasattr(dc_or_stream, 'close'):
                     def close_stream_callback(stream):
                         stream.close()
@@ -94,7 +105,7 @@ class ConsumeTasks(threading.Thread):
                 else:
                     dc_or_stream.stop()
 
-            event.callbacks = {}
+            event_mod.callbacks = {}
 
 #        if getattr(self, 'stream', None) is not None:
 #            self.stream.close()

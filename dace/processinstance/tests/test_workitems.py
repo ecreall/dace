@@ -1766,6 +1766,11 @@ class EventsTests(FunctionalTests):
         wi, proc = start_wi.consume()
         wi.start_test_activity()
         transaction.commit()
+        # we need to wait ZMQStream to start on ioloop side and read
+        # the DelayedCallback from the socket so we have the dc in
+        # event.callbacks
+        import time
+        time.sleep(2.2)
         self.assertEqual(len(event.callbacks), 1)
         workitems = proc.getWorkItems()
         self.assertEqual(len(workitems), 1)
@@ -1773,7 +1778,6 @@ class EventsTests(FunctionalTests):
         workitems['sample.cie'].node.eventKind.definition.condition = return_true
         workitems['sample.cie'].node.definition._p_changed = 1
         transaction.commit()
-        import time
         time.sleep(6)
         transaction.begin()
         workitems = proc.getWorkItems()

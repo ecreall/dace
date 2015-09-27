@@ -20,7 +20,6 @@ from dace.z3 import Job
 from dace.util import get_system_request
 
 
-# shared between threads
 callbacks = {}
 
 
@@ -52,15 +51,15 @@ class DelayedCallback(object):
             ioloop.time() + self.callback_time / 1000.0, self.callback)
 
     def stop(self):
-        s = get_socket()
-        s.send_pyobj(('stop_in_ioloop', self))
-
-    def stop_in_ioloop(self):
         """Stop the timer."""
         if self._timeout is not None:
             ioloop = IOLoop.current()
             ioloop.remove_timeout(self._timeout)
             self._timeout = None
+
+    @property
+    def identifier(self):
+        return getattr(self.callback, 'identifier', None)
 
 
 def push_callback_after_commit(event, callback, callback_params, deadline):
@@ -75,8 +74,6 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
             job.callable = callback
             job.args = callback_params
             dc = DelayedCallback(job, deadline)
-            with callbacks_lock:
-                callbacks[event._p_oid] = dc
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook, 
@@ -286,11 +283,7 @@ class ConditionalEvent(EventKind):
         push_callback_after_commit(self.event, self._callback, (), 1000)
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            callbacks[self.event._p_oid].stop()
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
-
+        get_socket().send_pyobj(('stop', self.event._p_oid))
 
 
 class TerminateEvent(EventKind):
@@ -366,21 +359,13 @@ class SignalEvent(EventKind):
             dc.start()
 
         with callbacks_lock:
-            callbacks[event_oid] = stream
-        # TODO get_socket().send_pyobj
+            callbacks[event_oid] = stream  # TODO:should be done in ioloop side
+        # TODO: get_socket().send_pyobj
         stream.on_recv(execute_next)
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            # Close ZMQStream
-            stream = callbacks[self.event._p_oid]
-            def close_stream_callback(stream):
-                stream.close()
-
-            io_loop = IOLoop.instance()
-            io_loop.add_callback(close_stream_callback, stream)
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+        # Close ZMQStream
+        get_socket().send_pyobj(('close', self.event._p_oid))
 
     def _callback(self, msg):
         # convert str (py27) / bytes (py34) to unicode (py27) or str (py34)
@@ -458,8 +443,5 @@ class TimerEvent(EventKind):
         push_callback_after_commit(self.event, self._callback, (), deadline)
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            # stop DelayedCallback
-            callbacks[self.event._p_oid].stop()
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+        # stop DelayedCallback
+        get_socket().send_pyobj(('stop', self.event._p_oid))
