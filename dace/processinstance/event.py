@@ -25,7 +25,7 @@ from dace.util import (
 callbacks = {}
 
 
-def push_callback_after_commit(event, callback, callback_params, deadline):
+def push__event_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
     # the logged in user.
     job = EventJob('system')
@@ -242,7 +242,7 @@ class ConditionalEvent(EventKind):
             self._push_callback()
 
     def _push_callback(self):
-        push_callback_after_commit(self.event, self._callback, (), 1000)
+        push_event_callback_after_commit(self.event, self._callback, (), 1000)
 
     def stop(self):
         get_socket().send_pyobj(('stop', self.event._p_oid))
@@ -272,7 +272,7 @@ class Listener(object):
             # this code is executed in another thread (eventloop)
             # We don't have site or interaction, so the job must be created
             # before.
-            # we can't use push_callback_after_commit here because
+            # we can't use push_event_callback_after_commit here because
             # it will never commit in this thread (eventloop)
             if identifier in callbacks:
                 callbacks[identifier].close()
@@ -383,7 +383,7 @@ class TimerEvent(EventKind):
 
     def _push_callback(self, restart=False):
         deadline = self._start_time(restart)
-        push_callback_after_commit(self.event, self._callback, (), deadline)
+        push_event_callback_after_commit(self.event, self._callback, (), deadline)
 
     def stop(self):
         # stop DelayedCallback
