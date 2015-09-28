@@ -794,17 +794,13 @@ class DelayedCallback(object):
 
 
 def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
-    # Create job object now before the end of the interaction so we have
-    # the logged in user.
     job = Job(callback, 'system')
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.
         if status:
-            # Set callable now, we are sure to have p_oid
+            # Set kwargs now, we are sure to have p_oid
             job.kwargs = kwargs
             dc = DelayedCallback(job, deadline, identifier)
             dc.start()
 
-    transaction.get().addAfterCommitHook(
-        after_commit_hook,
-        args=(deadline, job))
+    transaction.get().addAfterCommitHook(after_commit_hook)
