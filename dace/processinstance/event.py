@@ -11,54 +11,24 @@ import datetime
 from pyramid.threadlocal import get_current_registry
 
 import zmq
-from zmq.eventloop.ioloop import IOLoop
 from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
-from dace.z3 import Job
-from dace.util import get_system_request
+from dace.util import (
+    get_system_request,
+    get_socket,
+    DelayedCallback,
+    get_zmq_context,
+    EventJob)
 
 
 callbacks = {}
 
 
-class DelayedCallback(object):
-    """Schedule the given callback to be called once.
-
-    The callback is called once, after callback_time milliseconds.
-
-    `start` must be called after the DelayedCallback is created.
-
-    The timeout is calculated from when `start` is called.
-    """
-    def __init__(self, callback, callback_time, identifier=None):
-        self.callback = callback
-        self.callback_time = callback_time
-        self.identifier = identifier
-        self._timeout = None
-
-    def start(self):
-        s = get_socket()
-        s.send_pyobj(('start_in_ioloop', self))
-
-    def start_in_ioloop(self):
-        """Start the timer."""
-        ioloop = IOLoop.current()
-        self._timeout = ioloop.add_timeout(
-            ioloop.time() + self.callback_time / 1000.0, self.callback)
-
-    def stop(self):
-        """Stop the timer."""
-        if self._timeout is not None:
-            ioloop = IOLoop.current()
-            ioloop.remove_timeout(self._timeout)
-            self._timeout = None
-
-
 def push_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
     # the logged in user.
-    job = Job('system')
+    job = EventJob('system')
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.
         if status:
@@ -285,33 +255,6 @@ class TerminateEvent(EventKind):
 # https://github.com/zeromq/pyzmq/blob/master/examples/poll/pubsub.py
 # http://learning-0mq-with-pyzmq.readthedocs.org/en/latest/pyzmq/multisocket/tornadoeventloop.html
 
-_ctx = None
-_socket = None
-
-
-def get_zmq_context():
-    global _ctx
-    if _ctx is None:
-        _ctx = zmq.Context()
-
-    return _ctx
-
-
-def get_socket_url():
-    return 'tcp://127.0.0.1:12345'
-
-
-def get_socket():
-    global _socket
-    if _socket is None:
-        ctx = get_zmq_context()
-        _socket = ctx.socket(zmq.PUSH)
-        _socket.setsockopt(zmq.LINGER, 0)
-        _socket.connect(get_socket_url())
-
-    return _socket
-
-
 def get_signal_socket_url():
     return 'tcp://127.0.0.1:12346'
 
@@ -357,7 +300,7 @@ class SignalEvent(EventKind):
         return self.definition.refSignal(self.event.process) == self._msg
 
     def prepare_for_execution(self, restart=False):
-        job = Job('system')
+        job = EventJob('system')
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
         event_oid = self.event._p_oid

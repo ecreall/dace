@@ -4,16 +4,26 @@
 # licence: AGPL
 # author: Amen Souissi
 
+from __future__ import print_function
+
+import sys
+import time
+import rwproperty
 import unicodedata
 import venusian
 import zope.copy
+import transaction
+import zmq
+import transaction
+from zmq.eventloop.ioloop import IOLoop
 from zope.interface import providedBy, implementedBy, Interface
 from ZODB.interfaces import IBroken
+from ZODB.POSException import ConflictError
 from pyramid.exceptions import Forbidden
 from pyramid.traversal import find_root
 from pyramid.testing import DummyRequest
 from pyramid.threadlocal import (
-        get_current_registry, get_current_request, manager)
+    get_current_registry, get_current_request, manager)
 
 from substanced.interfaces import IUserLocator
 from substanced.principal import DefaultUserLocator
@@ -25,14 +35,116 @@ from substanced.util import (
     BrokenWrapper)
 
 from dace.interfaces import (
-        IEntity,
-        IWorkItem,
-        IBusinessAction)
+    IEntity,
+    IWorkItem,
+    IBusinessAction)
 from dace.descriptors import (
     Descriptor, CompositeUniqueProperty, CompositeMultipleProperty)
 from dace.relations import find_relations, connect
 from dace import _
 
+
+class BaseJob(object):
+    # a job that examines the site and interaction participants when it is
+    # created, and reestablishes them when run, tearing down as necessary.
+
+    args = ()
+
+    def __init__(self, login=None):
+        request = get_current_request()
+        self.site_id = 'app_root'
+        self.database_name = request.root._p_jar.db().database_name
+        if login is not None:
+            user = get_user_by_login(login)
+        else:
+            user = request.user
+        self.userid = get_oid(user)
+
+    def retry(self):
+        transaction.begin()
+        self.callable(*self.args)
+        transaction.commit()
+
+    def __call__(self):
+        # log here don't work, we are in the eventloop
+        try:
+            app = self.setUp()
+            self.retry()
+        except ConflictError:
+            transaction.abort()
+            print("ConflictError, retry in 2s")
+            time.sleep(2.0)
+            self.retry()
+        except Exception:
+            transaction.abort()
+            print("transaction abort, so retry aborted")
+            print(sys.exc_info())
+            print(self.callable)
+            raise
+        finally:
+            self.tearDown(app)
+
+    def setUp(self):
+        registry = get_current_registry()
+        db = registry._zodb_databases[self.database_name]
+        app = db.open().root()[self.site_id]
+        request = DummyRequest()
+        request.root = app
+        manager.push({'registry': registry, 'request': request})
+        user = get_user_by_userid(self.userid)
+        request.user = user
+        return app
+
+    def tearDown(self, app):
+        manager.pop()
+        app._p_jar.close()
+
+
+class Job(BaseJob):
+
+    def __init__(self, callable, login=None):
+        super(Job, self).__init__(login)
+        self.callable = callable
+        self._kwargs = {}
+
+    @rwproperty.setproperty
+    def kwargs(self, value):
+        def get_value(obj):
+            return getattr(obj, '_p_oid', obj)
+
+        self._kwargs = {key: get_value(obj) for key, obj in value.items()}
+
+    def retry(self):
+        request = get_current_request()
+        site = request.root
+        def get_value(obj):
+            try:
+                result = site._p_jar.get(obj)
+                return result if result is not None else obj
+            except:
+                return obj
+
+        kwargs = {key: get_value(obj) for key, obj in self._kwargs.items()}
+        transaction.begin()
+        self.callable(**kwargs)
+        transaction.commit()
+
+
+class EventJob(BaseJob):
+    _callable_oid = _callable_name = None
+
+    @property
+    def callable(self):
+        request = get_current_request()
+        site = request.root
+        callable_root = site._p_jar.get(self._callable_oid).eventKind
+        call = getattr(callable_root, self._callable_name)
+        return call
+
+    @rwproperty.setproperty
+    def callable(self, value):
+        self._callable_oid = value.__self__.event._p_oid
+        self._callable_name = value.__name__
 
 
 def get_system_request():
@@ -622,3 +734,80 @@ def get_user_by_userid(login, request=None):
 def get_userid_by_login(login, request=None):
     user = get_user_by_login(login, request)
     return get_oid(user)
+
+
+_ctx = None
+_socket = None
+
+
+def get_zmq_context():
+    global _ctx
+    if _ctx is None:
+        _ctx = zmq.Context()
+
+    return _ctx
+
+
+def get_socket_url():
+    return 'tcp://127.0.0.1:12345'
+
+
+def get_socket():
+    global _socket
+    if _socket is None:
+        ctx = get_zmq_context()
+        _socket = ctx.socket(zmq.PUSH)
+        _socket.setsockopt(zmq.LINGER, 0)
+        _socket.connect(get_socket_url())
+
+    return _socket
+
+
+class DelayedCallback(object):
+    """Schedule the given callback to be called once.
+
+    The callback is called once, after callback_time milliseconds.
+
+    `start` must be called after the DelayedCallback is created.
+
+    The timeout is calculated from when `start` is called.
+    """
+    def __init__(self, callback, callback_time, identifier=None):
+        self.callback = callback
+        self.callback_time = callback_time
+        self.identifier = identifier
+        self._timeout = None
+
+    def start(self):
+        s = get_socket()
+        s.send_pyobj(('start_in_ioloop', self))
+
+    def start_in_ioloop(self):
+        """Start the timer."""
+        ioloop = IOLoop.current()
+        self._timeout = ioloop.add_timeout(
+            ioloop.time() + self.callback_time / 1000.0, self.callback)
+
+    def stop(self):
+        """Stop the timer."""
+        if self._timeout is not None:
+            ioloop = IOLoop.current()
+            ioloop.remove_timeout(self._timeout)
+            self._timeout = None
+
+
+def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
+    # Create job object now before the end of the interaction so we have
+    # the logged in user.
+    job = Job(callback, 'system')
+    def after_commit_hook(status, *args, **kws):
+        # status is true if the commit succeeded, or false if the commit aborted.
+        if status:
+            # Set callable now, we are sure to have p_oid
+            job.kwargs = kwargs
+            dc = DelayedCallback(job, deadline, identifier)
+            dc.start()
+
+    transaction.get().addAfterCommitHook(
+        after_commit_hook,
+        args=(deadline, job))

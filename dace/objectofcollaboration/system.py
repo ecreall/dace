@@ -9,8 +9,9 @@ import transaction
 from substanced.util import get_oid
 
 from dace.processinstance.event import DelayedCallback
-from dace.util import find_catalog, getAllSystemActions, get_system_request
-from dace.z3 import BaseJob
+from dace.util import (
+    find_catalog, getAllSystemActions,
+    get_system_request, BaseJob)
 from dace import log
 
 

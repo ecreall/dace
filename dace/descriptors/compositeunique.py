@@ -53,8 +53,8 @@ class CompositeUniqueProperty(Descriptor):
         value_property = getattr(value, '__property__', None)
         moved_to = (((moving is not None) and obj) or None)
         #if the parent is a substanced container
-        if  not(None in (value_parent, value_property)):
-            getattr(value_parent.__class__, 
+        if not(None in (value_parent, value_property)):
+            getattr(value_parent.__class__,
                     value_property).remove(
                         value_parent, value, True, moved_to)
         elif value_parent is not None:
@@ -70,9 +70,9 @@ class CompositeUniqueProperty(Descriptor):
 
     def remove(self, obj, value, initiator=True, moving=None):
         self.init(obj)
-        value_name = value.__name__
         current_value = self._get(obj)
         if current_value is not None and current_value == value:
+            value_name = value.__name__
             if initiator and self.opposite is not None:
                 opposite_property = getattr(value.__class__,
                                       self.opposite, _marker)
