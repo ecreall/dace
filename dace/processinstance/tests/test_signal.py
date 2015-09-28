@@ -152,7 +152,8 @@ class TestsSignal(FunctionalTests):
 
     def test_start_intermediate_events_on_startup(self):
         from zope.processlifetime import DatabaseOpenedWithRoot
-        from dace.processinstance.event import callbacks as event_callbacks
+        from dace.processinstance import event
+        from dace.subscribers import stop_ioloop
         pd = self._process_definition_with_activity_after_start_event()
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('b')['b']
@@ -164,15 +165,21 @@ class TestsSignal(FunctionalTests):
         transaction.commit()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
         # simulate application shutdown
-        self.assertEqual(len(event_callbacks), 1)
-        e = proc.getWorkItems()['sample.sc'].node.eventKind
-        e.stop()
-        self.assertEqual(len(event_callbacks), 0)
+        import time
+        # we need to wait ZMQStream to start on ioloop side and read
+        # the Listener from the socket so we have the listener in
+        # event.callbacks
+        time.sleep(2.2)
+        self.assertEqual(len(event.callbacks), 1)
+        stop_ioloop()
+        time.sleep(1)
+        self.assertEqual(len(event.callbacks), 0)
 
         # simulate application startup
-        event = DatabaseOpenedWithRoot(self.app)
-        self.registry.notify(event)
-        self.assertEqual(len(event_callbacks), 1)
+        e = DatabaseOpenedWithRoot(self.app._p_jar.db())
+        self.registry.notify(e)
+        time.sleep(1)
+        self.assertEqual(len(event.callbacks), 1)
 
         a_wi = proc.getWorkItems()['sample.a']
         a_wi.consume().start_test_activity()
@@ -181,7 +188,6 @@ class TestsSignal(FunctionalTests):
         transaction.commit()
         # The job wait 2 sec before executing
 
-        import time
         time.sleep(5)
         transaction.begin()
         self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])

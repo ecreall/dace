@@ -1,5 +1,5 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
@@ -16,6 +16,7 @@ from pyramid.threadlocal import get_current_request
 from substanced.db import root_factory
 
 from dace.util import get_userid_by_login
+from dace.subscribers import stop_ioloop
 
 
 def main(global_config, **settings):
@@ -66,11 +67,11 @@ class FunctionalTests(unittest.TestCase):
         request.root = request.context = self.app
         # request.user execute substanced.sdi.user which get request.context to find objectmap
         self.users = self.app['principals']['users']
-        self.app['principals'].add_user('alice', 
-                                        password='alice', 
+        self.app['principals'].add_user('alice',
+                                        password='alice',
                                         email='alice@example.com')
-        self.app['principals'].add_user('bob', 
-                                        password='bob', 
+        self.app['principals'].add_user('bob',
+                                        password='bob',
                                         email='alice@example.com')
         login('admin')
         # request.user is the admin user, but if you do later login('system'), you will still have admin in request.user
@@ -78,20 +79,7 @@ class FunctionalTests(unittest.TestCase):
         self.def_container = self.app['process_definition_container']
 
     def tearDown(self):
-        from dace.processinstance import event
-        with event.callbacks_lock:
-            for dc_or_stream in event.callbacks.values():
-                if hasattr(dc_or_stream, 'close'):
-                    dc_or_stream.close()
-                else:
-                    dc_or_stream.stop()
-
-            event.callbacks = {}
-
-        from dace.objectofcollaboration.system import CRAWLERS
-        for crawler in CRAWLERS:
-            crawler.stop()
-
+        stop_ioloop()
         import shutil
         testing.tearDown()
         self.db.close()

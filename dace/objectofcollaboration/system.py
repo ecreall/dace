@@ -17,9 +17,6 @@ from dace import log
 last_transaction_by_machine = {}
 
 
-CRAWLERS = []
-
-
 def _call_action(action):
     transaction.begin()
     try:
@@ -42,6 +39,11 @@ def _get_cache_key():
 
 
 def run():
+    request = get_system_request()
+    if request.user is None:
+        # in test, db connection closed
+        return
+
     catalog = find_catalog('dace')
     global last_transaction
     cache_key = _get_cache_key()
@@ -57,13 +59,13 @@ def run():
             _call_action(action)
 
         log.info("actions to check: done")
+
     run_crawler()
 
 
 def run_crawler():
     """Start loop."""
-    job = BaseJob()
+    job = BaseJob('system')
     job.callable = run
     dc = DelayedCallback(job, 2000)
     dc.start()
-    CRAWLERS.append(dc)

@@ -1,11 +1,10 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
 
 import time
-import threading
 import transaction
 import datetime
 
@@ -20,11 +19,7 @@ from dace.z3 import Job
 from dace.util import get_system_request
 
 
-# shared between threads
 callbacks = {}
-
-
-callbacks_lock = threading.Lock()
 
 
 class DelayedCallback(object):
@@ -36,28 +31,28 @@ class DelayedCallback(object):
 
     The timeout is calculated from when `start` is called.
     """
-    def __init__(self, callback, callback_time, io_loop=None):
+    def __init__(self, callback, callback_time, identifier=None):
         self.callback = callback
         self.callback_time = callback_time
-        self.io_loop = io_loop or IOLoop.instance()
+        self.identifier = identifier
         self._timeout = None
 
     def start(self):
+        s = get_socket()
+        s.send_pyobj(('start_in_ioloop', self))
+
+    def start_in_ioloop(self):
         """Start the timer."""
-        def start_delayed_callback(dc):
-            ioloop = IOLoop.current()
-            dc._timeout = ioloop.add_timeout(
-                ioloop.time() + self.callback_time / 1000.0, self.callback)
-        self.io_loop.add_callback(start_delayed_callback, self)
+        ioloop = IOLoop.current()
+        self._timeout = ioloop.add_timeout(
+            ioloop.time() + self.callback_time / 1000.0, self.callback)
 
     def stop(self):
         """Stop the timer."""
         if self._timeout is not None:
-            def stop_delayed_callback(dc):
-                ioloop = IOLoop.current()
-                ioloop.remove_timeout(dc._timeout)
-                dc._timeout = None
-            self.io_loop.add_callback(stop_delayed_callback, self)
+            ioloop = IOLoop.current()
+            ioloop.remove_timeout(self._timeout)
+            self._timeout = None
 
 
 def push_callback_after_commit(event, callback, callback_params, deadline):
@@ -71,12 +66,10 @@ def push_callback_after_commit(event, callback, callback_params, deadline):
             event, callback, callback_params, deadline, job = args
             job.callable = callback
             job.args = callback_params
-            dc = DelayedCallback(job, deadline)
-            with callbacks_lock:
-                callbacks[event._p_oid] = dc
+            dc = DelayedCallback(job, deadline, event._p_oid)
             dc.start()
 
-    transaction.get().addAfterCommitHook(after_commit_hook, 
+    transaction.get().addAfterCommitHook(after_commit_hook,
             args=(event, callback, callback_params, deadline, job))
 
 
@@ -229,7 +222,7 @@ class EndEvent(Throwing):
         if current_process.definition.isVolatile and \
            getattr(current_process, '__property__', None):
             getattr(current_process.__parent__.__class__,
-                    current_process.__property__).remove(current_process.__parent__, 
+                    current_process.__property__).remove(current_process.__parent__,
                                                       current_process)
 
 
@@ -265,8 +258,7 @@ class ConditionalEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+            del callbacks[self.event._p_oid]
 
         if self.validate():
             #log.info('%s %s', self.event, "validate ok")
@@ -283,11 +275,7 @@ class ConditionalEvent(EventKind):
         push_callback_after_commit(self.event, self._callback, (), 1000)
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            callbacks[self.event._p_oid].stop()
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
-
+        get_socket().send_pyobj(('stop', self.event._p_oid))
 
 
 class TerminateEvent(EventKind):
@@ -298,16 +286,67 @@ class TerminateEvent(EventKind):
 # http://learning-0mq-with-pyzmq.readthedocs.org/en/latest/pyzmq/multisocket/tornadoeventloop.html
 
 _ctx = None
+_socket = None
+
 
 def get_zmq_context():
     global _ctx
     if _ctx is None:
         _ctx = zmq.Context()
+
     return _ctx
 
 
 def get_socket_url():
     return 'tcp://127.0.0.1:12345'
+
+
+def get_socket():
+    global _socket
+    if _socket is None:
+        ctx = get_zmq_context()
+        _socket = ctx.socket(zmq.PUSH)
+        _socket.setsockopt(zmq.LINGER, 0)
+        _socket.connect(get_socket_url())
+
+    return _socket
+
+
+def get_signal_socket_url():
+    return 'tcp://127.0.0.1:12346'
+
+
+class Listener(object):
+    def __init__(self, job, identifier):
+        self.job = job
+        self.identifier = identifier
+
+    def start(self):
+        identifier = self.identifier
+        job = self.job
+        def execute_next(msg):
+            # We can't use zodb object from outside here because
+            # this code is executed in another thread (eventloop)
+            # We don't have site or interaction, so the job must be created
+            # before.
+            # we can't use push_callback_after_commit here because
+            # it will never commit in this thread (eventloop)
+            if identifier in callbacks:
+                callbacks[identifier].close()
+                del callbacks[identifier]
+
+            job.args = (msg, )
+            # wait 2s that the throw event transaction has committed
+            dc = DelayedCallback(job, 2000)
+            dc.start()
+
+        ctx = get_zmq_context()
+        s = ctx.socket(zmq.SUB)
+        s.setsockopt_string(zmq.SUBSCRIBE, u'')
+        s.connect(get_signal_socket_url())
+        stream = ZMQStream(s)
+        callbacks[identifier] = stream
+        stream.on_recv(execute_next)
 
 
 class SignalEvent(EventKind):
@@ -318,46 +357,16 @@ class SignalEvent(EventKind):
         return self.definition.refSignal(self.event.process) == self._msg
 
     def prepare_for_execution(self, restart=False):
-        ctx = get_zmq_context()
-        s = ctx.socket(zmq.SUB)
-        s.setsockopt_string(zmq.SUBSCRIBE, u'')
-        s.connect(get_socket_url())
-        stream = ZMQStream(s)
         job = Job('system')
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
         event_oid = self.event._p_oid
-        def execute_next(msg):
-            # We can't use zodb object from outside here because
-            # this code is executed in another thread (eventloop)
-            # We don't have site or interaction, so the job must be created
-            # before.
-            # we can't use push_callback_after_commit here because
-            # it will never commit in this thread (eventloop)
-            if event_oid in callbacks:
-                callbacks[event_oid].close()
-                with callbacks_lock:
-                    del callbacks[event_oid]
-
-            job.args = (msg, )
-            # wait 2s that the throw event transaction has committed
-            dc = DelayedCallback(job, 2000)
-            dc.start()
-
-        with callbacks_lock:
-            callbacks[event_oid] = stream
-        stream.on_recv(execute_next)
+        listener = Listener(job, event_oid)
+        get_socket().send_pyobj(('start', listener))
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            # Stop ZMQStream
-            stream = callbacks[self.event._p_oid]
-            def stop_stream_callback(stream):
-                stream.stop()
-            io_loop = IOLoop.instance()
-            io_loop.add_callback(stop_stream_callback, stream)
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+        # close ZMQStream
+        get_socket().send_pyobj(('close', self.event._p_oid))
 
     def _callback(self, msg):
         # convert str (py27) / bytes (py34) to unicode (py27) or str (py34)
@@ -373,7 +382,7 @@ class SignalEvent(EventKind):
         ref = self.definition.refSignal(self.event.process)
         ctx = get_zmq_context()
         s = ctx.socket(zmq.PUB)
-        s.bind(get_socket_url())
+        s.bind(get_signal_socket_url())
         # Sleep to allow sockets to connect.
         time.sleep(0.2)
         s.send_string(ref)
@@ -390,7 +399,7 @@ class TimerEvent(EventKind):
 
     def _prepare_time(self, time, restart=False):
         if getattr(self, time, None) is None or not restart:
-            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO 
+            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO
 
     def _start_time(self, restart=False):
         """Return start time in milliseconds.
@@ -418,8 +427,7 @@ class TimerEvent(EventKind):
 
     def _callback(self):
         if self.event._p_oid in callbacks:
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+            del callbacks[self.event._p_oid]
 
         if self.validate():
             wi = self.event._get_workitem()
@@ -435,8 +443,5 @@ class TimerEvent(EventKind):
         push_callback_after_commit(self.event, self._callback, (), deadline)
 
     def stop(self):
-        if self.event._p_oid in callbacks:
-            # stop DelayedCallback
-            callbacks[self.event._p_oid].stop()
-            with callbacks_lock:
-                del callbacks[self.event._p_oid]
+        # stop DelayedCallback
+        get_socket().send_pyobj(('stop', self.event._p_oid))

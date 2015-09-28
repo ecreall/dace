@@ -75,5 +75,5 @@ def add_process_definitions(event):
         processdef_container.DEFINITIONS.clear()
 
     transaction.commit()
-    registry.notify(DatabaseOpenedWithRoot(root))
+    registry.notify(DatabaseOpenedWithRoot(root._p_jar.db()))
     manager.pop()

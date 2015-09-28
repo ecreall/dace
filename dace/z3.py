@@ -35,7 +35,6 @@ class BaseJob(object):
         else:
             user = request.user
         self.userid = get_oid(user)
-        self.registry = get_current_registry()
 
     def retry(self):
         transaction.begin()
@@ -62,11 +61,12 @@ class BaseJob(object):
             self.tearDown(app)
 
     def setUp(self):
-        db = self.registry._zodb_databases[self.database_name]
+        registry = get_current_registry()
+        db = registry._zodb_databases[self.database_name]
         app = db.open().root()[self.site_id]
         request = DummyRequest()
         request.root = app
-        manager.push({'registry': self.registry, 'request': request})
+        manager.push({'registry': registry, 'request': request})
         user = get_user_by_userid(self.userid)
         request.user = user
         return app
