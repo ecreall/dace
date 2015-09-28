@@ -28,6 +28,11 @@ def process_definitions_evolve(root, registry):
             def_container.delfromproperty('definitions', old_def)
             def_container.add_definition(definition)
 
+    for definition in def_container.definitions:
+        for node in definition.nodes:
+            for context in getattr(node, 'contexts', []):
+                context.node_definition = node
+
     processdef_container.DEFINITIONS.clear()
     log.info('process definitions evolved.')
 
