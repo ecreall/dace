@@ -4,8 +4,6 @@
 # licence: AGPL
 # author: Amen Souissi
 
-from __future__ import print_function
-
 import sys
 import time
 import rwproperty
@@ -14,7 +12,6 @@ import venusian
 import zope.copy
 import transaction
 import zmq
-import transaction
 from zmq.eventloop.ioloop import IOLoop
 from zope.interface import providedBy, implementedBy, Interface
 from ZODB.interfaces import IBroken
@@ -121,7 +118,7 @@ class Job(BaseJob):
             try:
                 result = site._p_jar.get(obj)
                 return result if result is not None else obj
-            except:
+            except Exception:
                 return obj
 
         kwargs = {key: get_value(obj) for key, obj in self._kwargs.items()}
