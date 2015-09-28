@@ -33,6 +33,8 @@ def process_definitions_evolve(root, registry):
             for context in getattr(node, 'contexts', []):
                 context.node_definition = node
 
+    import transaction
+    transaction.commit()
     processdef_container.DEFINITIONS.clear()
     log.info('process definitions evolved.')
 
