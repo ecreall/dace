@@ -32,24 +32,8 @@ def process_definitions_evolve(root, registry):
     log.info('process definitions evolved.')
 
 
-def utc_converter(root, registry):
-    from dace.util import find_catalog
-    from .interfaces import IObject
-    import pytz
-    dace_catalog = find_catalog('dace')
-    object_provides_index = dace_catalog['object_provides']
-    query = object_provides_index.any((IObject.__identifier__,))
-    result = query.execute().all()
-    for obj in result:
-        obj.created_at = obj.created_at.replace(tzinfo=pytz.UTC)
-        obj.modified_at = obj.modified_at.replace(tzinfo=pytz.UTC)
-        
-    log.info('utc evolved.')
-
-
 def includeme(config):
     config.scan()
     config.include('.system')
     config.add_evolution_step(process_definitions_evolve)
-    config.add_evolution_step(utc_converter)
 #    config.add_request_method(user, reify=True)
