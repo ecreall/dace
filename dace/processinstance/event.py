@@ -25,7 +25,7 @@ from dace.util import (
 callbacks = {}
 
 
-def push__event_callback_after_commit(event, callback, callback_params, deadline):
+def push_event_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
     # the logged in user.
     job = EventJob('system')
