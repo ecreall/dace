@@ -31,6 +31,7 @@ class Anonymous(object):
     __name__ = 'Anonymous'
     name = 'Anonymous'
     locale = 'fr'
+    __oid__ = 20159291037391313
 
 
 def anonymous_oid_generator():
@@ -46,12 +47,8 @@ def get_current(request=None):
 
     result = request.user
     if result is None:
-        if 'dace_user' in request.session and request.session['dace_user']:
-            result = request.session['dace_user']
-        else:
-            result = Anonymous()
-            result.__oid__ = anonymous_oid_generator()
-            request.session['dace_user'] = result
+        result = Anonymous()
+#        result.__oid__ = anonymous_oid_generator()
 
     return result
 
@@ -61,7 +58,7 @@ def get_roles(user=None, obj=None, root=None):
         user = get_current()
 
     if isinstance(user, Anonymous):
-        return [RoleAnonymous.name] #TODO use cookies to find roles
+        return [RoleAnonymous.name]
 
     if root is None:
         root = getSite()
