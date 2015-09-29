@@ -70,6 +70,10 @@ class Entity(Object):
             self.state.append(state_item)
 
     @property
+    def state_or_none(self):
+        return self.state if self.state else [None]
+
+    @property
     def actions(self):
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]

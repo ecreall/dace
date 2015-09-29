@@ -32,8 +32,12 @@ def process_definitions_evolve(root, registry):
     log.info('process definitions evolved.')
 
 
+def include_evolve_steps(config):
+    config.add_evolution_step(process_definitions_evolve)
+
+
 def includeme(config):
     config.scan()
     config.include('.system')
-    config.add_evolution_step(process_definitions_evolve)
+    include_evolve_steps(config)
 #    config.add_request_method(user, reify=True)
