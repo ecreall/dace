@@ -304,8 +304,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
                 entities = find_entities((self.context,))
 
         for entity in entities:
-            if self.validate(entity, request):
+            try:
+                self.validate(entity, request)
                 return entity
+            except ValidationError:
+                continue
 
         return None
 
