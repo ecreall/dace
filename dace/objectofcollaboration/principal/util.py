@@ -110,7 +110,7 @@ def grant_roles(user=None, roles=(), root=None):
             opts[u'reftype'] = 'Role'
             if not has_any_roles(user, (role,), True, root=root):
                 connect(user, obj, **opts)
-                if not(obj is root):
+                if obj is not root:
                     connect(user, root, **opts)
 
     if hasattr(user, 'reindex'):
@@ -201,8 +201,8 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
 
 
 def has_any_roles(user=None,
-                  roles=(), 
-                  ignore_superiors=False, 
+                  roles=(),
+                  ignore_superiors=False,
                   root=None):
     if not roles:
         return True
@@ -326,7 +326,7 @@ def get_objects_with_role(user=None, role=None, root=None):
     return objects
 
 
-def get_access_keys(user, root=None):
+def get_access_keys(user, root=None, to_exclude=[]):
     if isinstance(user, Anonymous):
         return ['anonymous']
 
@@ -351,10 +351,10 @@ def get_access_keys(user, root=None):
         relations.extend(list(find_relations(group, opts).all()))
 
     result = [(t.relation_id+'_'+str(t.target_id)).lower() \
-              for t in relations]
+              for t in relations if t.target_id not in to_exclude]
     for relation in relations:
         if relation.relation_id == 'Admin':
-            result.append(('Admin'+'_'+str(principal_root_oid)).lower())
+            result.append(('admin'+'_'+str(principal_root_oid)).lower())
             break
 
     return list(set(result))
