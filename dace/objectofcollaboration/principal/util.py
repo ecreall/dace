@@ -53,7 +53,8 @@ def get_current(request=None):
     return result
 
 
-def get_roles(user=None, obj=None, root=None):
+def get_roles(user=None, obj=None,
+              root=None, ignore_groups=False):
     if user is None:
         user = get_current()
 
@@ -72,10 +73,13 @@ def get_roles(user=None, obj=None, root=None):
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
     principals = find_service(root, 'principals')
     sd_admin = principals['users']['admin']
-    if sd_admin is user and not ('Admin' in roles):
+    if sd_admin is user and 'Admin' not in roles:
         roles.append('Admin')
 
-    groups = getattr(user, 'groups', [])
+    groups = []
+    if not ignore_groups:
+        groups.extend = getattr(user, 'groups', [])
+
     for group in groups:
         roles.extend(get_roles(group, obj, root))
 
