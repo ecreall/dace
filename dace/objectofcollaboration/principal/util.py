@@ -78,7 +78,7 @@ def get_roles(user=None, obj=None,
 
     groups = []
     if not ignore_groups:
-        groups.extend = getattr(user, 'groups', [])
+        groups.extend(getattr(user, 'groups', []))
 
     for group in groups:
         roles.extend(get_roles(group, obj, root))
