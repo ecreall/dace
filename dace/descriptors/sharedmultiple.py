@@ -21,22 +21,31 @@ class SharedMultipleProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
-        return list(filter(lambda x: x is not None,
-                           (get_ref(o) for o
-                            in obj.__dict__.get(self.key, []))))
+        """Return a tuple (references, need_cleanup)
+
+        need_cleanup is a boolean which indicate if there is a
+        ResourceRef that evaluated to None and so can be removed.
+        """
+        references = list(obj.__dict__.get(self.key, []))
+        values = list(filter(lambda x: x is not None,
+                      [get_ref(o) for o in references]))
+        return values, len(references) != len(values)
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return self._get(obj)
+        return self._get(obj)[0]
 
     def add(self, obj, value, initiator=True, moving=None):
         if value is None:
             return
 
         self.init(obj)
-        current_values = self._get(obj)
+        current_values, need_cleanup = self._get(obj)
+        if need_cleanup:
+            self._cleanup(obj)
+
         if self.isunique and value in current_values:
             return
 
@@ -47,11 +56,19 @@ class SharedMultipleProperty(Descriptor):
 
         obj.__dict__[self.key].append(ref(value))
 
+    def _cleanup(self, obj):
+        references = [o for o in obj.__dict__.get(self.key, [])
+                      if get_ref(o) is not None]
+        setattr(obj, self.key, PersistentList(references))
+
     def __set__(self, obj, values, initiator=True, moving=None):
         if not isinstance(values, (list, tuple, set, PersistentList)):
             values = [values]
 
-        oldvalues = self._get(obj)
+        oldvalues, need_cleanup = self._get(obj)
+        if need_cleanup:
+            self._cleanup(obj)
+
         toremove = []
         toadd = []
         if values is None:
