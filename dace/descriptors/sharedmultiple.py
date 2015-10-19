@@ -1,5 +1,5 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
@@ -13,7 +13,7 @@ _marker = object()
 
 
 class SharedMultipleProperty(Descriptor):
-    
+
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -21,8 +21,8 @@ class SharedMultipleProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
-        return [get_ref(o) for o \
-                in obj.__dict__.get(self.key, []) \
+        return [get_ref(o) for o
+                in obj.__dict__.get(self.key, [])
                 if get_ref(o)]
 
     def __get__(self, obj, objtype=None):
@@ -72,7 +72,7 @@ class SharedMultipleProperty(Descriptor):
 
         for value in values:
             if initiator and self.opposite:
-                opposite_property = getattr(value.__class__, 
+                opposite_property = getattr(value.__class__,
                                        self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
