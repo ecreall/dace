@@ -5,6 +5,7 @@
 # author: Amen Souissi
 
 from persistent.wref import WeakRef
+from ZODB.POSException import POSKeyError
 
 
 class Descriptor(object):
@@ -20,16 +21,34 @@ class ResourceRef(object):
             self.ref = resource
 
     def __call__(self):
-        obj = None
         if isinstance(self.ref, WeakRef):
             ref = self.ref()
-            name = getattr(ref, '__name__', None)
-            if name is not None:
-                obj = ref
-        else:
-            obj = self.ref
+            if ref is None:
+                # The object is not in the database anymore.
+                return None
 
-        return obj
+            try:
+                # If a zeopack occurred and the process was not restarted after
+                # that, it's possible that WeakRef._v_ob is
+                # a ghostified object and trying accessing the object will try
+                # to wake it up and raise POSKeyError because the
+                # object is not in the database anymore.
+                name = getattr(ref, '__name__', None)
+            except POSKeyError:
+                delattr(self.ref, '_v_ob')
+                return None
+
+            if name is None:
+                # If name is None, it means that the object is not in any
+                # container meaning the user removed the object
+                # but we can still access it from the db until
+                # the filestorage is packed.
+                # We want to return None in this case.
+                return None
+
+            return ref
+
+        return self.ref
 
     def __hash__(self):
         self = self()
