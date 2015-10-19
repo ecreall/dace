@@ -211,7 +211,11 @@ class SearchableObject(Adapter):
         return getattr(self.context, 'description', '')
 
     def object_states(self):
-        return [s.lower() for s in list(getattr(self.context, 'state', []))]
+        states = list(getattr(self.context, 'state', []))
+        if not states:
+            return ['none']
+
+        return [s.lower() for s in states]
 
     def object_type(self):
         if providedBy(self.context).declared:
