@@ -175,13 +175,16 @@ class Object(Folder):
             registry = get_current_registry()
             registry.subscribers((event, self), None)
 
-    def get_data(self, node):
+    def get_data(self, node, ignore_null=False):
         """return values of attributes descibed in
            the colander schema node 'node' """
         result = {}
         for child in node:
             name = child.name
             val = getattr(self, name, colander.null)
+            if val is colander.null and ignore_null:
+                continue
+
             result[name] = val
 
         return result
