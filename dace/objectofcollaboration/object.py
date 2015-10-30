@@ -152,7 +152,7 @@ class Object(Folder):
         obj_property = getattr(self[oldname], '__property__', None)
         if obj_property:
             self.move(oldname, (self, obj_property), newname, registry)
-        else: 
+        else:
             self.move(oldname, self, newname, registry)
 
     def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):

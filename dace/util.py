@@ -166,10 +166,10 @@ def is_broken(resource):
            IBroken.providedBy(resource)
 
 
-def  name_normalizer(name):
+def name_normalizer(name):
     return unicodedata.normalize('NFKD',
                                  u''+name).encode('ascii',
-                                                  'replace').decode()
+                                                  'ignore').decode()
 
 
 def name_chooser(container={}, name='default_name', local='default'):
