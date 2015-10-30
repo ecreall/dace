@@ -38,6 +38,7 @@ from dace.interfaces import (
 from dace.descriptors import (
     Descriptor, CompositeUniqueProperty, CompositeMultipleProperty)
 from dace.relations import find_relations, connect
+from dace.i18n.normalizer.interfaces import INormalizer
 from dace import _
 
 
@@ -165,7 +166,13 @@ def is_broken(resource):
            IBroken.providedBy(resource)
 
 
-def name_chooser(container={}, name='default_name'):
+def  name_normalizer(name):
+    return unicodedata.normalize('NFKD',
+                                 u''+name).encode('ascii',
+                                                  'replace').decode()
+
+
+def name_chooser(container={}, name='default_name', local='default'):
     # remove characters that checkName does not allow
     try:
         name = str(name)
@@ -181,14 +188,20 @@ def name_chooser(container={}, name='default_name'):
     else:
         suffix = ''
 
-    unicodedname = unicodedata.normalize('NFKD',
-                                         u''+name).encode('ascii',
-                                                          'ignore').decode()
-    new_name = unicodedname + suffix
+    normalizer = get_current_registry().getUtility(INormalizer,
+                                                   local+'_normalizer')
+    if normalizer:
+        unicodedname = normalizer.normalize(u''+name).decode()
+        unicodedsuffix = normalizer.normalize(u''+suffix).decode()
+    else:
+        unicodedname = name_normalizer(name)
+        unicodedsuffix = name_normalizer(suffix)
+
+    new_name = unicodedname + unicodedsuffix
     i = 1
     while new_name in container:
         i += 1
-        new_name = unicodedname + '-' + str(i) + suffix
+        new_name = unicodedname + '-' + str(i) + unicodedsuffix
 
     return new_name
 
