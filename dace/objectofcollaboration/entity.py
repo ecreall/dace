@@ -59,6 +59,7 @@ class Entity(Object):
     def __init__(self, **kwargs):
         super(Entity, self).__init__(**kwargs)
         self.state = PersistentList()
+        self.history = PersistentList()
         self.__property__ = None
 
     def setstate(self, state):

@@ -60,7 +60,7 @@ class Object(Folder):
         obj_property = getattr(self[name], '__property__', None)
         if obj_property:
             self.delfromproperty(obj_property, self[name])
-        else: 
+        else:
             self.remove(name)
 
     def _init_property(self, name, propertydef):
