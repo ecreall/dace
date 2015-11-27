@@ -20,15 +20,15 @@ from dace.util import (
     getBusinessAction, getAllBusinessAction, getSite)
 from dace import _
 from .core import (
-        EventHandler,
-        BehavioralFlowNode,
-        Wizard,
-        Behavior,
-        Validator,
-        ValidationError,
-        ExecutionError,
-        DEFAULTMAPPING_ACTIONS_VIEWS,
-        BPMNElement)
+    EventHandler,
+    BehavioralFlowNode,
+    Wizard,
+    Behavior,
+    Validator,
+    ValidationError,
+    ExecutionError,
+    DEFAULTMAPPING_ACTIONS_VIEWS,
+    BPMNElement)
 from .lock import LockableElement
 from dace.interfaces import (
     IActivity,
@@ -49,7 +49,6 @@ class Activity(BehavioralFlowNode, EventHandler):
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
         self.assigned_to = PersistentList()
-
 
     def assigne_to(self, users):
         if not isinstance(users, (list, tuple)):
@@ -168,8 +167,8 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             source_action = get_obj(int(action_uid))
 
         if source_action and \
-           (source_action._class_ is cls) and \
-            source_action.validate(context, request):
+           source_action._class_ is cls and \
+           source_action.validate(context, request):
             return source_action
 
         instances = getBusinessAction(context, request,
@@ -316,25 +315,25 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         query = {}
         try:
             actionuid = get_oid(self)
-            query = {'action_uid':actionuid}
+            query = {'action_uid': actionuid}
         except AttributeError:
-            query = {'isstart':'True'}
+            query = {'isstart': 'True'}
 
-        return get_current_request().resource_url(obj,
-                      '@@'+self.view_name,  query=query)
+        return get_current_request().resource_url(
+            obj, '@@'+self.view_name,  query=query)
 
     def assigne_to(self, users):
         if not isinstance(users, (list, tuple)):
             users = [users]
 
-        users = [u for u in users if not(u in self.local_assigned_to)]
+        users = [u for u in users if u not in self.local_assigned_to]
         self.local_assigned_to.extend(users)
 
     def unassigne(self, users):
         if not isinstance(users, (list, tuple)):
             users = [users]
 
-        users = [u for u in users if (u in self.local_assigned_to)]
+        users = [u for u in users if u in self.local_assigned_to]
         for user in users:
             self.local_assigned_to.remove(user)
 
@@ -373,7 +372,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if _assigned_to:
             _assigned_to.append(getSite()['principals']['users']['admin'])
             current_user = get_current(request)
-            if not( current_user in _assigned_to):
+            if current_user not in _assigned_to:
                 return False, _('Action is assigned to an other user')
 
         elif not getattr(self.roles_validation,
@@ -669,7 +668,7 @@ class ActionInstance(BusinessAction):
         self.item = item
         item_id = item
         if not isinstance(item, int):
-            item_id  = get_oid(item)
+            item_id = get_oid(item)
             self.title = self.title+' ('+item.title+')'
         else:
             self.title = self.title+' ('+str(item)+')'
@@ -684,11 +683,11 @@ class ActionInstance(BusinessAction):
     def _init_attributes_(cls, principalaction):
         cls.context = principalaction.context
         cls.node_definition = principalaction.node_definition
-        cls.actionType =  principalaction.actionType
+        cls.actionType = principalaction.actionType
         cls.relation_validation = principalaction.relation_validation
-        cls.roles_validation =  principalaction.roles_validation
+        cls.roles_validation = principalaction.roles_validation
         cls.processsecurity_validation = principalaction.processsecurity_validation
-        cls.state_validation =  principalaction.state_validation
+        cls.state_validation = principalaction.state_validation
 
     @property
     def action_view(self):
@@ -701,7 +700,7 @@ class ActionInstance(BusinessAction):
     def informations(self):# pragma: no cover
         item_id = str(self.item)
         if not isinstance(self.item, int):
-            item_id  = self.item.title
+            item_id = self.item.title
 
         if self.process is not None:
             return 'Description: ' + \
@@ -724,7 +723,7 @@ class ActionInstance(BusinessAction):
         if self.principalaction.isSequential:
             self.workitem.unlock(request)
 
-        if  not self.principalaction.instances:
+        if not self.principalaction.instances:
             self.workitem.node.finish_behavior(self.workitem)
 
     def cancel_execution(self, context, request, **kw):
@@ -765,9 +764,8 @@ class ActionInstance(BusinessAction):
 
 class ActionInstanceAsPrincipal(ActionInstance):
 
-
     def validate_mini(self, context, request, **kw):
-        if not (context is self.item):
+        if context is not self.item:
             return False, _('Context not valid')
 
         return super(ActionInstanceAsPrincipal, self).validate_mini(

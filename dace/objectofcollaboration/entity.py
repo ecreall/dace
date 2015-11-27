@@ -4,6 +4,7 @@
 # licence: AGPL
 # author: Amen Souissi
 
+from BTrees.OOBTree import OOBTree
 from zope.interface import implementer
 from persistent.list import PersistentList
 
@@ -59,16 +60,11 @@ class Entity(Object):
     def __init__(self, **kwargs):
         super(Entity, self).__init__(**kwargs)
         self.state = PersistentList()
-        self.history = PersistentList()
+        self.annotations = OOBTree()
         self.__property__ = None
 
-    def setstate(self, state):
-        if not isinstance(state, (list, tuple)):
-            state = [state]
-
-        self.state = PersistentList()
-        for state_item in state:
-            self.state.append(state_item)
+    def init_annotations(self):
+        self.annotations = OOBTree()
 
     @property
     def state_or_none(self):
@@ -78,3 +74,9 @@ class Entity(Object):
     def actions(self):
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
+
+    def setstate(self, state):
+        if not isinstance(state, (list, tuple)):
+            state = [state]
+
+        self.state = PersistentList(state)

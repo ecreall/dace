@@ -4,6 +4,8 @@
 # licence: AGPL
 # author: Amen Souissi
 
+import datetime
+import pytz
 import threading
 
 from persistent import Persistent
@@ -13,15 +15,20 @@ from pyramid.interfaces import ILocation
 from pyramid.events import subscriber
 from zope.interface import implementer
 
+from substanced.util import get_oid
+
 from dace.interfaces import IProcessStarted, IProcessFinished
 from dace import log
 from dace.interfaces import IBehavior
 from dace.descriptors import (
-        CompositeMultipleProperty,
-        SharedUniqueProperty, SharedMultipleProperty)
+    CompositeMultipleProperty,
+    SharedUniqueProperty, SharedMultipleProperty)
 from dace.processdefinition.core import Path
 from dace.objectofcollaboration.entity import Entity
 from .workitem import DecisionWorkItem, StartWorkItem, WorkItem
+
+
+PROCESS_HISTORY_KEY = 'process_history'
 
 
 class BPMNElement(Entity):
@@ -547,6 +554,17 @@ class ActivityStarted:
         return "ActivityStarted(%r)" % self.activity
 
 
+class ActivityExecuted:
+
+    def __init__(self, activity, contexts, user):
+        self.activity = activity
+        self.contexts = contexts
+        self.user = user
+
+    def __repr__(self):# pragma: no cover
+        return "ActivityExecuted(%r)" % self.activity
+
+
 class ProcessError(Exception):
     """An error occurred in execution of a process.
     """
@@ -557,3 +575,26 @@ class ProcessError(Exception):
 @subscriber(ActivityFinished)
 def activity_handler(event):# pragma: no cover
     log.info('%s %s', threading.current_thread().ident, event)
+
+
+@subscriber(ActivityExecuted)
+def activity_executed__handler(event):
+    now = datetime.datetime.now(tz=pytz.UTC)
+    for context in event.contexts:
+        if isinstance(context, Entity):
+            process = event.activity.process
+            node = event.activity.node
+            node = {
+                'date': now,
+                'state': list(context.state),
+                'user': get_oid(event.user, None),
+                'activity_id': (event.activity.process_id,
+                                event.activity.node_id),
+                'activity_data': (getattr(process, 'title', None),
+                                  getattr(node, 'title', None))
+            }
+            if not hasattr(context, 'annotations'):
+                context.init_annotations()
+
+            context.annotations.setdefault(
+                PROCESS_HISTORY_KEY, PersistentList()).append(node)
