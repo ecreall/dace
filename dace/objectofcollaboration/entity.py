@@ -60,6 +60,7 @@ class Entity(Object):
     def __init__(self, **kwargs):
         super(Entity, self).__init__(**kwargs)
         self.state = PersistentList()
+        self.annotations = OOBTree()
         self.__property__ = None
 
     def init_annotations(self):
