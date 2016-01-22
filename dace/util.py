@@ -198,7 +198,7 @@ def name_chooser(container={}, name='default_name', local='default'):
         unicodedsuffix = name_normalizer(suffix)
 
     new_name = unicodedname + unicodedsuffix
-    new_name = new_name.replace(' ', '_')[:60]
+    new_name = new_name.replace(' ', '-')[:60]
     i = 1
     while new_name in container:
         i += 1
