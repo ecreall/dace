@@ -826,8 +826,8 @@ class Process(Entity):
                        action_id, appstruct, ignor_validation=True):
         try:
             workitems = self.getWorkItems()
-            publication_wi = workitems[self.id+'.'+action_id]
-            action = publication_wi.actions[0]
+            workitem = workitems[self.id+'.'+action_id]
+            action = workitem.actions[0]
             if not ignor_validation:
                 action.validate(context, request)
 
@@ -840,8 +840,8 @@ class Process(Entity):
     def get_actions(self, action_id):
         try:
             workitems = self.getWorkItems()
-            publication_wi = workitems[self.id+'.'+action_id]
-            return publication_wi.actions
+            workitem = workitems[self.id+'.'+action_id]
+            return workitem.actions
         except Exception:
             return []
 

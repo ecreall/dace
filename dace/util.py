@@ -197,8 +197,8 @@ def name_chooser(container={}, name='default_name', local='default'):
         unicodedname = name_normalizer(name)
         unicodedsuffix = name_normalizer(suffix)
 
+    unicodedname = unicodedname.replace(' ', '-')[:60]
     new_name = unicodedname + unicodedsuffix
-    new_name = new_name.replace(' ', '-')[:60]
     i = 1
     while new_name in container:
         i += 1
@@ -654,9 +654,10 @@ def copy(obj, container, new_name=None, shared_properties=False,
     # and has a __oid__ attribute
     if isinstance(container, tuple):
         container, propertyname = container
-        new.__name__ = new_name
+        new.__name__ = name_chooser(container, new_name)
         container.addtoproperty(propertyname, new)
     else:
+        new_name = name_chooser(container, new_name)
         container.add(new_name, new)
 
     seen = set()
