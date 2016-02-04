@@ -208,13 +208,8 @@ def name_chooser(container={}, name='default_name', local='default'):
 
 
 def getSite(resource=None):
-    request = get_current_request()
-    if resource is not None:
-        return find_root(resource)
-    elif request is not None:
-        return getattr(request, 'root', None)
-
-    return None
+    return find_root(resource) if resource else \
+        getattr(get_current_request(), 'root', None)
 
 
 def get_obj(oid, only_exists=False):

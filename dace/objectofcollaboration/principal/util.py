@@ -180,7 +180,7 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         normalized_roles.update(dict(_get_allsuperiors(role[0], root)))
 
     if isinstance(user, Anonymous):
-        return RoleAnonymous.name in normalized_roles 
+        return RoleAnonymous.name in normalized_roles
         #TODO use cookies to find roles
 
     if 'Admin' in  normalized_roles:

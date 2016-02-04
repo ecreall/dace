@@ -1,0 +1,62 @@
+#
+# SOME DESCRIPTIVE TITLE
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2016.
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE 1.0\n"
+"POT-Creation-Date: 2016-02-04 15:17+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Language: \n"
+"Generated-By: Lingua 3.11\n"
+
+#: ./src/dace/dace/util.py:340
+msgid "Default validation"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:390
+msgid "Valid action"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:355
+msgid "Action is executed"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:358
+msgid "Action is locked"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:361
+msgid "Workitem is not valid"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:364
+#: ./src/dace/dace/processinstance/activity.py:369
+msgid "Context is not valid"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:384
+msgid "Security is violated"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:388
+msgid "Context state is not valid"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:769
+msgid "Context not valid"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:376
+msgid "Action is assigned to an other user"
+msgstr ""
+
+#: ./src/dace/dace/processinstance/activity.py:380
+msgid "Role is not valid"
+msgstr ""
