@@ -324,7 +324,7 @@ def get_objects_with_role(user=None, role=None, root=None):
     opts[u'reftype'] = 'Role'
     objects = [r.target for r in find_relations(root, opts).all()]
     objects = list(set(objects))
-    if not (len(objects) == 1 and objects[0] is root):
+    if root in objects:
         objects.remove(root)
 
     return objects
