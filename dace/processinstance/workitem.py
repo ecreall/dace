@@ -171,9 +171,14 @@ class BaseWorkItem(LockableElement, Object):
         pass # pragma: no cover
 
     def add_action(self, action):
-        action.__name__ = action.behavior_id
         action.workitem = self
-        self.addtoproperty('actions', action)
+        if getattr(action, '__parent__', None):
+            action.__parent__.move(
+                action.__name__, (self, 'actions'),
+                newname=action.behavior_id)
+        else:
+            action.__name__ = action.behavior_id
+            self.addtoproperty('actions', action)
 
     def set_actions(self, actions):
         self.setproperty('actions', [])
