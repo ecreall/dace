@@ -396,7 +396,7 @@ class Behavior(Step):
 
     def start(self, context, request, appstruct, **kw):
         """Execution"""
-        pass
+        return {}
 
     def execute(self, context, request, appstruct, **kw):
         """Execution policy"""
