@@ -12,6 +12,7 @@ import venusian
 import zope.copy
 import transaction
 import zmq
+import string
 from zmq.eventloop.ioloop import IOLoop
 from zope.interface import providedBy, implementedBy, Interface
 from ZODB.interfaces import IBroken
@@ -40,6 +41,14 @@ from dace.descriptors import (
 from dace.relations import find_relations, connect
 from dace.i18n.normalizer.interfaces import INormalizer
 from dace import _
+
+
+SPECIAL_CHAR = "._-"
+
+STRING_PUNCTUATION = ' ' + string.punctuation.translate(
+    {ord(c): None for c in SPECIAL_CHAR})
+
+NAME_RE_MAPPING = {ord(c): '-' for c in STRING_PUNCTUATION}
 
 
 class BaseJob(object):
@@ -197,7 +206,7 @@ def name_chooser(container={}, name='default_name', local='default'):
         unicodedname = name_normalizer(name)
         unicodedsuffix = name_normalizer(suffix)
 
-    unicodedname = unicodedname.replace(' ', '-')[:60]
+    unicodedname = unicodedname.translate(NAME_RE_MAPPING)[:60]
     new_name = unicodedname + unicodedsuffix
     i = 1
     while new_name in container:
