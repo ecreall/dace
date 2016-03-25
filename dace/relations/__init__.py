@@ -22,13 +22,25 @@ def get_relations_catalog(resource):
     return root.get('relations', None)
 
 
+INTERSECTION_ORDER = ['relation_id', 'source_id', 'target_id']
+
+def get_order(e):
+    try:
+        return INTERSECTION_ORDER.index(e[0])
+    except ValueError:
+        return 999
+
+
 # TODO def find_relations(root, query)
 def find_relations(resource, query):
     catalog = get_relations_catalog(resource)
     root = find_root(resource)
     objectmap = find_objectmap(root)
     queryobject = None
-    for index, value in query.items():
+    for index, value in sorted(query.items(), key=get_order):
+        if 'reftype' == index: # ignore reftype, it's always 'Role'
+            continue
+
         if isinstance(value, (tuple, list)):
             querytype = value[0]
             value = value[1]
