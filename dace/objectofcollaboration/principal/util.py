@@ -193,13 +193,13 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
-        for group in groups:
-            opts = {u'source_id': get_oid(group),
-                    u'target_id': get_oid(context)}
-            opts[u'relation_id'] = role
-            opts[u'reftype'] = 'Role'
-            if find_relations(root, opts):
-                return True
+        opts = {u'source_id': (
+                    'any', tuple(sorted([get_oid(g) for g in groups]))),
+                u'target_id': get_oid(context)}
+        opts[u'relation_id'] = role
+        opts[u'reftype'] = 'Role'
+        if find_relations(root, opts):
+            return True
 
     return False
 
@@ -241,13 +241,13 @@ def has_any_roles(user=None,
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
-        for group in groups:
-            opts = {u'source_id': get_oid(group),
-                    u'target_id': get_oid(context)}
-            opts[u'relation_id'] = role
-            opts[u'reftype'] = 'Role'
-            if find_relations(root, opts):
-                return True
+        opts = {u'source_id': (
+                    'any', tuple(sorted([get_oid(g) for g in groups]))),
+                u'target_id': get_oid(context)}
+        opts[u'relation_id'] = role
+        opts[u'reftype'] = 'Role'
+        if find_relations(root, opts):
+            return True
 
     return False
 

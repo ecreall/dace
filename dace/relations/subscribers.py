@@ -13,7 +13,7 @@ from substanced.event import RootAdded
 from substanced.event import subscribe_removed
 from substanced.util import find_objectmap
 
-from dace.relations import get_relations_catalog
+from dace.relations import get_relations_catalog, invalidate_cache
 from .interfaces import (
     IRelationAdded,
     IRelationModified,
@@ -88,3 +88,5 @@ def object_deleted(event):
             del parent[rel.__name__]
         except KeyError:
             continue
+
+    invalidate_cache()
