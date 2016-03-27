@@ -92,11 +92,13 @@ class LockableElement(object):
         if getattr(self, 'dont_lock', False):
             return False
 
-        try:
-            user = get_current(request)
-            if isinstance(user, Anonymous):
-                 return False
+        user = get_current(request)
+        if isinstance(user, Anonymous):
+             return False
 
+        try:
             return not could_lock_resource(self, user)
+        except ValueError:  # self is probably an action not bound to zodb
+            return False
         except LockError:
             return True
