@@ -97,12 +97,12 @@ def connect(source, target, **kwargs):
     relation = RelationValue(source_id, target_id, **kwargs)
     objectid = objectmap.new_objectid()
     set_oid(relation, objectid)
-    container[str(objectid)] = relation
+    container.add(str(objectid), relation, send_events=False)
     invalidate_cache()
     return relation
 
 
 def disconnect(relation):
     parent = relation.__parent__
-    del parent[relation.__name__]
+    parent.remove(relation.__name__, send_events=False)
     invalidate_cache()

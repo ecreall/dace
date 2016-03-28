@@ -17,6 +17,7 @@ from dace.relations import get_relations_catalog, invalidate_cache
 from .interfaces import (
     IRelationAdded,
     IRelationModified,
+    IRelationDeleted,
     IRelationValue,
     )
 from .catalog import create_catalog
@@ -45,9 +46,10 @@ def update_relation(event):
     catalog.reindex_doc(objectid, relation)
 
 
+@subscriber(IRelationDeleted)
 @subscribe_removed()
 def object_deleted(event):
-    if event.moving:
+    if getattr(event, 'moving', False):
         return
 
     registry = get_current_registry()
@@ -75,7 +77,7 @@ def object_deleted(event):
         registry.notify(RelationSourceDeleted(ob, rel))
         parent = rel.__parent__
         try:
-            del parent[rel.__name__]
+            parent.remove(rel.__name__, send_events=False, registry=registry)
         except KeyError:
             continue
 
@@ -85,7 +87,7 @@ def object_deleted(event):
         registry.notify(RelationTargetDeleted(ob, rel))
         parent = rel.__parent__
         try:
-            del parent[rel.__name__]
+            parent.remove(rel.__name__, send_events=False, registry=registry)
         except KeyError:
             continue
 

@@ -7,6 +7,8 @@
 import logging
 from pyramid.i18n import TranslationStringFactory
 
+from dace.relations.evolve import unindex_relations_from_other_catalogs
+
 log = logging.getLogger('dace')
 _ =  TranslationStringFactory('dace')
 
@@ -34,7 +36,7 @@ def process_definitions_evolve(root, registry):
 
 def include_evolve_steps(config):
     config.add_evolution_step(process_definitions_evolve)
-
+    config.add_evolution_step(unindex_relations_from_other_catalogs)
 
 def includeme(config):
     config.scan()
