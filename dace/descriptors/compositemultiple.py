@@ -40,9 +40,7 @@ class CompositeMultipleProperty(Descriptor):
 
         self.init(obj)
         contents_keys = obj.__dict__[self.key]
-
-        current_values = self._get(obj)
-        if self.isunique and value in current_values:
+        if self.isunique and value in self._get(obj):
             return
 
         value_name = value.__name__
