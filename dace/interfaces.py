@@ -28,7 +28,7 @@ class IObject(IFolder):
 
 class IEntity(IObject):
 
-    state = Attribute("title", multiplicity='*')
+    state = Attribute("state", multiplicity='*')
 
     def getCreator():
         """Get creator with `tag` relation.
