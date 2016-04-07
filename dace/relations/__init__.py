@@ -37,12 +37,16 @@ class RequestMemojito(object):
 
     def invalidate_cache(self):
         request = get_current_request()
-        setattr(request, self.propname, dict())
+        if request:
+            setattr(request, self.propname, dict())
 
     def request_memoize(self, func):
 
         def memogetter(*args, **kwargs):
             request = get_current_request()
+            if not request:
+                return func(*args, **kwargs)
+
             cache = getattr(request, self.propname, _marker)
             if cache is _marker:
                 setattr(request, self.propname, dict())
