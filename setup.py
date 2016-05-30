@@ -17,7 +17,7 @@ requires = [
     'zope.processlifetime',
     ]
 
-setup(name='dace',
+setup(name='ecreall_dace',
       version='0.0',
       description='Data-centric engine',
       long_description=README + '\n\n' +  CHANGES,
