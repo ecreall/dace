@@ -17,7 +17,8 @@ from substanced.util import get_oid
 
 from dace.util import (
     find_service, get_obj, find_entities,
-    getBusinessAction, getAllBusinessAction, getSite)
+    getBusinessAction, getAllBusinessAction,
+    getSite, request_memoize)
 from dace import _
 from .core import (
     EventHandler,
@@ -38,9 +39,77 @@ from dace.objectofcollaboration.principal.util import get_current
 from .workitem import UserDecision, StartWorkItem
 
 
+def always_true(process, context):
+    return True
+
+
+MARKER_FUNC = always_true
+
 ITEM_INDEX = 'item'
 
 ACTIONSTEPID = '__actionstepid__'
+
+
+class ActionType:
+    automatic = 1
+    manual = 2
+    system = 3
+
+
+def getBusinessActionValidator(action_cls):
+
+    class BusinessActionValidator(Validator):
+
+        @classmethod
+        def validate(cls, context, request, **kw):
+            instance = action_cls.get_instance(context, request, **kw)
+            if instance is None:
+                raise ValidationError()
+
+            return True
+
+    return BusinessActionValidator
+
+
+@request_memoize
+def validate_action(action, context, request, **kw):
+    if not context.__provides__(action.context):
+        return False, _('Context is not valid')
+
+    if action.isexecuted:
+        return False, _('Action is executed')
+
+    if action.is_locked(request):
+        return False, _('Action is locked')
+
+    if not action.workitem.validate():
+        return False, _('Workitem is not valid')
+
+    process = kw.get('process', action.process)
+    if not getattr(action.relation_validation,
+                   '__func__', MARKER_FUNC)(process, context):
+        return False, _('Context is not valid')
+
+    _assigned_to = list(action.assigned_to)
+    if _assigned_to:
+        _assigned_to.append(getSite()['principals']['users']['admin'])
+        current_user = get_current(request)
+        if current_user not in _assigned_to:
+            return False, _('Action is assigned to an other user')
+
+    elif not getattr(action.roles_validation,
+                     '__func__', MARKER_FUNC)(process, context):
+        return False, _('Role is not valid')
+
+    if not getattr(action.processsecurity_validation,
+                   '__func__', MARKER_FUNC)(process, context):
+        return False, _('Security is violated')
+
+    if not getattr(action.state_validation,
+                   '__func__', MARKER_FUNC)(process, context):
+        return False, _('Context state is not valid')
+
+    return True, _('Valid action')
 
 
 @implementer(IActivity)
@@ -101,34 +170,6 @@ class SubProcess(Activity):
                 node.setproperty('workitems', [])
 
             runtime.delfromproperty('processes', process)
-
-
-class ActionType:
-    automatic = 1
-    manual = 2
-    system = 3
-
-
-def getBusinessActionValidator(action_cls):
-
-    class BusinessActionValidator(Validator):
-
-        @classmethod
-        def validate(cls, context, request, **kw):
-            instance = action_cls.get_instance(context, request, **kw)
-            if instance is None:
-                raise ValidationError()
-
-            return True
-
-    return BusinessActionValidator
-
-
-def always_true(process, context):
-    return True
-
-
-MARKER_FUNC = always_true
 
 
 @implementer(ILocation, IBusinessAction)
@@ -350,44 +391,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return True
 
     def validate_mini(self, context, request, **kw):
-        #TODO optimization: add activity validators
-        if self.isexecuted:
-            return False, _('Action is executed')
-
-        if self.is_locked(request):
-            return False, _('Action is locked')
-
-        if not self.workitem.validate():
-            return False, _('Workitem is not valid')
-
-        if not context.__provides__(self.context):
-            return False, _('Context is not valid')
-
-        process = kw.get('process', self.process)
-        if not getattr(self.relation_validation,
-                       '__func__', MARKER_FUNC)(process, context):
-            return False, _('Context is not valid')
-
-        _assigned_to = list(self.assigned_to)
-        if _assigned_to:
-            _assigned_to.append(getSite()['principals']['users']['admin'])
-            current_user = get_current(request)
-            if current_user not in _assigned_to:
-                return False, _('Action is assigned to an other user')
-
-        elif not getattr(self.roles_validation,
-                         '__func__', MARKER_FUNC)(process, context):
-            return False, _('Role is not valid')
-
-        if not getattr(self.processsecurity_validation,
-                       '__func__', MARKER_FUNC)(process, context):
-            return False, _('Security is violated')
-
-        if not getattr(self.state_validation,
-                       '__func__', MARKER_FUNC)(process, context):
-            return False, _('Context state is not valid')
-
-        return True, _('Valid action')
+        return validate_action(self, context, request, **kw)
 
     def before_execution(self, context, request, **kw):
         self.lock(request)

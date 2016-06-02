@@ -5,7 +5,8 @@
 # author: Amen Souissi
 
 from pyramid.decorator import reify
-from zope.interface import implementer
+from persistent.list import PersistentList
+from zope.interface import implementer, Interface
 
 from dace.interfaces import IProcessDefinition, IProcess
 from .core import InvalidProcessDefinition, Transaction
@@ -33,6 +34,7 @@ class ProcessDefinition(Entity):
 
     def __init__(self, **kwargs):
         super(ProcessDefinition, self).__init__(**kwargs)
+        self.contexts = PersistentList()
         self.id = None
         if 'id' in kwargs:
             self.id = kwargs['id']
@@ -58,6 +60,8 @@ class ProcessDefinition(Entity):
             node.id = self.id + '.' + name
             node.__name__ = name
             self.addtoproperty('nodes', node)
+            if hasattr(node, 'init_process_contexts'):
+                node.init_process_contexts(self)
 
     def defineTransitions(self, *transitions):
         self._dirty()
@@ -211,12 +215,16 @@ class ProcessDefinition(Entity):
         sub_transaction = global_transaction.start_subtransaction(type='Find',
                                                                 initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
-        start_workitems = dict([(wi.node.__name__, wi) \
-                                for wi in start_workitems])
         if node_name is None:
+            start_workitems = dict([(wi.node.__name__, wi) \
+                                    for wi in start_workitems])
             return start_workitems
 
-        return {node_name: start_workitems.get(node_name, None)}
+        for wi in start_workitems:
+            if node_name == wi.node.__name__:
+                return {node_name: wi}
+
+        return {node_name: None}
 
     @property
     def started_processes(self):

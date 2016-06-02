@@ -55,6 +55,7 @@ class FunctionalTests(unittest.TestCase):
         app = main({}, **settings)
         self.db = app.registry._zodb_databases['']
         self.request = request = DummyRequest()
+        self.request.test = True
         self.config = testing.setUp(registry=app.registry, request=request)
 
         # set extensions (add_request_method, so the request.user works)

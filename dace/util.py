@@ -42,6 +42,7 @@ from dace.relations import find_relations, connect
 from dace.i18n.normalizer.interfaces import INormalizer
 from dace import _
 
+_marker = object()
 
 SPECIAL_CHAR = "._-"
 
@@ -376,7 +377,7 @@ def getBusinessAction(context,
         query = query & object_type_class_index.eq(action_type.__name__)
 
     allactions = [action for action in  query.execute().all() \
-              if getattr(action, 'validate_mini', always_false)(
+                  if getattr(action, 'validate_mini', always_false)(
                       context, request)[0]]
 
     def_container = find_service('process_definition_container')
@@ -411,10 +412,10 @@ def getAllSystemActions(request=None,
 
     allactions = [a for a in query.execute().all()]
     def_container = find_service('process_definition_container')
-    allprocess = [(pd.id, pd) for pd in  def_container.definitions \
+    allprocess = [pd for pd in  def_container.definitions \
                   if not pd.isControlled]
     # Add start workitem
-    for name, pd in allprocess:
+    for pd in allprocess:
         wis = pd.start_process()
         allactions.extend([action for wi in list(wis.values()) \
                             for action in wi.actions \
@@ -467,15 +468,16 @@ def getAllBusinessAction(context,
     if process_id:
         process_id_index = dace_catalog['process_id']
         query = query & process_id_index.eq(process_id)
-        pd = def_container.get_definition(process_id)
-        allprocessdef = [(process_id, pd)]
+        allprocessdef = [def_container.get_definition(process_id)]
     else:
         if process_discriminator:
-            allprocessdef = [(pd.id, pd) for pd in def_container.definitions \
-                             if pd.discriminator == process_discriminator and \
+            allprocessdef = [pd for pd in def_container.definitions \
+                             if any(context.__provides__(pd_context)
+                                    for pd_context in pd.contexts) and \
+                                pd.discriminator == process_discriminator and \
                                 not pd.isControlled]
         else:
-            allprocessdef = [(pd.id, pd) for pd in def_container.definitions \
+            allprocessdef = [pd for pd in def_container.definitions \
                              if not pd.isControlled]
 
     if node_id:
@@ -490,7 +492,7 @@ def getAllBusinessAction(context,
                   if getattr(action, 'validate_mini', always_false)(
                             context, request)[0]]
     # Add start workitem
-    for name, pd in allprocessdef:
+    for pd in allprocessdef:
         wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
         for wi in wis:
             swisactions = [action for action in wi.actions \
@@ -823,3 +825,30 @@ def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook)
+
+
+class RequestMemojito(object):
+    propname = '_memojito_'
+
+    def request_memoize(self, func):
+
+        def memogetter(*args, **kwargs):
+            request = get_current_request()
+            cache = getattr(request, self.propname, _marker)
+            if cache is _marker:
+                setattr(request, self.propname, dict())
+                cache = getattr(request, self.propname)
+
+            # XXX this could be potentially big, a custom key should
+            # be used if the arguments are expected to be big
+            key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
+            val = cache.get(key, _marker)
+            if val is _marker or getattr(request, 'test', False):
+                val = func(*args, **kwargs)
+                cache[key] = val
+                setattr(request, self.propname, cache)
+            return val
+        return memogetter
+
+_m = RequestMemojito()
+request_memoize = _m.request_memoize

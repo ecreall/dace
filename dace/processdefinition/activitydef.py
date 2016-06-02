@@ -26,6 +26,11 @@ class ActivityDefinition(EventHandlerDefinition):
         for context in contexts:
             context.node_definition = self
 
+    def init_process_contexts(self, process):
+        for context in self.contexts:
+            if context.context not in process.contexts:
+                process.contexts.append(context.context) 
+
 
 class SubProcessDefinition(ActivityDefinition):
     factory = SubProcess
