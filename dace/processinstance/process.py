@@ -25,6 +25,7 @@ from dace.descriptors import (
         SHARED_MULTIPLE,
         CompositeMultipleProperty, CompositeUniqueProperty,
         SharedUniqueProperty, SharedMultipleProperty)
+from dace import log
 
 
 class ExecutionContext(Object):
@@ -774,6 +775,10 @@ class Process(Entity):
         workitems = query.execute().all()
         result = []
         for wi in workitems:
+            if wi is None:
+                log.error('getAllWorkItems: one of the wi is None for process %s', p_uid)
+                continue
+
             if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
                 for sub_process in wi.node.sub_processes:
                     result.extend(sub_process.getAllWorkItems())
