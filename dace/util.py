@@ -843,7 +843,8 @@ class RequestMemojito(object):
             # be used if the arguments are expected to be big
             key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
             val = cache.get(key, _marker)
-            if val is _marker or getattr(request, 'test', False):
+            if val is _marker or getattr(request, 'test', False) or \
+               getattr(request, 'invalidate_cache', False):
                 val = func(*args, **kwargs)
                 cache[key] = val
                 setattr(request, self.propname, cache)
