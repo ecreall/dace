@@ -76,26 +76,19 @@ def validate_action(action, context, request, **kw):
     if not context.__provides__(action.context):
         return False, _('Context is not valid')
 
-    if action.isexecuted:
-        return False, _('Action is executed')
-
-    if action.is_locked(request):
-        return False, _('Action is locked')
-
-    if not action.workitem.validate():
-        return False, _('Workitem is not valid')
-
     process = kw.get('process', action.process)
     if not getattr(action.relation_validation,
                    '__func__', MARKER_FUNC)(process, context):
         return False, _('Context is not valid')
 
-    _assigned_to = list(action.assigned_to)
-    if _assigned_to:
-        _assigned_to.append(getSite()['principals']['users']['admin'])
-        current_user = get_current(request)
-        if current_user not in _assigned_to:
-            return False, _('Action is assigned to an other user')
+    if action.isexecuted:
+        return False, _('Action is executed')
+
+    if not action.workitem.validate():
+        return False, _('Workitem is not valid')
+
+    if getattr(action, 'isSequential', False) and action.is_locked(request):
+        return False, _('Action is locked')
 
     elif not getattr(action.roles_validation,
                      '__func__', MARKER_FUNC)(process, context):
@@ -108,6 +101,13 @@ def validate_action(action, context, request, **kw):
     if not getattr(action.state_validation,
                    '__func__', MARKER_FUNC)(process, context):
         return False, _('Context state is not valid')
+
+    _assigned_to = list(action.assigned_to)
+    if _assigned_to:
+        _assigned_to.append(getSite()['principals']['users']['admin'])
+        current_user = get_current(request)
+        if current_user not in _assigned_to:
+            return False, _('Action is assigned to an other user')
 
     return True, _('Valid action')
 
