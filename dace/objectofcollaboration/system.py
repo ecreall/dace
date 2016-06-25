@@ -56,7 +56,7 @@ def run():
         system_actions = getAllSystemActions()
         log.info("new zodb transactions, actions to check: %s",
                  len(system_actions))
-        for action in system_actions:
+        for action in system_actions and getattr(action, 'process', None):
             _call_action(action)
 
         log.info("actions to check: done")
