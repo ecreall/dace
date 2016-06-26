@@ -26,6 +26,7 @@ def _call_action(action):
             return
 
         request = get_system_request()
+        request.invalidate_cache = True
         action.execute(context, request, {})
         log.info("Execute action %s", action.title)
         transaction.commit()
@@ -54,13 +55,14 @@ def run():
         last_transaction_by_machine[cache_key] = last_tid
         transaction.begin()
         try:
-            system_actions = getAllSystemActions()
+            system_actions = [a for a in getAllSystemActions()
+                              if getattr(a, 'process', None)]
             log.info("new zodb transactions, actions to check: %s",
                      len(system_actions))
-            for action in system_actions and getattr(action, 'process', None):
+            for action in system_actions:
                 _call_action(action)
 
-        except Exception:
+        except Exception as e:
             log.exception(e)
 
         log.info("actions to check: done")
