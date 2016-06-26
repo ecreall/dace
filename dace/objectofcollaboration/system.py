@@ -53,11 +53,15 @@ def run():
     if last_transaction != last_tid:
         last_transaction_by_machine[cache_key] = last_tid
         transaction.begin()
-        system_actions = getAllSystemActions()
-        log.info("new zodb transactions, actions to check: %s",
-                 len(system_actions))
-        for action in system_actions and getattr(action, 'process', None):
-            _call_action(action)
+        try:
+            system_actions = getAllSystemActions()
+            log.info("new zodb transactions, actions to check: %s",
+                     len(system_actions))
+            for action in system_actions and getattr(action, 'process', None):
+                _call_action(action)
+
+        except Exception:
+            log.exception(e)
 
         log.info("actions to check: done")
 
