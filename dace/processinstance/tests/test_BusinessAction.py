@@ -245,7 +245,7 @@ class TestsBusinessAction(FunctionalTests):
         wi.start_test_empty()
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
-        actions_y_executed =  [a for a in actions_y if a.isexecuted]
+        actions_y_executed = [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 1)
         self.assertIn(action_y, actions_y_executed)
         actions_y_validated = []
@@ -268,8 +268,8 @@ class TestsBusinessAction(FunctionalTests):
                 actions_y_validated_alice.append(a)
             except Exception:
                 continue
-
-        self.assertEqual(len(actions_y_validated_alice), 1)# ActionYP is parallel (1 action instance locked by admin)
+        
+        self.assertEqual(len(actions_y_validated_alice), 2)# ActionYP is parallel
 
         self.logAdmin()
         action_y.after_execution(objecta, self.request) # unlock action
