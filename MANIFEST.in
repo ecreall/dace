@@ -1,0 +1,5 @@
+include *.rst
+include LICENSE
+recursive-include dace *.po
+recursive-include dace *.pot
+recursive-include dace *.pt
