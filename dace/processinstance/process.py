@@ -466,9 +466,11 @@ class ExecutionContext(Object):
             return []
 
         name = name+'_'+str(index)
-        self._init_property(name, self.dynamic_properties_def[name])
-        result = self.getproperty(name)
-        return result
+        if name in self.dynamic_properties_def:
+            self._init_property(name, self.dynamic_properties_def[name])
+            return self.getproperty(name)
+
+        return []
 
     def find_subinvolved_collection(self, name, index=-1):
         result = self.get_involved_collection(name, index)

@@ -335,18 +335,20 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         entities = []
         try:
             entities = [self.process.execution_context.involved_entity(
-                                 self.processs_relation_id)]
+                        self.processs_relation_id)]
         except Exception:
             try:
                 entities = self.process.execution_context.involved_collection(
-                                   self.processs_relation_id)
+                    self.processs_relation_id)
             except Exception:
                 entities = find_entities((self.context,))
 
         for entity in entities:
             try:
-                self.validate(entity, request)
-                return entity
+                if entity:
+                    self.validate(entity, request)
+                    return entity
+
             except ValidationError:
                 continue
 
