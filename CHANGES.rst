@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.1 (unreleased)
-----------------
+1.0.1 (2016-08-18)
+------------------
 
 - Include mo files in the release.
 
