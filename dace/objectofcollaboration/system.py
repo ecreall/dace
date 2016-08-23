@@ -56,7 +56,8 @@ def run():
         transaction.begin()
         try:
             system_actions = [a for a in getAllSystemActions()
-                              if getattr(a, 'process', None)]
+                              if getattr(a, 'process', None) or
+                              a.isstart]
             log.info("new zodb transactions, actions to check: %s",
                      len(system_actions))
             for action in system_actions:
