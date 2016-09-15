@@ -1,8 +1,8 @@
 Changelog
 =========
 
-1.1 (unreleased)
-----------------
+1.0.2 (2016-09-15)
+------------------
 
 - Fix an issue with automatic actions.
 
