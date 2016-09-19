@@ -34,9 +34,9 @@ def get_unlock_operation(request):
 def get_useroruseroid(request):
     user = get_current(request)
     if isinstance(user, Anonymous):
-        user = user.oid 
+        user = user.oid
 
-    return user 
+    return user
 
 
 class LockableElement(object):
@@ -63,7 +63,7 @@ class LockableElement(object):
         try:
             user = get_current(request)
             if isinstance(user, Anonymous):
-                 return
+                return
 
             lock_resource(self, user, DEFAUT_DURATION)
         except LockError:
@@ -80,9 +80,11 @@ class LockableElement(object):
         try:
             user = get_current(request)
             if isinstance(user, Anonymous):
-                 return
+                return
 
             unlock_resource(self, user)
+        except ValueError:  # self is probably an action not bound to zodb
+            return
         except UnlockError:
             return
 
@@ -94,7 +96,7 @@ class LockableElement(object):
 
         user = get_current(request)
         if isinstance(user, Anonymous):
-             return False
+            return False
 
         try:
             return not could_lock_resource(self, user)
