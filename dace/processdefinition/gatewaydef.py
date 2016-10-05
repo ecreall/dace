@@ -40,7 +40,6 @@ class ParallelGatewayDefinition(GatewayDefinition):
 
     def find_startable_paths(self, source_path, source):
         global_transaction = source_path.transaction.get_global_transaction()
-        incoming_nodes = [t.source for t in self.incoming]
         paths = global_transaction.find_allsubpaths_for(self, 'Find')
         test_path = Path()
         for path in paths:
@@ -58,8 +57,9 @@ class ParallelGatewayDefinition(GatewayDefinition):
 
         validated_nodes = set(t.source_id for t in alllatest_transitions)
         validated = True
+        incoming_nodes = (t.source_id for t in self.incoming)
         for node in incoming_nodes:
-            if not (node in  validated_nodes):
+            if not node in validated_nodes:
                 validated = False
                 break
 
