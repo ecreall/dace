@@ -356,7 +356,6 @@ def getBusinessAction(context,
                       node_id,
                       behavior_id=None,
                       action_type=None):
-    allactions = []
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
@@ -368,15 +367,15 @@ def getBusinessAction(context,
     query = process_id_index.eq(process_id) & \
             node_id_index.eq(node_id) & \
             object_provides_index.any((IBusinessAction.__identifier__,)) & \
-            context_id_index.any(tuple([d.__identifier__ \
-                                    for d in context.__provides__.__iro__])) & \
+            context_id_index.any(tuple(d.__identifier__ \
+                                    for d in context.__provides__.__iro__)) & \
             potential_contexts_ids.any(['any',context_oid])
 
     if action_type:
         object_type_class_index = dace_catalog['object_type_class']
         query = query & object_type_class_index.eq(action_type.__name__)
 
-    allactions = [action for action in  query.execute().all() \
+    allactions = [action for action in query.execute().all()
                   if getattr(action, 'validate_mini', always_false)(
                       context, request)[0]]
 
@@ -386,11 +385,11 @@ def getBusinessAction(context,
     if not pd.isControlled:
         s_wi = pd.start_process(node_id)[node_id]
         if s_wi:
-            swisactions = [action for action in s_wi.actions \
+            swisactions = (action for action in s_wi.actions
                            if action_type is None or \
-                              action._class_.__name__ == action_type.__name__]
-            allactions.extend([action for action in swisactions \
-                               if action.validate_mini(context, request)[0]])
+                              action._class_.__name__ == action_type.__name__)
+            allactions.extend(action for action in swisactions
+                              if action.validate_mini(context, request)[0])
 
     if allactions:
         return allactions
@@ -403,7 +402,6 @@ def getAllSystemActions(request=None,
     if request is None:
         request = get_current_request()
 
-    allactions = []
     dace_catalog = find_catalog('dace')
     issystem_index = dace_catalog['issystem']
     object_provides_index = dace_catalog['object_provides']
@@ -412,14 +410,14 @@ def getAllSystemActions(request=None,
 
     allactions = [a for a in query.execute().all()]
     def_container = find_service('process_definition_container')
-    allprocess = [pd for pd in  def_container.definitions \
-                  if not pd.isControlled]
+    allprocess = (pd for pd in def_container.definitions
+                  if not pd.isControlled)
     # Add start workitem
     for pd in allprocess:
         wis = pd.start_process()
-        allactions.extend([action for wi in list(wis.values()) \
-                            for action in wi.actions \
-                                if action.issystem])
+        allactions.extend(action for wi in wis.values()
+                          for action in wi.actions
+                          if action.issystem)
     return allactions
 
 
@@ -446,7 +444,6 @@ def getAllBusinessAction(context,
 
     def_container = find_service('process_definition_container')
     context_oid = str(get_oid(context))
-    allactions = []
     allprocessdef = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
@@ -488,21 +485,21 @@ def getAllBusinessAction(context,
         process_discriminator_index = dace_catalog['process_discriminator']
         query = query & process_discriminator_index.eq(process_discriminator)
 
-    allactions = [action for action in  query.execute().all() \
+    allactions = [action for action in query.execute().all() \
                   if getattr(action, 'validate_mini', always_false)(
                             context, request)[0]]
     # Add start workitem
     for pd in allprocessdef:
-        wis = [wi for wi in list(pd.start_process(node_id).values()) if wi]
+        wis = (wi for wi in pd.start_process(node_id).values() if wi)
         for wi in wis:
-            swisactions = [action for action in wi.actions \
+            swisactions = (action for action in wi.actions \
                            if (not isautomatic or \
                                (isautomatic and action.isautomatic)) and \
                               (action_type is None or \
-                               action._class_.__name__ == action_type.__name__)]
+                               action._class_.__name__ == action_type.__name__))
 
-            allactions.extend([action for action in swisactions \
-                               if action.validate_mini(context, request)[0]])
+            allactions.extend(action for action in swisactions
+                              if action.validate_mini(context, request)[0])
 
     return allactions
 
