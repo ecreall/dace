@@ -10,7 +10,7 @@ from dace.descriptors import Descriptor
 
 
 _marker = object()
-
+_empty = ()
 
 class CompositeMultipleProperty(Descriptor):
     
@@ -21,12 +21,9 @@ class CompositeMultipleProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
-        contents_keys = obj.__dict__.get(self.key, None)
-        if contents_keys is not None:
-            return [obj.get(key, None) for key in contents_keys \
-                    if obj.get(key, None)]
-
-        return []
+        contents_keys = obj.__dict__.get(self.key, _empty)
+        return list(filter(lambda x: x is not None,
+                           (obj.get(key, None) for key in contents_keys)))
 
     def __get__(self, obj, objtype=None):
         if obj is None:
