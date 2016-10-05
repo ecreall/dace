@@ -56,7 +56,7 @@ class ParallelGatewayDefinition(GatewayDefinition):
         for path in paths:
             alllatest_transitions.extend(path.latest)
 
-        validated_nodes = set([t.source for t in alllatest_transitions])
+        validated_nodes = set(t.source_id for t in alllatest_transitions)
         validated = True
         for node in incoming_nodes:
             if not (node in  validated_nodes):
@@ -67,7 +67,7 @@ class ParallelGatewayDefinition(GatewayDefinition):
             for transition in self.outgoing:
                 if transition.condition(None):
                     nodedef = self.process[transition.target.__name__]
-                    for path in list(paths):
+                    for path in paths:
                         initial_path = path.clone()
                         source_transaction = path.transaction.__parent__
                         source_transaction.remove_subtransaction(

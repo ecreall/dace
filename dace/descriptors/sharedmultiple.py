@@ -28,7 +28,7 @@ class SharedMultipleProperty(Descriptor):
         """
         references = list(obj.__dict__.get(self.key, []))
         values = list(filter(lambda x: x is not None,
-                      [get_ref(o) for o in references]))
+                      (get_ref(o) for o in references)))
         return values, len(references) != len(values)
 
     def __get__(self, obj, objtype=None):

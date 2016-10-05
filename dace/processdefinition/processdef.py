@@ -216,8 +216,7 @@ class ProcessDefinition(Entity):
                                                                 initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         if node_name is None:
-            start_workitems = dict([(wi.node.__name__, wi) \
-                                    for wi in start_workitems])
+            start_workitems = {wi.node.__name__: wi for wi in start_workitems}
             return start_workitems
 
         for wi in start_workitems:
