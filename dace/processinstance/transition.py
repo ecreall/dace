@@ -41,8 +41,7 @@ class Transition(Object):
         return self.condition_result
 
     def equal(self, transition):
-        return self.source is transition.source and \
-                self.target is transition.target
+        return self.id == transition.id
 
     def __repr__(self):# pragma: no cover
         return "Transition(%r, %r)" % (self.source, self.target)

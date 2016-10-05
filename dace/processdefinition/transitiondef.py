@@ -59,7 +59,7 @@ class TransitionDefinition(Object):
         self.setproperty('source', newsource)
 
     def equal(self, other): #deprecated
-        return self.source is other.source and self.target is other.target
+        return self.id == other.id
 
     def __repr__(self):# pragma: no cover
         return "%s(%r, %r)" % (self.__class__.__name__,
