@@ -39,7 +39,7 @@ class StartEventDefinition(EventDefinition):
             start_workitems = {}
             for transition in self.outgoing:
                 if transition.condition(None):
-                    nodedef = self.process[transition.target.__name__]
+                    nodedef = self.process[transition.target_id]
                     initial_path = Path([transition], transaction)
                     startable_paths = nodedef.find_startable_paths(initial_path,
                                                                    self)

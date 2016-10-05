@@ -20,7 +20,7 @@ class ExclusiveGatewayDefinition(GatewayDefinition):
     def find_startable_paths(self, source_path, source):
         for transition in self.outgoing:
             if transition.condition(None):
-                nodedef = self.process[transition.target.__name__]
+                nodedef = self.process[transition.target_id]
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
                 source_transaction.remove_subtransaction(
@@ -66,7 +66,7 @@ class ParallelGatewayDefinition(GatewayDefinition):
         if validated:
             for transition in self.outgoing:
                 if transition.condition(None):
-                    nodedef = self.process[transition.target.__name__]
+                    nodedef = self.process[transition.target_id]
                     for path in paths:
                         initial_path = path.clone()
                         source_transaction = path.transaction.__parent__
