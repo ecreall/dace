@@ -10,7 +10,7 @@ from dace.descriptors.base import Descriptor, ref, get_ref
 
 
 _marker = object()
-
+_empty = ()
 
 class SharedMultipleProperty(Descriptor):
 
@@ -26,7 +26,7 @@ class SharedMultipleProperty(Descriptor):
         need_cleanup is a boolean which indicate if there is a
         ResourceRef that evaluated to None and so can be removed.
         """
-        references = list(obj.__dict__.get(self.key, []))
+        references = obj.__dict__.get(self.key, _empty)
         values = list(filter(lambda x: x is not None,
                       (get_ref(o) for o in references)))
         return values, len(references) != len(values)
@@ -57,7 +57,7 @@ class SharedMultipleProperty(Descriptor):
         obj.__dict__[self.key].append(ref(value))
 
     def _cleanup(self, obj):
-        references = [o for o in obj.__dict__.get(self.key, [])
+        references = [o for o in obj.__dict__.get(self.key, _empty)
                       if get_ref(o) is not None]
         setattr(obj, self.key, PersistentList(references))
 
