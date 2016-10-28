@@ -11,7 +11,7 @@ Dace is a data-centric workflow engine. It enables the definition and execution 
 
 It is licensed under a `AGPLv3+ license <http://fsf.org/>`_.
 
-Here is one of the simplest Dace process you can make:
+Here is one of the simplest DaCE process you can make:
 
 .. literalinclude:: narr/helloworld.py
 
