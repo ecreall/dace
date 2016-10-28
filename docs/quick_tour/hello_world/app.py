@@ -13,14 +13,9 @@ from .behaviors import (
 
 
 @process_definition(
-	name='myprocessid',
-	id='myprocessid')
+	id='myprocessid',
+	title='My process')
 class MyProcess(ProcessDefinition):
-
-    def __init__(self, **kwargs):
-        super(MyProcess, self).__init__(**kwargs)
-        self.title = _('My process')
-        self.description = _('Hello world process')
 
     def _init_definition(self):
         # define process nodes

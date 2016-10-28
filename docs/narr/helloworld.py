@@ -5,7 +5,7 @@ from dace.processdefinition.eventdef import (
     StartEventDefinition,
     EndEventDefinition)
 from dace.objectofcollaboration.services.processdef_container import (
-	process_definition)
+    process_definition)
 
 from .behaviors import (
     MyBehavior,
@@ -13,14 +13,9 @@ from .behaviors import (
 
 
 @process_definition(
-	name='myprocessid',
-	id='myprocessid')
+    id='myprocessid',
+    title='My process')
 class MyProcess(ProcessDefinition):
-
-    def __init__(self, **kwargs):
-        super(MyProcess, self).__init__(**kwargs)
-        self.title = _('My process')
-        self.description = _('Hello world process')
 
     def _init_definition(self):
         # define process nodes
@@ -31,7 +26,7 @@ class MyProcess(ProcessDefinition):
             hello=ActivityDefinition(
                 # MyBehavior is the behavior to execute
                 # when the node is called
-            	contexts=[MyBehavior],
+                contexts=[MyBehavior],
                 description=_("Hello behavior"),
                 title=_("Hello!"),
                 groups=[]),
