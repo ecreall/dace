@@ -58,9 +58,9 @@ class TestsProcessRelations(FunctionalTests):
         self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
-                x = ActivityDefinition(contexts=[ActionX]),
-                y = ActivityDefinition(contexts = [ActionY]),
-                z = ActivityDefinition(contexts=[ActionZ]),
+                x = ActivityDefinition(behaviors=[ActionX]),
+                y = ActivityDefinition(behaviors=[ActionY]),
+                z = ActivityDefinition(behaviors=[ActionZ]),
                 g1 = ExclusiveGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
                 g3 = ExclusiveGatewayDefinition(),

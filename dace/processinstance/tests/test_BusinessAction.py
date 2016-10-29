@@ -78,9 +78,9 @@ class TestsBusinessAction(FunctionalTests):
         y = ActivityDefinition()
         pd.defineNodes(
                 s = StartEventDefinition(),
-                x = ActivityDefinition(contexts=[ActionX]),
+                x = ActivityDefinition(behaviors=[ActionX]),
                 y = y,
-                z = ActivityDefinition(contexts=[ActionZ]),
+                z = ActivityDefinition(behaviors=[ActionZ]),
                 g1 = ExclusiveGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
                 g3 = ExclusiveGatewayDefinition(),
@@ -106,7 +106,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionY])
+        y._init_behaviors([ActionY])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
@@ -218,7 +218,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YParallel(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYP])
+        y._init_behaviors([ActionYP])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
@@ -287,7 +287,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YParallelI(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYPI])
+        y._init_behaviors([ActionYPI])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
@@ -355,7 +355,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialI(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYI])
+        y._init_behaviors([ActionYI])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
@@ -425,7 +425,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialD(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYD]) # multi instance (pour chaque instance nous avons un objet)
+        y._init_behaviors([ActionYD]) # multi instance (pour chaque instance nous avons un objet)
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
@@ -496,7 +496,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YSequentialDp(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal)
+        y._init_behaviors([ActionYDp]) # multi instance (pour chaque instance nous avons un objet, l'objet est le context principal)
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objectb= ObjectA()
@@ -592,7 +592,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YLC_TestAfter(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYLC])
+        y._init_behaviors([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
 
@@ -600,14 +600,14 @@ class TestsBusinessAction(FunctionalTests):
         self.logAdmin()
         y, pd = self._process_valid_actions()
         ActionYLC.testBefore = True
-        y._init_contexts([ActionYLC])
+        y._init_behaviors([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
 
     def test_actions_YLD(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYLD])
+        y._init_behaviors([ActionYLD])
         self.def_container.add_definition(pd)
         objecta= ObjectA()
         objecta.is_executed = False
@@ -654,7 +654,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_steps(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionYSteps])
+        y._init_behaviors([ActionYSteps])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
         actions_x = start_wi.actions
@@ -783,7 +783,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_validator(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionY])
+        y._init_behaviors([ActionY])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
 
@@ -806,7 +806,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_assignement(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionY])
+        y._init_behaviors([ActionY])
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('x')['x']
 
@@ -879,7 +879,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_system(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        y._init_contexts([ActionSystem]) # system action
+        y._init_behaviors([ActionSystem]) # system action
         self.def_container.add_definition(pd)
         objectc = ObjectA()
         self.app['objectc'] = objectc
@@ -955,9 +955,9 @@ class TestsPotentialActions(FunctionalTests):
         self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
-                a = ActivityDefinition(contexts=[ActionA]),
-                b = ActivityDefinition(contexts=[ActionB]),
-                c = ActivityDefinition(contexts=[ActionX]),
+                a = ActivityDefinition(behaviors=[ActionA]),
+                b = ActivityDefinition(behaviors=[ActionB]),
+                c = ActivityDefinition(behaviors=[ActionX]),
                 g0 = ExclusiveGatewayDefinition(),
                 g1 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
@@ -996,7 +996,7 @@ class TestsPotentialActions(FunctionalTests):
         actionb = process['a'].workitems[0].actions[0] 
         potential_context_b = actionb.get_potential_context()
         self.assertIs(potential_context_b, objecta)
-        objecta2= ObjectA()
+        objecta2 = ObjectA()
         self.app['myobject2'+str(index)] = objecta2
         actionb.execute(objecta, self.request, {})
         decision_wi_a = [ w for w in process['b'].workitems if w.node.__name__ == 'a'][0]
@@ -1015,7 +1015,7 @@ class TestsPotentialActions(FunctionalTests):
 
     def test_action_call(self):
         self.logAdmin()
-        objecta= ObjectA()
+        objecta = ObjectA()
         self.app['myobject'] = objecta
         pd = self._process_cycle()
         self.def_container.add_definition(pd)
@@ -1133,7 +1133,7 @@ class TestsSubProcess(FunctionalTests):
 
     def test_subprocess_elementary(self):
         spaction, sp, pd = self._process_valid_subprocess()
-        spaction._init_contexts([ActionSP])
+        spaction._init_behaviors([ActionSP])
         self.def_container.add_definition(pd)
         self.def_container.add_definition(sp)
         start_wi = pd.start_process('sp')['sp']
@@ -1187,14 +1187,14 @@ class TestsSubProcess(FunctionalTests):
 
     def test_subprocess_multiinstance(self):
         spaction, sp, pd = self._process_valid_subprocess()
-        spaction._init_contexts([ActionSPMI])
+        spaction._init_behaviors([ActionSPMI])
         self.def_container.add_definition(pd)
         self.def_container.add_definition(sp)
-        objecta= ObjectA()
+        objecta = ObjectA()
         objecta.is_executed = False
-        objectb= ObjectA()
+        objectb = ObjectA()
         objectb.is_executed = False
-        objectc= ObjectA()
+        objectc = ObjectA()
         self.app['objecta'] = objecta
         self.app['objectb'] = objectb
         self.app['objectc'] = objectc

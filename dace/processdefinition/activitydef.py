@@ -16,27 +16,27 @@ from .eventdef import EventHandlerDefinition
 class ActivityDefinition(EventHandlerDefinition):
     factory = Activity
 
-    def __init__(self, contexts=(), **kwargs):
+    def __init__(self, behaviors=(), **kwargs):
         super(ActivityDefinition, self).__init__(**kwargs)
-        self.contexts = PersistentList([])
-        self._init_contexts(contexts)
+        self.behaviors = PersistentList([])
+        self._init_behaviors(behaviors)
 
-    def _init_contexts(self, contexts):
-        self.contexts = PersistentList(contexts)
-        for context in contexts:
-            context.node_definition = self
+    def _init_behaviors(self, behaviors):
+        self.behaviors = PersistentList(behaviors)
+        for behavior in behaviors:
+            behavior.node_definition = self
 
     def init_process_contexts(self, process):
-        for context in self.contexts:
-            if context.context not in process.contexts:
-                process.contexts.append(context.context) 
+        for behavior in self.behaviors:
+            if behavior.context not in process.contexts:
+                process.contexts.append(behavior.context)
 
 
 class SubProcessDefinition(ActivityDefinition):
     factory = SubProcess
 
-    def __init__(self, contexts=(), pd=None, **kwargs):
-        super(SubProcessDefinition, self).__init__(contexts, **kwargs)
+    def __init__(self, behaviors=(), pd=None, **kwargs):
+        super(SubProcessDefinition, self).__init__(behaviors, **kwargs)
         self.sub_process_definition = pd
 
     def _init_subprocess(self, process, subprocess):

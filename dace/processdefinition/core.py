@@ -30,9 +30,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
 
     def __init__(self, **kwargs):
         super(FlowNodeDefinition, self).__init__(**kwargs)
-        self.groups = []
-        if 'groups' in kwargs:
-            self.groups = kwargs['groups']
+        self.groups = kwargs.get('groups', [])
 
     def find_startable_paths(self, source_path, source):
         decision_path = source_path.clone()
@@ -46,9 +44,9 @@ class FlowNodeDefinition(BPMNElementDefinition):
 
 class Transaction(Persistent):
 
-    def __init__(self, path=None ,type='Normal', initiator=None):
+    def __init__(self, path=None, type='Normal', initiator=None):
         self.path = path
-        if self.path is not None and not (self.path.transaction is self):
+        if self.path is not None and self.path.transaction is not self:
             self.path.set_transaction(self)
 
         self.initiator = initiator
@@ -151,9 +149,9 @@ class Transaction(Persistent):
 
         return self.__parent__.get_global_transaction()
 
-    def start_subtransaction(self, 
-                             type='Normal', 
-                             transitions=None, 
+    def start_subtransaction(self,
+                             type='Normal',
+                             transitions=None,
                              path=None,
                              initiator=None):
         transaction = Transaction(path=path, type=type, initiator=initiator)
@@ -161,7 +159,7 @@ class Transaction(Persistent):
             if transitions:
                 if not isinstance(transitions, (tuple, list)):
                     transitions = [transitions]
-                    
+
                 Path(transitions, transaction)
 
         self.add_subtransactions(transaction)

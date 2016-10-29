@@ -58,8 +58,8 @@ class StartWorkItem(UserDecision):
         self.process = None
         self.actions = []
         actions = []
-        for action_context in self.node.contexts:
-            action = action_context(self)
+        for behavior in self.node.behaviors:
+            action = behavior(self)
             # The creation of the action can modify self.actions
             actions.append(action)
 
@@ -150,8 +150,8 @@ class BaseWorkItem(LockableElement, Object):
         self.is_valide = True
 
     def _init_actions(self):
-        for action_context in self.node.definition.contexts:
-            action = action_context(self)
+        for behavior in self.node.definition.behaviors:
+            action = behavior(self)
             action.__name__ = action.behavior_id
             self.addtoproperty('actions', action)
 

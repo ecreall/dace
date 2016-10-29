@@ -19,7 +19,6 @@ from dace.util import find_catalog
 from dace.objectofcollaboration.entity import Entity
 
 
-
 @implementer(IProcessDefinition)
 class ProcessDefinition(Entity):
 
@@ -34,16 +33,14 @@ class ProcessDefinition(Entity):
 
     def __init__(self, **kwargs):
         super(ProcessDefinition, self).__init__(**kwargs)
+        self.id = kwargs.get('id', None)
         self.contexts = PersistentList()
-        self.id = None
-        if 'id' in kwargs:
-            self.id = kwargs['id']
-
-    def _init_definition(self):
-        pass
 
     def __call__(self, **kwargs):
         return Process(self, self._startTransition, **kwargs)
+
+    def __repr__(self):# pragma: no cover
+        return "ProcessDefinition(%r)" % self.id
 
     def _dirty(self):
         try:
@@ -51,8 +48,8 @@ class ProcessDefinition(Entity):
         except AttributeError:
             pass
 
-    def __repr__(self):# pragma: no cover
-        return "ProcessDefinition(%r)" % self.id
+    def init_definition(self):
+        pass
 
     def defineNodes(self, **nodes):
         self._dirty()
@@ -136,8 +133,8 @@ class ProcessDefinition(Entity):
             for oldtransition in oldtransitions:
                 oldtransition.set_target(e_g)
 
-            new_transitions += (TransitionDefinition('endeg', 
-                                                empty_end_event.__name__), )
+            new_transitions += (TransitionDefinition(
+                'endeg', empty_end_event.__name__), )
             for o_n in orphan_nodes:
                 new_transitions += (TransitionDefinition(o_n.__name__,
                                                          'endeg'), )
@@ -202,18 +199,19 @@ class ProcessDefinition(Entity):
         return start_events[0].outgoing[0]
 
     def start_process(self, node_name=None):
-        if self.isUnique and self.started_processes:
+        if self.isUnique and self.is_started:
             if node_name:
                 return {node_name: None}
-                
+
             return {}
+
         #une transaction globale pour chaque demande
         global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
         # une transaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = global_transaction.start_subtransaction(type='Find',
-                                                                initiator=self)
+        sub_transaction = global_transaction.start_subtransaction(
+            type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         if node_name is None:
             start_workitems = {wi.node.__name__: wi for wi in start_workitems}
@@ -226,13 +224,21 @@ class ProcessDefinition(Entity):
         return {node_name: None}
 
     @property
+    def is_started(self):
+        dace_catalog = find_catalog('dace')
+        object_provides_index = dace_catalog['object_provides']
+        processid_index = dace_catalog['process_id']
+        query = object_provides_index.any(
+            (IProcess.__identifier__,)) & \
+            processid_index.eq(self.id)
+        return query.execute().__len__ > 0
+
+    @property
     def started_processes(self):
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
-        query = object_provides_index.any((IProcess.__identifier__,)) & \
-                processid_index.eq(self.id)
-        results = query.execute().all()
-        processes = [p for p in results]
-        #processes.sort()
-        return processes
+        query = object_provides_index.any(
+            (IProcess.__identifier__,)) & \
+            processid_index.eq(self.id)
+        return list(query.execute().all())

@@ -10,7 +10,7 @@ from pyramid.threadlocal import get_current_registry
 
 from dace.interfaces import IProcessDefinition, IStartWorkItem
 from dace.catalog.interfaces import ISearchableObject
-from dace.util import  getWorkItem, queryWorkItem
+from dace.util import getWorkItem, queryWorkItem
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition

@@ -28,7 +28,7 @@ class ProcessDefinitionContainer(Entity):
     def add_definition(self, definition):
         definition.__name__ = definition.id
         self.addtoproperty('definitions', definition)
-        definition._init_definition()
+        definition.init_definition()
 
     def get_definition(self, name):
         for definition in self.definitions:
@@ -40,10 +40,11 @@ class ProcessDefinitionContainer(Entity):
 
 class process_definition(object):
 
-    def __init__(self, name, direct=False, **kw):
-       self.name = name
-       self.direct = direct
-       self.kw = kw
+    def __init__(self, id, direct=False, **kw):
+        self.id = id
+        self.name = id
+        self.direct = direct
+        self.kw = kw
 
     def __call__(self, wrapped):
         def callback(scanner, name, ob):
