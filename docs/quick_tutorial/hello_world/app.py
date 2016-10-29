@@ -13,11 +13,11 @@ from .behaviors import (
 
 
 @process_definition(
-	id='myprocessid',
-	title='My process')
+    id='myprocessid',
+    title='My process')
 class MyProcess(ProcessDefinition):
 
-    def _init_definition(self):
+    def init_definition(self):
         # define process nodes
         self.defineNodes(
             # start node: the beginning of the process
@@ -26,10 +26,9 @@ class MyProcess(ProcessDefinition):
             hello=ActivityDefinition(
                 # MyBehavior is the behavior to execute
                 # when the node is called
-            	contexts=[MyBehavior],
-                description=_("Hello behavior"),
-                title=_("Hello!"),
-                groups=[]),
+                behaviors=[MyBehavior],
+                description='Hello behavior',
+                title='Hello!'),
             # end node: the ending of the process
             end=EndEventDefinition(),
         )
