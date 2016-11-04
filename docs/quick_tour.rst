@@ -25,15 +25,101 @@ DanCE implement a set of concepts introduced in the BPMN standard. For more info
 
 DaCE enables the definition and execution of complex processes. It provide an API to manage processes and their nodes.
 
+DaCE is an application built using the `SubstanceD <http://www.substanced.net/>`_ application server and the `Pyramid <http://www.pylonsproject.org/>`_ web framework.
+
 Installation
 ============
 
-Add `ecreall_dace` in `install_requires` in your `setup.py`.
-and edit `production.ini` in your Pyramid application to add::
+If you have already installed Substance D
+-----------------------------------------
 
-    pyramid.includes =
+#. Add `ecreall_dace` in `requires` in the `setup.py` file.::
+
+    ...
+    requires = [
         ...
-        dace
+        'ecreall_dace',
+        ]
+    ...
+
+#. Include DaCE in the Pyramid configurator in the ``myproj/__init__.py`` file::
+
+    ...
+    def main(global_config, **settings):
+        ...
+        config.include('substanced')
+        # include dace in the Pyramid configurator
+        config.include('dace')
+        ...
+
+
+If you didn't already installed SubstanceD
+------------------------------------------
+
+You can install DaCE by performing the following steps.
+
+#. Create a new directory somewhere and ``cd`` to it::
+
+   $ virtualenv -p python3.4 hack-on-substanced
+   $ cd hack-on-substanced
+
+#. Install Substance D either from PyPI or from a git checkout::
+
+   $ bin/pip install substanced
+   
+   OR::
+   
+   $ bin/pip install git+https://github.com/Pylons/substanced#egg=substanced
+
+   Alternatively create a writeable fork on GitHub and check that out.
+   
+#. Check that the python-magic library has been installed::
+
+   $ bin/python -c "from substanced.file import magic; assert magic is not None, 'python-magic not installed'"
+   
+   If you then see "python-magic not installed" then you will need to take
+   additional steps to install the python-magic library.
+   
+#. Move back to the parent directory::
+
+   $ cd ..
+
+#. Now you should be able to create new Substance D projects by
+   using ``pcreate``. The following ``pcreate`` command uses the scaffold
+   ``substanced`` to create a new project named ``myproj``::
+      
+   $ hack-on-substanced/bin/pcreate -s substanced myproj
+
+#. Now you can make a virtualenv for your project and move into it::
+
+   $ virtualenv -p python3.4 myproj
+   $ cd myproj
+
+#. Add `ecreall_dace` in `requires` in the `setup.py` file.::
+
+    ...
+    requires = [
+        ...
+        'ecreall_dace',
+        ]
+    ...
+
+#. Include DaCE in the Pyramid configurator in the ``myproj/__init__.py`` file::
+
+    ...
+    def main(global_config, **settings):
+        ...
+        config.include('substanced')
+        # include dace in the Pyramid configurator
+        config.include('dace')
+        ...
+
+#. Install that project using ``pip install -e`` into the virtualenv::
+
+   $ bin/pip install -e .
+
+#. Run the resulting project via ``bin/pserve development.ini``. The development server listens to requests sent to `<http://0.0.0.0:6543>`_ by default. Open this URL in a web browser.
+
 
 Hello World
 ===========
@@ -44,10 +130,9 @@ Applications have shown that learning starts best from a very small first step. 
     :linenos:
     :language: python
 
-This simple example is easy to run. Save this as ``process_definition.py`` in yor Pyramid application and run it.
+This simple example is easy to run. Save this as ``process_definition.py`` in yor project (``myproj``) and run it.
 
-Next open http://localhost:6543/my_process in a browser, and you will see the ``Hello
-World!`` message.
+Next open http://0.0.0.0:6543/my_process in a browser, and you will see the ``Hello World!`` message.
 
 New to DaCE? If so, some lines in the module merit explanation:
 
