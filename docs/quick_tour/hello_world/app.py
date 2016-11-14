@@ -57,7 +57,7 @@ class MyProcess(ProcessDefinition):
 # defined in our process.
 @view_config(name='my_process', renderer='json')
 def my_process_view(request):
-    # 'getAllBusinessAction' enable to recuperate all of
+    # 'getAllBusinessAction' enable to retrieve all of
     # behaviors in all of process instances with the id
     # equal to 'myprocessid'
     process_actions = getAllBusinessAction(

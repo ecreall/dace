@@ -62,20 +62,21 @@ You can install DaCE by performing the following steps.
 
    $ virtualenv -p python3.4 hack-on-substanced
    $ cd hack-on-substanced
+   $ . bin/activate
 
 #. Install Substance D either from PyPI or from a git checkout::
 
-   $ bin/pip install substanced
+   $ pip install substanced
    
    OR::
    
-   $ bin/pip install git+https://github.com/Pylons/substanced#egg=substanced
+   $ pip install git+https://github.com/Pylons/substanced#egg=substanced
 
    Alternatively create a writeable fork on GitHub and check that out.
    
 #. Check that the python-magic library has been installed::
 
-   $ bin/python -c "from substanced.file import magic; assert magic is not None, 'python-magic not installed'"
+   $ python -c "from substanced.file import magic; assert magic is not None, 'python-magic not installed'"
    
    If you then see "python-magic not installed" then you will need to take
    additional steps to install the python-magic library.
@@ -88,12 +89,7 @@ You can install DaCE by performing the following steps.
    using ``pcreate``. The following ``pcreate`` command uses the scaffold
    ``substanced`` to create a new project named ``myproj``::
       
-   $ hack-on-substanced/bin/pcreate -s substanced myproj
-
-#. Now you can make a virtualenv for your project and move into it::
-
-   $ virtualenv -p python3.4 myproj
-   $ cd myproj
+   $ pcreate -s substanced myproj
 
 #. Add `ecreall_dace` in `requires` in the `setup.py` file.::
 
@@ -116,9 +112,9 @@ You can install DaCE by performing the following steps.
 
 #. Install that project using ``pip install -e`` into the virtualenv::
 
-   $ bin/pip install -e .
+   $ pip install -e .
 
-#. Run the resulting project via ``bin/pserve development.ini``. The development server listens to requests sent to `<http://0.0.0.0:6543>`_ by default. Open this URL in a web browser.
+#. Run the resulting project via ``pserve development.ini``. The development server listens to requests sent to `<http://0.0.0.0:6543>`_ by default. Open this URL in a web browser.
 
 
 Hello World
@@ -130,20 +126,18 @@ Applications have shown that learning starts best from a very small first step. 
     :linenos:
     :language: python
 
-This simple example is easy to run. Save this as ``process_definition.py`` in yor project (``myproj``) and run it.
+This simple example is easy to run. Save this as ``process_definition.py`` in your project (``myproj``) and run it.
 
 Next open http://0.0.0.0:6543/my_process in a browser, and you will see the ``Hello World!`` message.
 
-New to DaCE? If so, some lines in the module merit explanation:
+New to DaCE? If so, some lines in the module merit an explanation:
 
 #. *Step 1 - Line 19*. The ``ElementaryAction`` is one of multiple behavior type in DaCE. This type of behavior is executed only one time in the process instance. See :ref:`Behaviors types <behaviors_types>` for more information.
 
 #. *Step 1 - Line 20*. The behavior is executed only on objects that implement the ``context``.
 
-#. *Step 3 - Line 63*. ``getAllBusinessAction`` enable to recuperate all of behaviors in all of process instances for a given object. For more information about the DaCE utilities see :ref:`DaCE utilities <dace_utilities>`
+#. *Step 3 - Line 63*. ``getAllBusinessAction`` retrieves all of behaviors in all of process instances of myprocessid for a given object. For more information about the DaCE utilities see :ref:`DaCE utilities <dace_utilities>`
 
 .. seealso::
    :ref:`Quick Tutorial Hello World <qtut_hello_world>`
 
-Conclusion
-==========
