@@ -21,7 +21,7 @@ In DaCE, a process is a set of nodes interconnected by oriented transitions (see
     Fig 1: Hello process example
 
 
-DanCE implement a set of concepts introduced in the BPMN standard. For more informtion about actions, events or gateways see `BPMN Specification - Business Process Model and Notation <http://www.bpmn.org/>`_.
+DaCE implement a set of concepts introduced in the BPMN standard. For more informtion about actions, events or gateways see `BPMN Specification - Business Process Model and Notation <http://www.bpmn.org/>`_.
 
 DaCE enables the definition and execution of complex processes. It provide an API to manage processes and their nodes.
 
