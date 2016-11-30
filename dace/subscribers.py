@@ -153,7 +153,7 @@ def start_intermediate_events_callback():
     query = catalog['object_provides'].any((IWorkItem.__identifier__,))
     results = query.execute().all()
     for wi in results:
-        node = wi.node
+        node = getattr(wi, 'node', None)
         if isinstance(node, IntermediateCatchEvent):
             if node.execution_prepared:
                 node.eventKind.prepare_for_execution(True)
