@@ -20,6 +20,7 @@ from dace.util import (
     DelayedCallback,
     get_zmq_context,
     EventJob)
+from dace import log
 
 
 callbacks = {}
@@ -180,20 +181,24 @@ class EndEvent(Throwing):
         registry.notify(ProcessFinished(self))
         current_process = self.process
         if current_process.definition.isSubProcess:
-            request = get_system_request()
-            root_process = current_process.attachedTo.process
-            current_process.attachedTo.finish_execution(None, request)
-            root_process.execution_context.remove_sub_execution_context(
-                                          current_process.execution_context)
-            parent_node = current_process.attachedTo.node
-            if current_process in parent_node.sub_processes:
-                parent_node.sub_processes.remove(current_process)
+            try:
+                request = get_system_request()
+                root_process = current_process.attachedTo.process
+                current_process.attachedTo.finish_execution(None, request)
+                root_process.execution_context.remove_sub_execution_context(
+                    current_process.execution_context)
+                parent_node = current_process.attachedTo.node
+                if current_process in parent_node.sub_processes:
+                    parent_node.sub_processes.remove(current_process)
+            except AttributeError as error:
+                # the root process is a volatile subprocess (is removed)
+                log.warning(error)
 
         if current_process.definition.isVolatile and \
            getattr(current_process, '__property__', None):
             getattr(current_process.__parent__.__class__,
-                    current_process.__property__).remove(current_process.__parent__,
-                                                      current_process)
+                    current_process.__property__).remove(
+                        current_process.__parent__, current_process)
 
 
 class EventKind(object):
@@ -215,7 +220,6 @@ class EventKind(object):
     @property
     def definition(self):
         return self.event.definition.eventKind
-
 
 
 class ConditionalEvent(EventKind):
