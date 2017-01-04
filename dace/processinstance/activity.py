@@ -431,6 +431,9 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         if self.isexecuted:
             self.workitem.node.finish_behavior(self.workitem)
 
+    def redirect(self, context, request, **kw):
+        return kw
+
     def cancel_execution(self, context, request, **kw):
         self.unlock(request)
         self.workitem.unlock(request)
