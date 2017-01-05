@@ -156,8 +156,8 @@ def start_intermediate_events_callback():
         node = getattr(wi, 'node', None)
         if isinstance(node, IntermediateCatchEvent):
             if node.execution_prepared:
+                log.info("Calling %s.eventKind.prepare_for_execution()", node)
                 node.eventKind.prepare_for_execution(True)
-            log.info("Calling %s.eventKind.prepare_for_execution()", node)
     # commit to execute after commit hooks
     transaction.commit()
 
