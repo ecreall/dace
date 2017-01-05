@@ -19,7 +19,8 @@ from dace.util import (
     get_socket,
     DelayedCallback,
     get_zmq_context,
-    EventJob)
+    EventJob,
+    is_broken)
 from dace import log
 
 
@@ -345,7 +346,8 @@ class TimerEvent(EventKind):
         self.time_cycle = None
 
     def _prepare_time(self, time, restart=False):
-        if getattr(self, time, None) is None or not restart:
+        time_attr = getattr(self, time, None)
+        if is_broken(time_attr) or time_attr is None or not restart:
             setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO
 
     def _start_time(self, restart=False):
