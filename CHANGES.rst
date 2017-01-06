@@ -1,10 +1,14 @@
 Changelog
 =========
 
-1.0.3 (unreleased)
+1.0.3 (2017-01-06)
 ------------------
 
-- Nothing changed yet.
+- Auto evolve TimeEvent if the definition changed.
+
+- Fix the end of a sub-process.
+
+- Optimizations of path finding to get the workitems.
 
 
 1.0.2 (2016-09-15)
