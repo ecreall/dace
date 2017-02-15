@@ -48,6 +48,10 @@ class User(OriginUser, Entity):
                 )
         mailer = get_mailer(request)
         mailer.send(_message)
+    
+    @property
+    def user_groups(self):
+        return self.groups
 
 
 class Machine(User):

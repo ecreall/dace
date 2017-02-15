@@ -78,7 +78,7 @@ def get_roles(user=None, obj=None,
 
     groups = []
     if not ignore_groups:
-        groups.extend(getattr(user, 'groups', []))
+        groups.extend(getattr(user, 'user_groups', []))
 
     for group in groups:
         roles.extend(get_roles(group, obj, root))
@@ -189,7 +189,7 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         if sd_admin is user:
             return True
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
@@ -237,7 +237,7 @@ def has_any_roles(user=None,
         if sd_admin is user:
             return True
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
@@ -346,7 +346,7 @@ def get_access_keys(user, root=None, to_exclude=[]):
         return list(set([('admin'+'_'+str(root_oid)).lower(),
                 ('admin'+'_'+str(principal_root_oid)).lower()]))
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     relations = []
     for group in groups:
