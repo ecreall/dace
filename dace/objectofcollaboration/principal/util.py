@@ -319,10 +319,15 @@ def get_objects_with_role(user=None, role=None, root=None):
     if root is None:
         root = getSite()
 
-    opts = {u'source_id': get_oid(user)}
-    opts[u'relation_id'] = role
-    opts[u'reftype'] = 'Role'
-    objects = [r.target for r in find_relations(root, opts).all()]
+    groups = list(getattr(user, 'user_groups', []))
+    groups.append(user)
+    objects = []
+    for principal in groups:
+        opts = {u'source_id': get_oid(principal)}
+        opts[u'relation_id'] = role
+        opts[u'reftype'] = 'Role'
+        objects.extend([r.target for r in find_relations(root, opts).all()])
+
     objects = list(set(objects))
     if root in objects:
         objects.remove(root)
