@@ -18,7 +18,7 @@ requires = [
     ]
 
 setup(name='ecreall_dace',
-      version='1.0.4.dev0',
+      version='1.1.0',
       description='Data-centric engine',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[

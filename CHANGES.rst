@@ -1,7 +1,7 @@
 Changelog
 =========
 
-1.0.4 (unreleased)
+1.1.0 (2017-02-25)
 ------------------
 
 - Add user_groups getter to User class, and now include roles from groups
