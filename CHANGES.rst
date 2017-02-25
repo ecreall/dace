@@ -4,7 +4,8 @@ Changelog
 1.0.4 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Add user_groups getter to User class, and now include roles from groups
+  when checking if the user has given role.
 
 
 1.0.3 (2017-01-06)
