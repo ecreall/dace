@@ -439,6 +439,10 @@ def getAllBusinessAction(context,
                          behavior_id=None,
                          process_discriminator=None,
                          action_type=None):
+    process_ids = process_id
+    if process_id and not isinstance(process_id, (list, tuple)):
+        process_ids = [process_id]
+
     if request is None:
         request = get_current_request()
 
@@ -462,10 +466,10 @@ def getAllBusinessAction(context,
         isautomatic_index = dace_catalog['isautomatic']
         query = query & isautomatic_index.eq(True)
 
-    if process_id:
+    if process_ids:
         process_id_index = dace_catalog['process_id']
-        query = query & process_id_index.eq(process_id)
-        allprocessdef = [def_container.get_definition(process_id)]
+        query = query & process_id_index.any(process_ids)
+        allprocessdef = [def_container.get_definition(p_id) for p_id in process_ids]
     else:
         if process_discriminator:
             allprocessdef = [pd for pd in def_container.definitions \
