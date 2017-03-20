@@ -4,7 +4,9 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
-- Nothing changed yet.
+- Fix tests with latest pyramid version.
+
+- Add support for Python 3.6
 
 
 1.1.0 (2017-02-25)

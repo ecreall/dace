@@ -61,7 +61,11 @@ class FunctionalTests(unittest.TestCase):
         # set extensions (add_request_method, so the request.user works)
         extensions = app.registry.queryUtility(IRequestExtensions)
         if extensions is not None:
-            request._set_extensions(extensions)
+            if getattr(request, '_set_extensions', None) is not None:  # pyramid 1.5.7
+                request._set_extensions(extensions)
+            else:
+                from pyramid.request import apply_request_extensions
+                apply_request_extensions(request, extensions=extensions)
 
         self.registry = self.config.registry
         self.app = root_factory(request)
