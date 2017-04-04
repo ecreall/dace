@@ -42,7 +42,8 @@ def add_process_definitions(event):
     request.root = root
 
     # use same env variable as substanced catalog to determine
-    # if we want to recreate process definitions
+    # if we want to recreate process definitions.
+    # autosync is True only in development mode.
     autosync = asbool(
         os.environ.get(
         'SUBSTANCED_CATALOGS_AUTOSYNC',
@@ -50,40 +51,46 @@ def add_process_definitions(event):
             'substanced.catalogs.autosync',
             settings.get('substanced.autosync_catalogs', False) # bc
             )))
-    def_container = root['process_definition_container']
-    if autosync:
-        for definition in def_container.definitions:
-            if hasattr(definition, '_broken_object'):
-                name = definition.__name__
-                def_container.remove(name, send_events=False)
-                def_container._definitions_value.remove(name)
-
-    for definition in processdef_container.DEFINITIONS.values():
-        old_def = def_container.get(definition.id, None)
-        if old_def is None:
-            def_container.add_definition(definition)
-        else:
-            if autosync:
-                def_container.delfromproperty('definitions', old_def)
-                def_container.add_definition(definition)
-
-    transaction.commit()
-
-    if autosync:
-        processdef_container.DEFINITIONS.clear()
-
     try:
-        transaction.begin()
-        for definition in def_container.definitions:
-            for node in definition.nodes:
-                for context in getattr(node, 'contexts', []):
-                    context.node_definition = node
+        # This code block must be in sync with what we do in
+        # process_definitions_evolve minus the autosync conditions
+        def_container = root['process_definition_container']
+        if autosync:
+            for definition in def_container.definitions:
+                if hasattr(definition, '_broken_object'):
+                    name = definition.__name__
+                    def_container.remove(name, send_events=False)
+                    def_container._definitions_value.remove(name)
+
+        for definition in processdef_container.DEFINITIONS.values():
+            old_def = def_container.get(definition.id, None)
+            if old_def is None:
+                # Don't check autosync here.
+                # We add the definition at startup when creating the application
+                # the first time where we normally have one worker.
+                # If we have more that one worker, the other workers will do
+                # a ConflictError here.
+                def_container.add_definition(definition)
+                for node in definition.nodes:
+                    for context in getattr(node, 'contexts', []):
+                        context.node_definition = node
+            else:
+                if autosync:
+                    def_container.delfromproperty('definitions', old_def)
+                    def_container.add_definition(definition)
+                    for node in definition.nodes:
+                        for context in getattr(node, 'contexts', []):
+                            context.node_definition = node
+
+        if autosync:
+            # if not autosync, we still need this global constant for the
+            # process_definitions_evolve step
+            processdef_container.DEFINITIONS.clear()
 
         transaction.commit()
     except ConflictError:
-        # The first worker did the changes, just abort to have the changes
+        # The first worker did the changes, simply abort to get the changes.
         transaction.abort()
-
 
     registry.notify(DatabaseOpenedWithRoot(root._p_jar.db()))
     manager.pop()
