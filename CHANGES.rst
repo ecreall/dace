@@ -4,6 +4,8 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- Can now execute process_definitions_evolve via sd_evolve script.
+
 - Fix ConflictError at startup when using several workers.
 
 - Fix tests with latest pyramid version.

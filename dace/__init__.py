@@ -6,6 +6,7 @@
 
 import logging
 from pyramid.i18n import TranslationStringFactory
+from pyramid.threadlocal import get_current_request
 
 from dace.relations.evolve import unindex_relations_from_other_catalogs
 
@@ -14,6 +15,8 @@ _ =  TranslationStringFactory('dace')
 
 
 def process_definitions_evolve(root, registry):
+    request = get_current_request()
+    request.root = root  # needed when executing the step via sd_evolve script
     from dace.objectofcollaboration.services import processdef_container
     def_container = root['process_definition_container']
     for definition in def_container.definitions:
