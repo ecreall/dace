@@ -4,6 +4,8 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- Fix ConflictError at startup when using several workers.
+
 - Fix tests with latest pyramid version.
 
 - Add support for Python 3.6

@@ -9,9 +9,10 @@ import os
 from pyramid.events import ApplicationCreated, subscriber
 from pyramid.settings import asbool
 from pyramid.request import Request
-from pyramid.threadlocal import get_current_request, manager
+from pyramid.threadlocal import manager
 import transaction
 
+from ZODB.POSException import ConflictError
 from zope.processlifetime import DatabaseOpenedWithRoot
 from substanced.event import RootAdded
 
@@ -66,14 +67,23 @@ def add_process_definitions(event):
                 def_container.delfromproperty('definitions', old_def)
                 def_container.add_definition(definition)
 
-    for definition in def_container.definitions:
-        for node in definition.nodes:
-            for context in getattr(node, 'contexts', []):
-                context.node_definition = node
+    transaction.commit()
 
     if autosync:
         processdef_container.DEFINITIONS.clear()
 
-    transaction.commit()
+    try:
+        transaction.begin()
+        for definition in def_container.definitions:
+            for node in definition.nodes:
+                for context in getattr(node, 'contexts', []):
+                    context.node_definition = node
+
+        transaction.commit()
+    except ConflictError:
+        # The first worker did the changes, just abort to have the changes
+        transaction.abort()
+
+
     registry.notify(DatabaseOpenedWithRoot(root._p_jar.db()))
     manager.pop()
