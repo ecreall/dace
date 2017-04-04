@@ -31,7 +31,7 @@ def process_definitions_evolve(root, registry):
             def_container.add_definition(definition)
 
     processdef_container.DEFINITIONS.clear()
-    log.info('process definitions evolved.')
+    log.info('process definitions evolved. You absolutely need to restart the application to fix the node_definition attributes on context classes')
 
 
 def include_evolve_steps(config):
