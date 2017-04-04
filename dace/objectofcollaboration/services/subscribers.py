@@ -71,16 +71,10 @@ def add_process_definitions(event):
                 # If we have more that one worker, the other workers will do
                 # a ConflictError here.
                 def_container.add_definition(definition)
-                for node in definition.nodes:
-                    for context in getattr(node, 'contexts', []):
-                        context.node_definition = node
             else:
                 if autosync:
                     def_container.delfromproperty('definitions', old_def)
                     def_container.add_definition(definition)
-                    for node in definition.nodes:
-                        for context in getattr(node, 'contexts', []):
-                            context.node_definition = node
 
         if autosync:
             # if not autosync, we still need this global constant for the
@@ -91,6 +85,16 @@ def add_process_definitions(event):
     except ConflictError:
         # The first worker did the changes, simply abort to get the changes.
         transaction.abort()
+
+    # After the restart of the application, we always need to resync
+    # the node_definition attributes to be the node definition instances
+    # currently in ZODB.
+    for definition in def_container.definitions:
+        for node in definition.nodes:
+            for context in getattr(node, 'contexts', []):
+                # context here is a class, we set the class attribute
+                # node_definition to the current node definition in ZODB
+                context.node_definition = node
 
     registry.notify(DatabaseOpenedWithRoot(root._p_jar.db()))
     manager.pop()
