@@ -4,6 +4,9 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- On SIGTERM, stop the system thread. It was already done for SIGINT but not
+  on SIGTERM.
+
 - Can now execute process_definitions_evolve via sd_evolve script.
 
 - Fix ConflictError at startup when using several workers.

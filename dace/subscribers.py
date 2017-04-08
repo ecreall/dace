@@ -123,16 +123,24 @@ class ConsumeTasks(threading.Thread):
 
 consumetasks = None
 curr_sigint_handler = signal.getsignal(signal.SIGINT)
+curr_sigterm_handler = signal.getsignal(signal.SIGTERM)
 
 
 def sigint_handler(*args):
     stop_ioloop()
     curr_sigint_handler(*args)
 
+
+def sigterm_handler(*args):
+    stop_ioloop()
+    curr_sigterm_handler(*args)
+
+
 # executed when 'system' app is started
 def start_ioloop(event):
     """Start loop."""
     signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigterm_handler)
     global consumetasks
     if consumetasks is None:
         registry = get_current_registry()
