@@ -28,6 +28,7 @@ def add_process_definition_container(event):
 
     def_container = ProcessDefinitionContainer(title='Process Definitions')
     root['process_definition_container'] = def_container
+    def_container._initializing = True
 
 
 @subscriber(ApplicationCreated)
@@ -65,12 +66,12 @@ def add_process_definitions(event):
         for definition in processdef_container.DEFINITIONS.values():
             old_def = def_container.get(definition.id, None)
             if old_def is None:
-                # Don't check autosync here.
                 # We add the definition at startup when creating the application
                 # the first time where we normally have one worker.
                 # If we have more that one worker, the other workers will do
                 # a ConflictError here.
-                def_container.add_definition(definition)
+                if getattr(def_container, '_initializing', False) or autosync:
+                    def_container.add_definition(definition)
             else:
                 if autosync:
                     def_container.delfromproperty('definitions', old_def)
@@ -80,6 +81,9 @@ def add_process_definitions(event):
             # if not autosync, we still need this global constant for the
             # process_definitions_evolve step
             processdef_container.DEFINITIONS.clear()
+
+        if getattr(def_container, '_initializing', False):
+            del def_container._initializing
 
         transaction.commit()
     except ConflictError:

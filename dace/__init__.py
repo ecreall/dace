@@ -17,9 +17,7 @@ log = logging.getLogger('dace')
 _ =  TranslationStringFactory('dace')
 
 
-def process_definitions_evolve(root, registry):
-    request = get_current_request()
-    request.root = root  # needed when executing the step via sd_evolve script
+def update_process_definitions(root):
     from dace.objectofcollaboration.services import processdef_container
     def_container = root['process_definition_container']
     for definition in def_container.definitions:
@@ -37,6 +35,12 @@ def process_definitions_evolve(root, registry):
             def_container.add_definition(definition)
 
     processdef_container.DEFINITIONS.clear()
+
+
+def process_definitions_evolve(root, registry):
+    request = get_current_request()
+    request.root = root  # needed when executing the step via sd_evolve script
+    update_process_definitions(root)
     log.info('process definitions evolved. You absolutely need to restart the application to fix the node_definition attributes on context classes')
     # always run update catalogs and reindex after that
     update_catalogs_evolve(root, registry)
