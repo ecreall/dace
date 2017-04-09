@@ -5,6 +5,7 @@
 # author: Vincent Fretin, Amen Souissi
 
 import logging
+import transaction
 from pyramid.i18n import TranslationStringFactory
 from pyramid.threadlocal import get_current_request
 from substanced.objectmap import find_objectmap
@@ -42,6 +43,9 @@ def process_definitions_evolve(root, registry):
 
 
 def update_catalogs_evolve(root, registry):
+    # commit first to be sure deferred indexing actions coming from previous
+    # evolve steps are executed before we modify catalogs' indexes
+    transaction.commit()
     # code taken from substanced/catalog/subscribers.py:on_startup
     request = get_current_request()
     request.root = root  # needed when executing the step via sd_evolve script
