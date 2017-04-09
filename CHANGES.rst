@@ -4,6 +4,9 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- Add a update_catalogs_evolve evolve step to update catalogs and reindex
+  new indexes programmatically.
+
 - On SIGTERM, stop the system thread. It was already done for SIGINT but not
   on SIGTERM.
 

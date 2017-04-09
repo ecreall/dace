@@ -1,5 +1,5 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
+# avalaible on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
@@ -7,6 +7,8 @@
 import logging
 from pyramid.i18n import TranslationStringFactory
 from pyramid.threadlocal import get_current_request
+from substanced.objectmap import find_objectmap
+from zope.interface.interfaces import ComponentLookupError
 
 from dace.relations.evolve import unindex_relations_from_other_catalogs
 
@@ -37,9 +39,35 @@ def process_definitions_evolve(root, registry):
     log.info('process definitions evolved. You absolutely need to restart the application to fix the node_definition attributes on context classes')
 
 
+def update_catalogs_evolve(root, registry):
+    # code taken from substanced/catalog/subscribers.py:on_startup
+    request = get_current_request()
+    request.root = root  # needed when executing the step via sd_evolve script
+    objectmap = find_objectmap(root)
+    if objectmap is not None:
+        content = registry.content
+        factory_type = content.factory_type_for_content_type('Catalog')
+        oids = objectmap.get_extent(factory_type)
+        for oid in oids:
+            catalog = objectmap.object_for(oid)
+            if catalog is not None:
+                try:
+                    catalog.update_indexes(
+                        registry=registry,
+                        reindex=True
+                        )
+                except ComponentLookupError:
+                    # could not find a catalog factory
+                    pass
+
+    log.info('catalogs updated and new indexes reindexed')
+
+
 def include_evolve_steps(config):
     config.add_evolution_step(process_definitions_evolve)
+    config.add_evolution_step(update_catalogs_evolve)
     config.add_evolution_step(unindex_relations_from_other_catalogs)
+
 
 def includeme(config):
     config.scan()
