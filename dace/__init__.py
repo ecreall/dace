@@ -37,6 +37,8 @@ def process_definitions_evolve(root, registry):
 
     processdef_container.DEFINITIONS.clear()
     log.info('process definitions evolved. You absolutely need to restart the application to fix the node_definition attributes on context classes')
+    # always run update catalogs and reindex after that
+    update_catalogs_evolve(root, registry)
 
 
 def update_catalogs_evolve(root, registry):
