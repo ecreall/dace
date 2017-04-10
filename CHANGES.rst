@@ -4,6 +4,8 @@ Changelog
 1.1.1 (unreleased)
 ------------------
 
+- Add a remove_unique_process_instances evolve step.
+
 - Add a update_catalogs_evolve evolve step to update catalogs and reindex
   new indexes programmatically.
 

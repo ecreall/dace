@@ -37,6 +37,14 @@ def update_process_definitions(root):
     processdef_container.DEFINITIONS.clear()
 
 
+def remove_unique_process_instances(root, registry):
+    runtime = root['runtime']
+    processes = [p for p in list(runtime.processes)
+                 if getattr(p.definition, 'isUnique', False)]
+    for proc in processes:
+        runtime.delfromproperty('processes', proc)
+
+
 def process_definitions_evolve(root, registry):
     request = get_current_request()
     request.root = root  # needed when executing the step via sd_evolve script
