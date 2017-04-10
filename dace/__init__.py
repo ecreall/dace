@@ -37,7 +37,7 @@ def update_process_definitions(root):
     processdef_container.DEFINITIONS.clear()
 
 
-def remove_unique_process_instances(root, registry):
+def remove_unique_process_instances_evolve(root, registry):
     runtime = root['runtime']
     processes = [p for p in list(runtime.processes)
                  if getattr(p.definition, 'isUnique', False)]
@@ -84,6 +84,7 @@ def update_catalogs_evolve(root, registry):
 def include_evolve_steps(config):
     config.add_evolution_step(process_definitions_evolve)
     config.add_evolution_step(update_catalogs_evolve)
+    config.add_evolution_step(remove_unique_process_instances_evolve)
     config.add_evolution_step(unindex_relations_from_other_catalogs)
 
 
