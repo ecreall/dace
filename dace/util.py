@@ -52,6 +52,33 @@ STRING_PUNCTUATION = ' ' + string.punctuation.translate(
 NAME_RE_MAPPING = {ord(c): '-' for c in STRING_PUNCTUATION}
 
 
+class RequestMemojito(object):
+    propname = '_memojito_'
+
+    def request_memoize(self, func):
+
+        def memogetter(*args, **kwargs):
+            request = get_current_request()
+            cache = getattr(request, self.propname, _marker)
+            if cache is _marker:
+                setattr(request, self.propname, dict())
+                cache = getattr(request, self.propname)
+
+            # XXX this could be potentially big, a custom key should
+            # be used if the arguments are expected to be big
+            key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
+            val = cache.get(key, _marker)
+            if val is _marker or getattr(request, 'test', False) or \
+               getattr(request, 'invalidate_cache', False):
+                val = func(*args, **kwargs)
+                cache[key] = val
+            return val
+        return memogetter
+
+_m = RequestMemojito()
+request_memoize = _m.request_memoize
+
+
 class BaseJob(object):
     # a job that examines the site and interaction participants when it is
     # created, and reestablishes them when run, tearing down as necessary.
@@ -495,18 +522,24 @@ def getAllBusinessAction(context,
                             context, request)[0]]
     # Add start workitem
     for pd in allprocessdef:
-        wis = (wi for wi in pd.start_process(node_id).values() if wi)
-        for wi in wis:
-            swisactions = (action for action in wi.actions \
-                           if (not isautomatic or \
-                               (isautomatic and action.isautomatic)) and \
-                              (action_type is None or \
-                               action._class_.__name__ == action_type.__name__))
-
-            allactions.extend(action for action in swisactions
-                              if action.validate_mini(context, request)[0])
+        swisactions = get_start_workitems_actions(
+            pd, node_id, isautomatic, action_type)
+        allactions.extend(action for action in swisactions
+                          if action.validate_mini(context, request)[0])
 
     return allactions
+
+
+@request_memoize
+def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
+    wis = (wi for wi in pd.start_process(node_id).values() if wi)
+    for wi in wis:
+        swisactions = (action for action in wi.actions
+                       if (not isautomatic or
+                           (isautomatic and action.isautomatic)) and
+                          (action_type is None or
+                           action._class_.__name__ == action_type.__name__))
+        yield from swisactions
 
 
 def getWorkItem(context, request, process_id, node_id):
@@ -827,31 +860,3 @@ def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook)
-
-
-class RequestMemojito(object):
-    propname = '_memojito_'
-
-    def request_memoize(self, func):
-
-        def memogetter(*args, **kwargs):
-            request = get_current_request()
-            cache = getattr(request, self.propname, _marker)
-            if cache is _marker:
-                setattr(request, self.propname, dict())
-                cache = getattr(request, self.propname)
-
-            # XXX this could be potentially big, a custom key should
-            # be used if the arguments are expected to be big
-            key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
-            val = cache.get(key, _marker)
-            if val is _marker or getattr(request, 'test', False) or \
-               getattr(request, 'invalidate_cache', False):
-                val = func(*args, **kwargs)
-                cache[key] = val
-                setattr(request, self.propname, cache)
-            return val
-        return memogetter
-
-_m = RequestMemojito()
-request_memoize = _m.request_memoize
