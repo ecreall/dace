@@ -246,37 +246,38 @@ class BehavioralFlowNode(MakerFlowNode):
         self.decide(self.process.global_transaction)
 
     def finish_decisions(self, work_item):
-        first_transitions = work_item.path._get_transitions_source(self)
-        if work_item is not None :
+        if work_item is not None:
+            # _get_transitions_source returns a set, convert it to list to
+            # retrieve the first item in the code at the end
+            first_transitions = list(work_item.path._get_transitions_source(self))
             work_item.validations.append(self)
             if work_item.is_finished:
                 work_item.__parent__.delfromproperty('workitems', work_item)
 
-        # clear commun work items
-        allconcernedworkitems = self.get_allconcernedworkitems()
-        all_stoped_wis = []
-        for cdecision in allconcernedworkitems:
-            for f_t in first_transitions:
-                if cdecision.path.contains_transition(f_t):
-                    if not (cdecision in all_stoped_wis) and \
-                            cdecision is not work_item:
-                        all_stoped_wis.append(cdecision)
-                        cdecision.validations.append(self)
-                        if cdecision.is_finished or \
-                           not cdecision.path.is_segment(work_item.path):
-                            # don't cdecision.node.stop()
-                            cdecision.__parent__.delfromproperty(
-                                       'workitems', cdecision)
+            # clear common work items
+            allconcernedworkitems = self.get_allconcernedworkitems()
+            all_stoped_wis = []
+            for cdecision in allconcernedworkitems:
+                for f_t in first_transitions:
+                    if cdecision.path.contains_transition(f_t):
+                        if not (cdecision in all_stoped_wis) and \
+                                cdecision is not work_item:
+                            all_stoped_wis.append(cdecision)
+                            cdecision.validations.append(self)
+                            if cdecision.is_finished or \
+                               not cdecision.path.is_segment(work_item.path):
+                                # don't cdecision.node.stop()
+                                cdecision.__parent__.delfromproperty(
+                                           'workitems', cdecision)
 
-                    break
+                        break
 
-        if work_item is not None:
-            start_transition = work_item.path._get_transitions_source(self)[0]
+            start_transition = first_transitions[0]
             self.process.play_transitions(self, [start_transition])
             paths = self.process.global_transaction.find_allsubpaths_by_source(
                                                                    self, 'Find')
             if paths:
-                for path in set(paths):
+                for path in paths:
                     if work_item.path.contains_transition(path.first[0]):
                         source_transaction = path.transaction.__parent__
                         source_transaction.remove_subtransaction(

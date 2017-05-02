@@ -42,7 +42,7 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
     def finish_decisions(self, work_item):
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
-        if work_item is not None :
+        if work_item is not None:
             work_item.validations.append(self)
             if work_item.is_finished:
                 work_item.__parent__.delfromproperty('workitems', work_item)
@@ -60,13 +60,15 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
                     cdecision.__parent__.delfromproperty('workitems', cdecision)
 
         if work_item is not None:
-            transition = work_item.path._get_transitions_source(self)[0]
+            # _get_transitions_source returns a set, convert it to list to
+            # retrieve the first item
+            transition = list(work_item.path._get_transitions_source(self))[0]
             self.process.play_transitions(self, [transition])
 
         paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
         paths.extend(self.process.global_transaction.find_allsubpaths_by_source(self, 'Find'))
         if paths:
-            for path in set(paths):
+            for path in paths:
                 source_transaction = path.transaction.__parent__
                 source_transaction.remove_subtransaction(path.transaction)
 

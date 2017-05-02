@@ -205,9 +205,10 @@ class ProcessDefinition(Entity):
         if self.isUnique and self.started_processes:
             if node_name:
                 return {node_name: None}
-                
+
             return {}
-        #une transaction globale pour chaque demande
+
+        # une transaction globale pour chaque demande
         global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
@@ -216,14 +217,9 @@ class ProcessDefinition(Entity):
                                                                 initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         if node_name is None:
-            start_workitems = {wi.node.__name__: wi for wi in start_workitems}
             return start_workitems
 
-        for wi in start_workitems:
-            if node_name == wi.node.__name__:
-                return {node_name: wi}
-
-        return {node_name: None}
+        return {node_name: start_workitems.get(node_name, None)}
 
     @property
     def started_processes(self):
@@ -233,6 +229,6 @@ class ProcessDefinition(Entity):
         query = object_provides_index.any((IProcess.__identifier__,)) & \
                 processid_index.eq(self.id)
         results = query.execute().all()
+        # .all() returns a generator, convert it to a list
         processes = [p for p in results]
-        #processes.sort()
         return processes

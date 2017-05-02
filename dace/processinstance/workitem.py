@@ -31,14 +31,14 @@ class UserDecision(LockableElement):
         for initiator in self.initiators:
             result = result.union(self.path._get_transitions_source(initiator))
 
-        return list(set(self.path.first).union(result))
+        return set(self.path.first).union(result)
 
     def merge(self, decision):
-        self.initiators = list(set(self.initiators).union(decision.initiators))
+        self.initiators = set(self.initiators).union(decision.initiators)
         self.path = self.path.merge(decision.path)
 
     def concerned_nodes(self):
-        result = list(set(self.initiators).union(self.path.sources))
+        result = set(self.initiators).union(self.path.sources)
         return result
 
     def __eq__(self, other):
@@ -192,7 +192,7 @@ class BaseWorkItem(LockableElement, Object):
         raise NotImplementedError # pragma: no cover
 
     def concerned_nodes(self):
-        return [self.node]
+        return {self.node}
 
 
 @implementer(IWorkItem)
@@ -271,7 +271,7 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
 
     def concerned_nodes(self):
         result = set(self.initiators).union(self.path.sources)
-        return [n for n in result if not (n in self.validations)]
+        return {n for n in result if not n in self.validations}
 
     def __eq__(self, other):
         return   UserDecision.__eq__(self, other) and self.node is other.node

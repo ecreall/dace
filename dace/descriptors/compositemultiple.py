@@ -22,8 +22,7 @@ class CompositeMultipleProperty(Descriptor):
 
     def _get(self, obj):
         contents_keys = obj.__dict__.get(self.key, _empty)
-        return list(filter(lambda x: x is not None,
-                           (obj.get(key, None) for key in contents_keys)))
+        return [o for o in (obj.get(key, None) for key in contents_keys) if o is not None]
 
     def __get__(self, obj, objtype=None):
         if obj is None:

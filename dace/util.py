@@ -388,6 +388,7 @@ def getBusinessAction(context,
             swisactions = (action for action in s_wi.actions
                            if action_type is None or \
                               action._class_.__name__ == action_type.__name__)
+            # yes there is really an attribute named _class_
             allactions.extend(action for action in swisactions
                               if action.validate_mini(context, request)[0])
 
@@ -472,13 +473,13 @@ def getAllBusinessAction(context,
         allprocessdef = [def_container.get_definition(p_id) for p_id in process_ids]
     else:
         if process_discriminator:
-            allprocessdef = [pd for pd in def_container.definitions \
+            allprocessdef = [pd for pd in def_container.definitions
                              if any(context.__provides__(pd_context)
-                                    for pd_context in pd.contexts) and \
-                                pd.discriminator == process_discriminator and \
+                                    for pd_context in pd.contexts) and
+                                pd.discriminator == process_discriminator and
                                 not pd.isControlled]
         else:
-            allprocessdef = [pd for pd in def_container.definitions \
+            allprocessdef = [pd for pd in def_container.definitions
                              if not pd.isControlled]
 
     if node_id:

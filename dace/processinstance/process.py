@@ -712,31 +712,30 @@ class Process(Entity):
         executed_transitions = first_transitions
         next_transitions = set()
         for transition in first_transitions:
-            next_transitions = next_transitions.union(
-                                  set(path.next(transition)))
+            next_transitions.update(path.next(transition))
 
-        for next_transition in set(next_transitions):
+        for next_transition in list(next_transitions):  # iterate on a copy
             if next_transition in executed_transitions:
                 next_transitions.remove(next_transition)
 
         while next_transitions:
             self.replay_transitions(decision, next_transitions, transaction)
-            executed_transitions.extend(next_transitions)
+            executed_transitions.update(next_transitions)
             next_ts = set()
             for next_transition in next_transitions:
-                next_ts = next_ts.union(set(path.next(next_transition)))
+                next_ts.update(path.next(next_transition))
 
-            for next_transition in list(next_ts):
+            for next_transition in list(next_ts):  # iterate on a copy
                 if next_transition in executed_transitions:
                     next_ts.remove(next_transition)
 
             next_transitions = next_ts
 
-    def replay_transitions(self,decision, transitions, transaction):
+    def replay_transitions(self, decision, transitions, transaction):
         executed_nodes = []
         for transition in transitions:
             node = transition.source
-            if not (node in executed_nodes):
+            if not node in executed_nodes:
                 executed_nodes.append(node)
                 node.replay_path(decision, transaction)
 
@@ -785,7 +784,7 @@ class Process(Entity):
                 for sub_process in wi.node.sub_processes:
                     result.extend(sub_process.getAllWorkItems())
 
-            if not (wi in result):
+            if not wi in result:
                 result.append(wi)
 
         return result

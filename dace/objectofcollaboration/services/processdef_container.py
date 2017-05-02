@@ -31,11 +31,8 @@ class ProcessDefinitionContainer(Entity):
         definition._init_definition()
 
     def get_definition(self, name):
-        for definition in self.definitions:
-            if definition.id == name:
-                return definition
-
-        return None
+        # Don't iterate on self.definitions property for performance reason.
+        return self.get(name, None)
 
 
 class process_definition(object):

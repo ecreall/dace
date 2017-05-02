@@ -35,8 +35,8 @@ class StartEventDefinition(EventDefinition):
     factory = StartEvent
 
     def start_process(self, transaction):
+        start_workitems = {}
         if self.eventKind is None:
-            start_workitems = {}
             for transition in self.outgoing:
                 if transition.condition(None):
                     nodedef = self.process[transition.target_id]
@@ -45,14 +45,13 @@ class StartEventDefinition(EventDefinition):
                                                                    self)
                     for startable_path in startable_paths:
                         swi = StartWorkItem(startable_path, self)
-                        if swi.node.__name__ in start_workitems:
-                            start_workitems[swi.node.__name__].merge(swi)
+                        node_name = swi.node.__name__
+                        if node_name in start_workitems:
+                            start_workitems[node_name].merge(swi)
                         else:
-                            start_workitems[swi.node.__name__] = swi
-                            #yield swi ?
+                            start_workitems[node_name] = swi
 
-            for swi in start_workitems.values():
-                yield swi
+        return start_workitems
 
 
 class IntermediateThrowEventDefinition(EventDefinition):
