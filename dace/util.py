@@ -377,6 +377,7 @@ def always_false(context, request):
     return False, _('Default validation')
 
 
+@request_memoize
 def getBusinessAction(context,
                       request,
                       process_id,
