@@ -519,7 +519,7 @@ def getAllBusinessAction(context,
     # Add start workitem
     for pd in allprocessdef:
         swisactions = get_start_workitems_actions(
-            pd, node_id, isautomatic=False, action_type=action_type)
+            pd, node_id, isautomatic=isautomatic, action_type=action_type)
         allactions.extend(action for action in swisactions
                           if action.validate_mini(context, request)[0])
 
@@ -528,16 +528,18 @@ def getAllBusinessAction(context,
 
 @request_memoize
 def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
-    wi = pd.start_process(node_id).get(node_id, None)
-    if wi:
+    # node_id can be None, so we need to iterate on all wis
+    wis = (wi for wi in pd.start_process(node_id).values() if wi)
+    actions = []
+    for wi in wis:
         swisactions = [action for action in wi.actions
                        if (not isautomatic or
                            (isautomatic and action.isautomatic)) and
                           (action_type is None or
                            action._class_.__name__ == action_type.__name__)]
-        return swisactions
+        actions.extend(swisactions)
 
-    return []
+    return actions
 
 
 def getWorkItem(context, request, process_id, node_id):
