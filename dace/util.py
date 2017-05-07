@@ -410,14 +410,10 @@ def getBusinessAction(context,
     pd = def_container.get_definition(process_id)
     # Add start workitem
     if not pd.isControlled:
-        s_wi = pd.start_process(node_id)[node_id]
-        if s_wi:
-            swisactions = (action for action in s_wi.actions
-                           if action_type is None or \
-                              action._class_.__name__ == action_type.__name__)
-            # yes there is really an attribute named _class_
-            allactions.extend(action for action in swisactions
-                              if action.validate_mini(context, request)[0])
+        swisactions = get_start_workitems_actions(
+            pd, node_id, isautomatic=False, action_type=action_type)
+        allactions.extend(action for action in swisactions
+                          if action.validate_mini(context, request)[0])
 
     if allactions:
         return allactions
@@ -523,7 +519,7 @@ def getAllBusinessAction(context,
     # Add start workitem
     for pd in allprocessdef:
         swisactions = get_start_workitems_actions(
-            pd, node_id, isautomatic, action_type)
+            pd, node_id, isautomatic=False, action_type=action_type)
         allactions.extend(action for action in swisactions
                           if action.validate_mini(context, request)[0])
 
@@ -532,14 +528,16 @@ def getAllBusinessAction(context,
 
 @request_memoize
 def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
-    wis = (wi for wi in pd.start_process(node_id).values() if wi)
-    for wi in wis:
-        swisactions = (action for action in wi.actions
+    wi = pd.start_process(node_id).get(node_id, None)
+    if wi:
+        swisactions = [action for action in wi.actions
                        if (not isautomatic or
                            (isautomatic and action.isautomatic)) and
                           (action_type is None or
-                           action._class_.__name__ == action_type.__name__))
-        yield from swisactions
+                           action._class_.__name__ == action_type.__name__)]
+        return swisactions
+
+    return []
 
 
 def getWorkItem(context, request, process_id, node_id):
