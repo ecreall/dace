@@ -27,9 +27,7 @@ from substanced.interfaces import IUserLocator
 from substanced.principal import DefaultUserLocator
 from substanced.util import (
     find_objectmap,
-    find_catalog as fcsd,
     get_oid,
-    find_service as fssd,
     BrokenWrapper)
 
 from dace.interfaces import (
@@ -259,14 +257,12 @@ def get_obj(oid, only_exists=False):
     return obj
 
 
-def find_catalog(name=None):
-    resource = getSite()
-    return fcsd(resource, name)
+def find_catalog(name):
+    return get_current_request().root['catalogs'].get(name, None)
 
 
-def find_service(name=None):
-    resource = getSite()
-    return fssd(resource, name)
+def find_service(name):
+    return get_current_request().root.get(name, None)
 
 
 def allSubobjectsOfType(root=None, interface=None):
