@@ -9,12 +9,12 @@ import random
 
 from pyramid.threadlocal import get_current_request
 
-from substanced.util import get_oid, find_service
+from substanced.util import get_oid
 from substanced.principal import User
 
 from dace.relations import connect, disconnect, find_relations
 from dace.objectofcollaboration.principal import Group
-from dace.util import getSite
+from dace.util import getSite, find_service
 from .role import DACE_ROLES, Anonymous as RoleAnonymous
 
 
@@ -71,7 +71,7 @@ def get_roles(user=None, obj=None,
             u'target_id': get_oid(obj)}
     opts[u'reftype'] = 'Role'
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
-    principals = find_service(root, 'principals')
+    principals = find_service('principals')
     sd_admin = principals['users']['admin']
     if sd_admin is user and 'Admin' not in roles:
         roles.append('Admin')
@@ -184,7 +184,7 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         #TODO use cookies to find roles
 
     if 'Admin' in  normalized_roles:
-        principals = find_service(root, 'principals')
+        principals = find_service('principals')
         sd_admin = principals['users']['admin']
         if sd_admin is user:
             return True
@@ -232,7 +232,7 @@ def has_any_roles(user=None,
         return RoleAnonymous.name in normalized_roles
 
     if 'Admin' in  normalized_roles:
-        principals = find_service(root, 'principals')
+        principals = find_service('principals')
         sd_admin = principals['users']['admin']
         if sd_admin is user:
             return True
@@ -339,7 +339,7 @@ def get_access_keys(user, root=None, to_exclude=[]):
     if isinstance(user, Anonymous):
         return ['anonymous']
 
-    principals = find_service(user, 'principals')
+    principals = find_service('principals')
     sd_admin = principals['users']['admin']
     pricipal_root = getSite()
     if root is None:
