@@ -57,7 +57,6 @@ class RequestMemojito(object):
             if val is _marker:
                 val = func(*args, **kwargs)
                 cache[key] = val
-                setattr(request, self.propname, cache)
             return val
         return memogetter
 
