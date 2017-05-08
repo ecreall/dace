@@ -71,6 +71,7 @@ def getBusinessActionValidator(action_cls):
     return BusinessActionValidator
 
 
+@request_memoize
 def validate_action(action, context, request, **kw):
     if not context.__provides__(action.context):
         return False, _('Context is not valid')
