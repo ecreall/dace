@@ -48,7 +48,7 @@ class TestsSignal(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
@@ -60,7 +60,7 @@ class TestsSignal(FunctionalTests):
                 sc = IntermediateCatchEventDefinition(
                     SignalEventDefinition(ref_signal)),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'a'),
                 TransitionDefinition('g1', 'sc'),
@@ -122,7 +122,7 @@ class TestsSignal(FunctionalTests):
 
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 g1 = ParallelGatewayDefinition(),
                 g2 = ParallelGatewayDefinition(),
@@ -135,7 +135,7 @@ class TestsSignal(FunctionalTests):
                 sc = IntermediateCatchEventDefinition(
                     SignalEventDefinition(ref_signal)),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'b'),
                 TransitionDefinition('b', 'g1'),
                 TransitionDefinition('g1', 'a'),

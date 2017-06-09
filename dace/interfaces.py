@@ -159,7 +159,7 @@ class IProcessDefinition(Interface):
 
         """
 
-    def defineTransitions(*transitions):
+    def define_transitions(*transitions):
         """Add transition definitions
 
         The transitions are ITransition objects.

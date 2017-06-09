@@ -51,7 +51,7 @@ class ProcessDefinition(Entity):
     def init_definition(self):
         pass
 
-    def defineNodes(self, **nodes):
+    def define_nodes(self, **nodes):
         self._dirty()
         for name, node in nodes.items():
             node.id = self.id + '.' + name
@@ -60,7 +60,7 @@ class ProcessDefinition(Entity):
             if hasattr(node, 'init_process_contexts'):
                 node.init_process_contexts(self)
 
-    def defineTransitions(self, *transitions):
+    def define_transitions(self, *transitions):
         self._dirty()
         for transition in transitions:
             transition.__name__ = transition.id
@@ -91,9 +91,9 @@ class ProcessDefinition(Entity):
 
             p_g = ParallelGatewayDefinition()
             if empty_start_event not in self.nodes:
-                self.defineNodes(emptystart=empty_start_event, startpg=p_g)
+                self.define_nodes(emptystart=empty_start_event, startpg=p_g)
             else:
-                self.defineNodes(startpg=p_g)
+                self.define_nodes(startpg=p_g)
 
             oldtransitions = list(empty_start_event.outgoing)
             for oldtransition in oldtransitions:
@@ -106,7 +106,7 @@ class ProcessDefinition(Entity):
                     'startpg', o_n.__name__), )
 
         if new_transitions:
-            self.defineTransitions(*new_transitions)
+            self.define_transitions(*new_transitions)
             new_transitions = ()
 
         orphan_nodes = [node for node in self.nodes
@@ -125,9 +125,9 @@ class ProcessDefinition(Entity):
 
             e_g = ExclusiveGatewayDefinition()
             if empty_end_event not in self.nodes:
-                self.defineNodes(emptyend=empty_end_event, endeg=e_g)
+                self.define_nodes(emptyend=empty_end_event, endeg=e_g)
             else:
-                self.defineNodes(endeg=e_g)
+                self.define_nodes(endeg=e_g)
 
             oldtransitions = list(empty_end_event.incoming)
             for oldtransition in oldtransitions:
@@ -140,7 +140,7 @@ class ProcessDefinition(Entity):
                     o_n.__name__, 'endeg'), )
 
         if new_transitions:
-            self.defineTransitions(*new_transitions)
+            self.define_transitions(*new_transitions)
 
         self._normalize_startevents()
         self._normalize_endevents()
@@ -150,12 +150,12 @@ class ProcessDefinition(Entity):
         for s_e in start_events:
             if len(s_e.outgoing) > 1:
                 p_g = ParallelGatewayDefinition()
-                self.defineNodes(mergepg=p_g)
+                self.define_nodes(mergepg=p_g)
                 oldtransitions = list(s_e.outgoing)
                 for oldtransition in oldtransitions:
                     oldtransition.set_source(p_g)
 
-                self.defineTransitions(TransitionDefinition(
+                self.define_transitions(TransitionDefinition(
                     s_e.__name__, 'mergepg'))
 
     def _normalize_endevents(self):
@@ -163,12 +163,12 @@ class ProcessDefinition(Entity):
         for e_e in end_events:
             if len(e_e.incoming) > 1:
                 e_g = ExclusiveGatewayDefinition()
-                self.defineNodes(mergeeg=e_g)
+                self.define_nodes(mergeeg=e_g)
                 oldtransitions = list(e_e.incoming)
                 for oldtransition in oldtransitions:
                     oldtransition.set_target(e_g)
 
-                self.defineTransitions(TransitionDefinition(
+                self.define_transitions(TransitionDefinition(
                     'mergeeg', e_e.__name__))
 
     def _get_start_events(self):

@@ -60,7 +60,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -71,7 +71,7 @@ class TestsWorkItems(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'd'),
@@ -106,14 +106,14 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
                 d = ActivityDefinition(),
                 g2 = ParallelGatewayDefinition(),
                 g3 = ExclusiveGatewayDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('g2', 'a'),
                 TransitionDefinition('g2', 'g3'),
                 TransitionDefinition('d', 'g3'),
@@ -144,14 +144,14 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 a = ActivityDefinition(),
                 e = EndEventDefinition(),
                 d = ActivityDefinition(),
                 s = StartEventDefinition(),
                 g3 = ExclusiveGatewayDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'a'),
                 TransitionDefinition('s', 'g3'),
                 TransitionDefinition('s', 'd'),
@@ -277,7 +277,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -288,7 +288,7 @@ class TestsWorkItems(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'd'),
@@ -327,7 +327,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 g = ExclusiveGatewayDefinition(),
@@ -335,7 +335,7 @@ class TestsWorkItems(FunctionalTests):
                 c = ActivityDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'a'),
                 TransitionDefinition('a', 'g'),
                 TransitionDefinition('g', 'b'),
@@ -423,7 +423,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -436,7 +436,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g'),
                 TransitionDefinition('g', 'g0'),
                 TransitionDefinition('g', 'g1'),
@@ -515,7 +515,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -528,7 +528,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'p0'),
                 TransitionDefinition('p0', 'g0'),
                 TransitionDefinition('p0', 'g1'),
@@ -634,7 +634,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -648,7 +648,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'p0'),
                 TransitionDefinition('p0', 'g0'),
                 TransitionDefinition('p0', 'g1'),
@@ -816,7 +816,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 g = ParallelGatewayDefinition(),
@@ -826,7 +826,7 @@ class TestsWorkItems(FunctionalTests):
         )
         gb_transition = TransitionDefinition('g', 'b', g_b_condition)
         gc_transition = TransitionDefinition('g', 'c', g_c_condition)
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'a'),
                 TransitionDefinition('a', 'g'),
                 gb_transition,
@@ -921,7 +921,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -934,7 +934,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'p0'),
                 TransitionDefinition('p0', 'g0'),
                 TransitionDefinition('g0', 'p'),
@@ -1017,7 +1017,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 f = ActivityDefinition(),
@@ -1032,7 +1032,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'f'),
                 TransitionDefinition('f', 'p0'),
                 TransitionDefinition('p0', 'g0'),
@@ -1168,7 +1168,7 @@ class TestsWorkItems(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 f = ActivityDefinition(),
@@ -1183,7 +1183,7 @@ class TestsWorkItems(FunctionalTests):
                 g2 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'f'),
                 TransitionDefinition('f', 'p0'),
                 TransitionDefinition('p0', 'g0'),
@@ -1493,7 +1493,7 @@ class TestGatewayChain(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -1504,7 +1504,7 @@ class TestGatewayChain(FunctionalTests):
                 g4 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'd'),
@@ -1571,7 +1571,7 @@ class TestGatewayChain(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -1582,7 +1582,7 @@ class TestGatewayChain(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'd'),
@@ -1645,7 +1645,7 @@ class TestGatewayChain(FunctionalTests):
         pd = ProcessDefinition(**{'id':u'sample'})
         pd.is_unique = True
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 b = ActivityDefinition(),
@@ -1654,7 +1654,7 @@ class TestGatewayChain(FunctionalTests):
                 g = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'p'),
                 TransitionDefinition('p', 'a'),
                 TransitionDefinition('p', 'b'),
@@ -1714,10 +1714,10 @@ class EventsTests(FunctionalTests):
     def xtest_conditional_start_event(self):
         pd = self._process_a_g_bc()
         # override start event s with a condition (this is a rule start)
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(ConditionalEventDefinition(condition=return_false)),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'a'),
         )
 
@@ -1748,12 +1748,12 @@ class EventsTests(FunctionalTests):
         ced = ConditionalEventDefinition(condition=return_false)
         from dace.processinstance import event
         self.assertEqual(len(event.callbacks), 0)
-        pd.defineNodes(
+        pd.define_nodes(
                 a = ActivityDefinition(),
                 cie = IntermediateCatchEventDefinition(ced),
                 b = ActivityDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('a', 'cie'),
                 TransitionDefinition('cie', 'b'),
         )
@@ -1810,14 +1810,14 @@ class EventsTests(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(),
                 tie = IntermediateCatchEventDefinition(ted),
                 b = ActivityDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'a'),
                 TransitionDefinition('a', 'tie'),
                 TransitionDefinition('tie', 'b'),

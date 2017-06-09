@@ -76,7 +76,7 @@ class TestsBusinessAction(FunctionalTests):
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
         y = ActivityDefinition()
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 x = ActivityDefinition(behaviors=[ActionX]),
                 y = y,
@@ -87,7 +87,7 @@ class TestsBusinessAction(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'z'),
@@ -953,7 +953,7 @@ class TestsPotentialActions(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 a = ActivityDefinition(behaviors=[ActionA]),
                 b = ActivityDefinition(behaviors=[ActionB]),
@@ -962,7 +962,7 @@ class TestsPotentialActions(FunctionalTests):
                 g1 = ExclusiveGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g0'),
                 TransitionDefinition('g0', 'a'),
                 TransitionDefinition('a', 'b'),
@@ -1084,7 +1084,7 @@ class TestsSubProcess(FunctionalTests):
         sp = ProcessDefinition(**{'id':u'sub_process'})
         sp.is_sub_process = True
         self.app['sub_process'] = sp
-        sp.defineNodes(
+        sp.define_nodes(
                 ss = StartEventDefinition(),
                 sa = ActivityDefinition(),
                 sg = ExclusiveGatewayDefinition(),
@@ -1092,7 +1092,7 @@ class TestsSubProcess(FunctionalTests):
                 sc = ActivityDefinition(),
                 se = EndEventDefinition(),
         )
-        sp.defineTransitions(
+        sp.define_transitions(
                 TransitionDefinition('ss', 'sa'),
                 TransitionDefinition('sa', 'sg'),
                 TransitionDefinition('sg', 'sb'),
@@ -1103,7 +1103,7 @@ class TestsSubProcess(FunctionalTests):
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
         spaction = SubProcessDefinition(pd=sp)
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 sp = spaction,
                 y = ActivityDefinition(),
@@ -1114,7 +1114,7 @@ class TestsSubProcess(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'z'),

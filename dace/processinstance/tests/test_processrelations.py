@@ -56,7 +56,7 @@ class TestsProcessRelations(FunctionalTests):
         """
         pd = ProcessDefinition(**{'id':u'sample'})
         self.app['sample'] = pd
-        pd.defineNodes(
+        pd.define_nodes(
                 s = StartEventDefinition(),
                 x = ActivityDefinition(behaviors=[ActionX]),
                 y = ActivityDefinition(behaviors=[ActionY]),
@@ -67,7 +67,7 @@ class TestsProcessRelations(FunctionalTests):
                 g4 = ParallelGatewayDefinition(),
                 e = EndEventDefinition(),
         )
-        pd.defineTransitions(
+        pd.define_transitions(
                 TransitionDefinition('s', 'g1'),
                 TransitionDefinition('g1', 'g2'),
                 TransitionDefinition('g1', 'z'),
