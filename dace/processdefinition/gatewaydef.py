@@ -1,4 +1,4 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
@@ -7,7 +7,6 @@
 from dace.processinstance.gateway import (
     ExclusiveGateway, ParallelGateway, InclusiveGateway)
 from .core import FlowNodeDefinition, Path
-
 
 
 class GatewayDefinition(FlowNodeDefinition):
@@ -24,13 +23,12 @@ class ExclusiveGatewayDefinition(GatewayDefinition):
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
                 source_transaction.remove_subtransaction(
-                                  source_path.transaction)
-                source_transaction.start_subtransaction(type='Find', 
-                                                     path=initial_path, 
-                                                     initiator=self)
+                    source_path.transaction)
+                source_transaction.start_subtransaction(
+                    type='Find', path=initial_path, initiator=self)
                 initial_path.add_transition(transition)
                 startable_paths = nodedef.find_startable_paths(
-                                             initial_path, self)
+                    initial_path, self)
                 for startable_path in startable_paths:
                     yield startable_path
 
@@ -48,7 +46,9 @@ class ParallelGatewayDefinition(GatewayDefinition):
         multiple_target = test_path.get_multiple_target
         if multiple_target:
             for node in multiple_target:
-                if isinstance(self.process[node.__name__], ExclusiveGatewayDefinition):
+                if isinstance(
+                        self.process[node.__name__],
+                        ExclusiveGatewayDefinition):
                     return
 
         alllatest_transitions = []
@@ -71,13 +71,12 @@ class ParallelGatewayDefinition(GatewayDefinition):
                         initial_path = path.clone()
                         source_transaction = path.transaction.__parent__
                         source_transaction.remove_subtransaction(
-                                                 path.transaction)
-                        source_transaction.start_subtransaction(type='Find', 
-                                                            path=initial_path, 
-                                                            initiator=self)
+                            path.transaction)
+                        source_transaction.start_subtransaction(
+                            type='Find', path=initial_path, initiator=self)
                         initial_path.add_transition(transition)
                         startable_paths = nodedef.find_startable_paths(
-                                                     initial_path, self)
+                            initial_path, self)
                         for startable_path in startable_paths:
                             yield startable_path
 

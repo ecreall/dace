@@ -1,16 +1,18 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
 
 from .core import FlowNodeDefinition, Path
-from dace.processinstance.event import (StartEvent, TerminateEvent, EndEvent,
+from dace.processinstance.event import (
+    StartEvent, TerminateEvent, EndEvent,
     TimerEvent, SignalEvent, IntermediateCatchEvent,
     IntermediateThrowEvent, ConditionalEvent)
 from dace.processinstance.workitem import StartWorkItem
 
 from dace.processinstance.core import EventHandler
+
 
 class EventHandlerDefinition(FlowNodeDefinition):
     factory = EventHandler
@@ -21,13 +23,13 @@ class EventHandlerDefinition(FlowNodeDefinition):
 
 class EventDefinition(FlowNodeDefinition):
 
-    def __init__(self, eventKind=None, **kwargs):
+    def __init__(self, event_kind=None, **kwargs):
         super(EventDefinition, self).__init__( **kwargs)
-        self.eventKind = eventKind
+        self.event_kind = event_kind
         self.contexts = ()
 
     def create(self):
-        event_kind = self.eventKind and self.eventKind.create() or None
+        event_kind = self.event_kind and self.event_kind.create() or None
         return self.factory(self, event_kind)
 
 
@@ -36,7 +38,7 @@ class StartEventDefinition(EventDefinition):
 
     def start_process(self, transaction):
         start_workitems = {}
-        if self.eventKind is None:
+        if self.event_kind is None:
             for transition in self.outgoing:
                 if transition.condition(None):
                     nodedef = self.process[transition.target_id]
@@ -77,9 +79,9 @@ class SignalEventDefinition(EventKindDefinition):
 
     factory = SignalEvent
 
-    def __init__(self, refSignal=None, **kwargs):
-        super(SignalEventDefinition, self).__init__( **kwargs)
-        self.refSignal = refSignal
+    def __init__(self, ref_signal=None, **kwargs):
+        super(SignalEventDefinition, self).__init__(**kwargs)
+        self.ref_signal = ref_signal
 
 
 class TerminateEventDefinition(EventKindDefinition):

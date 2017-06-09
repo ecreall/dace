@@ -11,7 +11,7 @@ _marker = object()
 
 
 class SharedUniqueProperty(Descriptor):
-    
+
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -20,7 +20,7 @@ class SharedUniqueProperty(Descriptor):
 
     def _get(self, obj):
         return get_ref(obj.__dict__.get(self.key, None))
-        
+
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
@@ -51,8 +51,8 @@ class SharedUniqueProperty(Descriptor):
         current_value = self._get(obj)
         if current_value and current_value == value:
             if initiator and self.opposite:
-                opposite_property = getattr(value.__class__,
-                                      self.opposite, _marker)
+                opposite_property = getattr(
+                    value.__class__, self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 

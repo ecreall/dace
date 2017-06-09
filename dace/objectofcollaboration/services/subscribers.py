@@ -36,7 +36,7 @@ def add_process_definitions(event):
     app = event.object
     registry = app.registry
     settings = getattr(registry, 'settings', {})
-    request = Request.blank('/application_created') # path is meaningless
+    request = Request.blank('/application_created')  # path is meaningless
     request.registry = registry
     manager.push({'registry': registry, 'request': request})
     root = app.root_factory(request)
@@ -47,11 +47,11 @@ def add_process_definitions(event):
     # autosync is True only in development mode.
     autosync = asbool(
         os.environ.get(
-        'SUBSTANCED_CATALOGS_AUTOSYNC',
-        settings.get(
-            'substanced.catalogs.autosync',
-            settings.get('substanced.autosync_catalogs', False) # bc
-            )))
+            'SUBSTANCED_CATALOGS_AUTOSYNC',
+            settings.get(
+                'substanced.catalogs.autosync',
+                settings.get('substanced.autosync_catalogs', False)  # bc
+                )))
     try:
         # This code block must be in sync with what we do in
         # process_definitions_evolve minus the autosync conditions

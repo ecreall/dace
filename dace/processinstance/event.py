@@ -31,6 +31,7 @@ def push_event_callback_after_commit(event, callback, callback_params, deadline)
     # Create job object now before the end of the interaction so we have
     # the logged in user.
     job = EventJob('system')
+
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.
         if status:
@@ -41,19 +42,20 @@ def push_event_callback_after_commit(event, callback, callback_params, deadline)
             dc = DelayedCallback(job, deadline, event._p_oid)
             dc.start()
 
-    transaction.get().addAfterCommitHook(after_commit_hook,
-            args=(event, callback, callback_params, deadline, job))
+    transaction.get().addAfterCommitHook(
+        after_commit_hook,
+        args=(event, callback, callback_params, deadline, job))
 
 
 class Event(BehavioralFlowNode, FlowNode):
 
-    def __init__(self, definition, eventKind, **kwargs):
+    def __init__(self, definition, event_kind, **kwargs):
         super(Event, self).__init__(definition, **kwargs)
-        self.eventKind = eventKind
+        self.event_kind = event_kind
         self.execution_prepared = False
         self.execution_finished = False
-        if eventKind:
-            eventKind.event = self
+        if event_kind:
+            event_kind.event = self
 
     def __call__(self, transition):
         pass
@@ -83,10 +85,10 @@ class Event(BehavioralFlowNode, FlowNode):
         super(Event, self).replay_path(decision, transaction)
 
     def validate(self):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     def execute(self):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     def stop(self):
         self.execution_prepared = False
@@ -106,36 +108,36 @@ class Throwing(Event):
                 self.stop()
 
     def execute(self):
-        if self.eventKind is None:
+        if self.event_kind is None:
             return
 
-        return self.eventKind.execute()
+        return self.event_kind.execute()
 
 
 class Catching(Event):
 
     def validate(self):
-        if self.eventKind is None:
+        if self.event_kind is None:
             return True
 
-        return self.eventKind.validate()
+        return self.event_kind.validate()
 
     def prepare_for_execution(self):
         # If it's a empty StartEvent, execute the callback directly.
         if not self.execution_prepared:
             super(Catching, self).prepare_for_execution()
-            if self.eventKind is None:
+            if self.event_kind is None:
                 if self.validate():
                     self.start(None)
                 else:
                     self.stop()
             else:
-                self.eventKind.prepare_for_execution()
+                self.event_kind.prepare_for_execution()
 
     def stop(self):
         super(Catching, self).stop()
-        if self.eventKind is not None:
-            self.eventKind.stop()
+        if self.event_kind is not None:
+            self.event_kind.stop()
 
 
 class StartEvent(Catching):
@@ -155,19 +157,18 @@ class StartEvent(Catching):
 
 
 class IntermediateThrowEvent(Throwing):
-    pass # pragma: no cover
+    pass  # pragma: no cover
 
 
 class IntermediateCatchEvent(Catching):
-    pass # pragma: no cover
+    pass  # pragma: no cover
 
 
 class EndEvent(Throwing):
 
-
     def finish_behavior(self, work_item):
         super(EndEvent, self).finish_behavior(work_item)
-        if isinstance(self.eventKind, TerminateEvent):
+        if isinstance(self.event_kind, TerminateEvent):
             return
         # Remove all workitems from process
         for node in self.process.nodes:
@@ -181,7 +182,7 @@ class EndEvent(Throwing):
         registry = get_current_registry()
         registry.notify(ProcessFinished(self))
         current_process = self.process
-        if current_process.definition.isSubProcess:
+        if current_process.definition.is_sub_process:
             try:
                 request = get_system_request()
                 root_process = current_process.attachedTo.process
@@ -195,11 +196,11 @@ class EndEvent(Throwing):
                 # the root process is a volatile subprocess (is removed)
                 log.warning(error)
 
-        if current_process.definition.isVolatile and \
+        if current_process.definition.is_volatile and \
            getattr(current_process, '__property__', None):
             getattr(current_process.__parent__.__class__,
                     current_process.__property__).remove(
-                        current_process.__parent__, current_process)
+                current_process.__parent__, current_process)
 
 
 class EventKind(object):
@@ -209,18 +210,18 @@ class EventKind(object):
         return True
 
     def prepare_for_execution(self, restart=False):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     # cette operation est appelee par les evenements "Throwing"
     def execute(self):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     def stop(self):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     @property
     def definition(self):
-        return self.event.definition.eventKind
+        return self.event.definition.event_kind
 
 
 class ConditionalEvent(EventKind):
@@ -247,7 +248,8 @@ class ConditionalEvent(EventKind):
             self._push_callback()
 
     def _push_callback(self):
-        push_event_callback_after_commit(self.event, self._callback, (), 1000)
+        push_event_callback_after_commit(
+            self.event, self._callback, (), 1000)
 
     def stop(self):
         get_socket().send_pyobj(('stop', self.event._p_oid))
@@ -272,6 +274,7 @@ class Listener(object):
     def start(self):
         identifier = self.identifier
         job = self.job
+
         def execute_next(msg):
             # We can't use zodb object from outside here because
             # this code is executed in another thread (eventloop)
@@ -302,7 +305,7 @@ class SignalEvent(EventKind):
     _msg = None
 
     def validate(self):
-        return self.definition.refSignal(self.event.process) == self._msg
+        return self.definition.ref_signal(self.event.process) == self._msg
 
     def prepare_for_execution(self, restart=False):
         job = EventJob('system')
@@ -327,7 +330,7 @@ class SignalEvent(EventKind):
                 self.event.stop()
 
     def execute(self):
-        ref = self.definition.refSignal(self.event.process)
+        ref = self.definition.ref_signal(self.event.process)
         ctx = get_zmq_context()
         s = ctx.socket(zmq.PUB)
         s.bind(get_signal_socket_url())
@@ -348,7 +351,8 @@ class TimerEvent(EventKind):
     def _prepare_time(self, time, restart=False):
         time_attr = getattr(self, time, None)
         if is_broken(time_attr) or time_attr is None or not restart:
-            setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO
+            setattr(self, time, getattr(self.definition, time)(self.event.process))
+            #TODO
 
     def _start_time(self, restart=False):
         """Return start time in milliseconds.

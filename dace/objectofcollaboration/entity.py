@@ -11,7 +11,7 @@ from persistent.list import PersistentList
 from dace.interfaces import IEntity
 from dace.objectofcollaboration.object import Object
 from dace.descriptors import SharedUniqueProperty, SharedMultipleProperty
-from dace.util import getAllBusinessAction
+from dace.util import get_all_business_actions
 
 
 class ActionCall(object):
@@ -71,7 +71,7 @@ class Entity(Object):
 
     @property
     def actions(self):
-        allactions = getAllBusinessAction(self)
+        allactions = get_all_business_actions(self)
         return [ActionCall(a, self) for a in allactions]
 
     def setstate(self, state):

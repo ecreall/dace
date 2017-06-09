@@ -1,4 +1,4 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
@@ -252,7 +252,7 @@ class SearchableObject(Adapter):
 
     def _get_oids(self, obj):
         result = []
-        if getattr(obj, '__parent__' , None) is None:
+        if getattr(obj, '__parent__', None) is None:
             return [0]
 
         result.append(get_oid(obj, None))
@@ -284,8 +284,8 @@ class StartWorkItemSearch(Adapter):
         return [a.context.__identifier__ for a in self.context.actions]
 
     def isautomatic(self):
-        for a in self.context.actions:
-            if a.isautomatic:
+        for action in self.context.actions:
+            if action.isautomatic:
                 return True
 
         return False
@@ -336,8 +336,8 @@ class DecisionWorkItemSearch(Adapter):
         return False
 
     def issystem(self):
-        for a in self.context.actions:
-            if a.issystem:
+        for action in self.context.actions:
+            if action.issystem:
                 return True
 
         return False
@@ -412,7 +412,7 @@ class BusinessActionSearch(Adapter):
         return [get_oid(self.context.__parent__.__parent__, None)]
 
     def context_provides(self):
-        return [i.__identifier__ \
+        return [i.__identifier__
                 for i in Declaration(self.context.context).flattened()]
 
     def context_id(self):

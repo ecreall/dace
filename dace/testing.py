@@ -47,10 +47,10 @@ class FunctionalTests(unittest.TestCase):
                     'substanced.initial_login': 'admin',
                     'substanced.initial_password': 'admin',
                     'pyramid.includes': [
-            'pyramid_tm',
-            'substanced',
-            'dace',
-        ]}
+                        'pyramid_tm',
+                        'substanced',
+                        'dace',
+                    ]}
 
         app = main({}, **settings)
         self.db = app.registry._zodb_databases['']

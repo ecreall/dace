@@ -12,6 +12,7 @@ from dace.descriptors.base import Descriptor, ref, get_ref
 _marker = object()
 _empty = ()
 
+
 class SharedMultipleProperty(Descriptor):
 
     def __init__(self, propertyref='', opposite=None, isunique=False):
@@ -39,13 +40,16 @@ class SharedMultipleProperty(Descriptor):
             results = getattr(obj, self.v_attr)  # without third arg to trigger AttributeError
             try:
                 # we need to check if each object has not been removed from their container
-                return [o for o in results if getattr(o, '__name__', None) is not None]
+                return [o for o in results
+                        if getattr(o, '__name__', None) is not None]
             except POSKeyError:
                 # in case of zeopack (see comments in base.py:ResourceRef)
                 raise AttributeError
         except AttributeError:
             # We don't use "return self._get(obj)[0]" for perf reason
-            results = [e for e in (get_ref(o) for o in obj.__dict__.get(self.key, _empty)) if e is not None]
+            results = [e for e in (get_ref(o)
+                       for o in obj.__dict__.get(self.key, _empty))
+                       if e is not None]
             setattr(obj, self.v_attr, results)
             return results
 
@@ -101,8 +105,8 @@ class SharedMultipleProperty(Descriptor):
 
         for value in values:
             if initiator and self.opposite:
-                opposite_property = getattr(value.__class__,
-                                       self.opposite, _marker)
+                opposite_property = getattr(
+                    value.__class__, self.opposite, _marker)
                 if opposite_property is not _marker:
                     opposite_property.remove(value, obj, False)
 

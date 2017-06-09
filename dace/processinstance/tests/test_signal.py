@@ -80,8 +80,8 @@ class TestsSignal(FunctionalTests):
         start_wi = pd.start_process('sc')['sc']
         sc_wi, proc = start_wi.consume()
         sc_wi.start_test_activity()
-        self.assertEqual(len(proc.getWorkItems()), 2)
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
+        self.assertEqual(len(proc.get_work_items()), 2)
+        self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.a', 'sample.sc'])
 
     def test_signal_event(self):
         pd = self._process_definition()
@@ -96,13 +96,13 @@ class TestsSignal(FunctionalTests):
         import time
         time.sleep(5)
         transaction.begin()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
+        self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.d'])
 
-        d_wi = proc.getWorkItems()['sample.d']
-        self.assertEqual(len(proc.getWorkItems()), 1)
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
+        d_wi = proc.get_work_items()['sample.d']
+        self.assertEqual(len(proc.get_work_items()), 1)
+        self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.d'])
         d_wi.consume().start_test_activity()
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
 
     def _process_definition_with_activity_after_start_event(self):
         """
@@ -163,7 +163,7 @@ class TestsSignal(FunctionalTests):
         b_wi, proc = start_wi.consume()
         b_wi.start_test_activity()
         transaction.commit()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.a', 'sample.sc'])
+        self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.a', 'sample.sc'])
         # simulate application shutdown
         import time
         # we need to wait ZMQStream to start on ioloop side and read
@@ -181,7 +181,7 @@ class TestsSignal(FunctionalTests):
         time.sleep(1)
         self.assertEqual(len(event.callbacks), 1)
 
-        a_wi = proc.getWorkItems()['sample.a']
+        a_wi = proc.get_work_items()['sample.a']
         a_wi.consume().start_test_activity()
         # we need to commit so the catching event Job 
         # see the modified process.
@@ -190,4 +190,4 @@ class TestsSignal(FunctionalTests):
 
         time.sleep(5)
         transaction.begin()
-        self.assertEqual(sorted(proc.getWorkItems().keys()), ['sample.d'])
+        self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.d'])

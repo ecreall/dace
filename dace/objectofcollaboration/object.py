@@ -87,20 +87,21 @@ class Object(Folder):
 
             if isinstance(name, bytes):
                 name = name.decode()
-                
+
         new_name = name_chooser(self.data, name)
         return new_name
 
     def add(self, name, other, send_events=True, reserved_names=(),
             duplicating=None, moving=None, loading=False, registry=None):
         name = self.choose_name(name, other)
-        super(Object, self).add(name, other, send_events, reserved_names,
-                duplicating, moving, loading, registry)
+        super(Object, self).add(
+            name, other, send_events, reserved_names,
+            duplicating, moving, loading, registry)
 
     def move(self, name, other, newname=None, registry=None):
         """
         Move a subobject named ``name`` from this folder to the folder
-        represented by ``other``.  `other`` that represent a tuple 
+        represented by ``other``.  `other`` that represent a tuple
         (the object target, property name). If ``newname`` is not none, it is used as
         the target object name; otherwise the existing subobject name is
         used.
@@ -125,8 +126,8 @@ class Object(Folder):
         objtomove = self[name]
         obj_property = getattr(self[name], '__property__', None)
         if not property_name and not obj_property:
-            objtomove = super(Object, self).move(name, target, 
-                                              newname, registry)
+            objtomove = super(Object, self).move(
+                name, target, newname, registry)
         elif property_name and obj_property:
             self.delfromproperty(obj_property, objtomove, target)
             objtomove.__name__ = newname

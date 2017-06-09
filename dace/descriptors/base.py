@@ -79,5 +79,5 @@ def ref(resource):
 def get_ref(obj):
     if isinstance(obj, ResourceRef):
         return obj()
-    else :
+    else:
         return obj

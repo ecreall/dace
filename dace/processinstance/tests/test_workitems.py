@@ -10,7 +10,7 @@ from pyramid.threadlocal import get_current_registry
 
 from dace.interfaces import IProcessDefinition, IStartWorkItem
 from dace.catalog.interfaces import ISearchableObject
-from dace.util import getWorkItem, queryWorkItem
+from dace.util import get_work_item, query_work_item
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition
@@ -345,15 +345,15 @@ class TestsWorkItems(FunctionalTests):
         self.config.scan(example)
         return pd
 
-    def test_getWorkItem_startworkitem(self):
+    def test_get_work_item_startworkitem(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        wi = queryWorkItem(None, self.request, 'sample', 'a')
+        wi = query_work_item(None, self.request, 'sample', 'a')
         self.assertIsNot(wi, None)
         self.assertTrue(IStartWorkItem.providedBy(wi))
-        wi = queryWorkItem(None, self.request, 'sample', 'b')
+        wi = query_work_item(None, self.request, 'sample', 'b')
         self.assertIs(wi, None)
-        wi = queryWorkItem(None, self.request, 'sample', 'c')
+        wi = query_work_item(None, self.request, 'sample', 'c')
         self.assertIs(wi, None)
 
 
@@ -368,7 +368,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIs(wi.node, proc['a'])
 
         wi.node.finish_behavior(wi)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems)
@@ -376,7 +376,7 @@ class TestsWorkItems(FunctionalTests):
 
         dwi_b = workitems['sample.b']
         wi_b = dwi_b.consume()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.b', nodes_workitems)
@@ -384,7 +384,7 @@ class TestsWorkItems(FunctionalTests):
     def test_process_volatile(self):
         from dace.util import find_service
         pd = self._process_a_g_bc()
-        pd.isVolatile = True
+        pd.is_volatile = True
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')['a']
         start_swi = ISearchableObject(start_wi)
@@ -392,7 +392,7 @@ class TestsWorkItems(FunctionalTests):
         runtime = find_service('runtime')
         self.assertIs(proc.__parent__, runtime)
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
 
         dwi_b = workitems['sample.b']
         wi_b = dwi_b.consume()
@@ -467,7 +467,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_a.consume()
         self.assertEqual(u'sample.a', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -484,7 +484,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_d.consume()
         self.assertEqual(u'sample.d', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.d', nodes_workitems)
@@ -562,7 +562,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_a.consume()
         self.assertEqual(u'sample.a', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -583,7 +583,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_d.consume()
         self.assertEqual(u'sample.d', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -603,7 +603,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems)
@@ -686,7 +686,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_ea.consume()
         self.assertEqual(u'sample.ea', wi.node.id)
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
@@ -700,7 +700,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)#* 1 (G0) une seule execution: un seul find transaction (le premier find est consomme par P0)
 
         workitems['sample.b'].consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_start_complex_MultiDecision_workitem_b(self):
@@ -718,7 +718,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -731,7 +731,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
         workitems['sample.ea'].start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -744,7 +744,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
         workitems['sample.d'].consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_blocked_gateway_because_no_workitems(self):
@@ -752,7 +752,7 @@ class TestsWorkItems(FunctionalTests):
         self.def_container.add_definition(pd)
         proc = pd()
         self.app['process'] = proc
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def _test_waiting_workitem_to_finish(self):
@@ -761,7 +761,7 @@ class TestsWorkItems(FunctionalTests):
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         b_wi = workitems['sample.b']
         c_wi = workitems['sample.c']
@@ -779,27 +779,27 @@ class TestsWorkItems(FunctionalTests):
     def test_catalogued_workitems(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
         request = self.request
-        self.assertIs(b_wi, getWorkItem(None, request, 'sample', 'b'))
-        self.assertIs(c_wi, getWorkItem(None, request, 'sample', 'c'))
+        self.assertIs(b_wi, get_work_item(None, request, 'sample', 'b'))
+        self.assertIs(c_wi, get_work_item(None, request, 'sample', 'c'))
 
     def test_waiting_workitem_b_to_finish(self):
         b_wi, c_wi, proc = self._test_waiting_workitem_to_finish()
         #import pdb; pdb.set_trace()
         b_wi.consume().start_test_activity()
         #self.assertEqual(proc.workflowRelevantData.choice, "b")
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
 
 
     def test_no_start_workitem_for_pd_subprocessOnly(self):
         pd = self._process_a_g_bc()
         self.def_container.add_definition(pd)
-        start_wi = queryWorkItem(None, self.request, 'sample', 'a')
+        start_wi = query_work_item(None, self.request, 'sample', 'a')
         self.assertIsNot(start_wi, None)
-        pd.isControlled = True
-        start_wi = queryWorkItem(None, self.request, 'sample', 'a')
+        pd.is_controlled = True
+        start_wi = query_work_item(None, self.request, 'sample', 'a')
         self.assertIs(start_wi, None)
         with self.assertRaises(Forbidden):
-            start_wi = getWorkItem(None, self.request, 'sample', 'a')
+            start_wi = get_work_item(None, self.request, 'sample', 'a')
 
     def _process_a_pg_bc(self):
         """
@@ -842,27 +842,27 @@ class TestsWorkItems(FunctionalTests):
         self.def_container.add_definition(pd)
         proc = pd()
         self.app['proc'] = proc
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         b_wi = workitems['sample.b']
         b_wi.consume().start_test_activity()
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
 
     def test_condition_not_sync_transition(self):
         pd = self._process_a_pg_bc()
         self.def_container.add_definition(pd)
         proc = pd()
         self.app['proc'] = proc
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         proc.validation_c = False
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 1)
         b_wi = workitems['sample.b']
         self.assertTrue(b_wi.validate())
@@ -871,7 +871,7 @@ class TestsWorkItems(FunctionalTests):
         #Transition is not sync. b_wi must be valid
         self.assertTrue(b_wi.validate())
         b_wi.consume().start_test_activity()
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
 
 
     def test_condition_sync_transition(self):
@@ -881,12 +881,12 @@ class TestsWorkItems(FunctionalTests):
         self.def_container.add_definition(pd)
         proc = pd()
         self.app['proc'] = proc
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         proc.validation_c = False
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         b_wi = workitems['sample.b']
         self.assertTrue(b_wi.validate())
@@ -897,7 +897,7 @@ class TestsWorkItems(FunctionalTests):
         c_wi = workitems['sample.c']
         self.assertTrue(c_wi.validate())
         c_wi.consume().start_test_activity()
-        self.assertEqual(len(proc.getWorkItems()), 0)
+        self.assertEqual(len(proc.get_work_items()), 0)
 
     def  _process_start_refresh_decision(self):
         """
@@ -966,7 +966,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_ea.consume()
         self.assertEqual(u'sample.ea', wi.node.id)
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -979,7 +979,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
         workitems['sample.b'].consume()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
@@ -990,7 +990,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(len(all_workitems['sample.c']), 1)
 
         workitems['sample.b'].start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def  _process_start_complex_Parallel_process_decision(self):
@@ -1071,7 +1071,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_f.consume()
         self.assertEqual(u'sample.f', wi.node.id)
         wi.start_test_activity()
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.get_work_items().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -1079,13 +1079,13 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(u'sample.c', nodes_workitems)
         self.assertIn(u'sample.d', nodes_workitems)
         proc.bool = False
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.get_work_items().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.d', nodes_workitems)
 
         proc.bool = True
-        workitems = dict([(k,v) for k, v in proc.getWorkItems().items() if v.validate()])
+        workitems = dict([(k,v) for k, v in proc.get_work_items().items() if v.validate()])
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -1105,7 +1105,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_f.consume()
         self.assertEqual(u'sample.f', wi.node.id)
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -1117,14 +1117,14 @@ class TestsWorkItems(FunctionalTests):
         wi = decision_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems)
         self.assertIn(u'sample.c', nodes_workitems)
 
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.ae', nodes_workitems)
@@ -1132,7 +1132,7 @@ class TestsWorkItems(FunctionalTests):
 
         wi = workitems['sample.c']
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
@@ -1141,7 +1141,7 @@ class TestsWorkItems(FunctionalTests):
 
         decision_ae = workitems['sample.ae']
         decision_ae.consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def  _process_start_complex_Parallel_process_decision_cycle(self):
@@ -1226,7 +1226,7 @@ class TestsWorkItems(FunctionalTests):
         wi, proc = start_f.consume()
         self.assertEqual(u'sample.f', wi.node.id)
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 4)
         self.assertIn(u'sample.a', nodes_workitems)
@@ -1240,7 +1240,7 @@ class TestsWorkItems(FunctionalTests):
         wi_c = workitems['sample.c'].consume()
         self.assertIs(wi_a, None)
         self.assertEqual(u'sample.b', wi.node.id)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
         self.assertIn(u'sample.b', nodes_workitems)
@@ -1248,7 +1248,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIs(wi_c, workitems['sample.c'])
 
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         all_workitems = proc.result_multiple
         self.assertEqual(len(workitems), 3)
@@ -1262,7 +1262,7 @@ class TestsWorkItems(FunctionalTests):
 
         wi = workitems['sample.a'].consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -1276,7 +1276,7 @@ class TestsWorkItems(FunctionalTests):
 
         wi = workitems['sample.c']
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 5)
@@ -1294,7 +1294,7 @@ class TestsWorkItems(FunctionalTests):
 
         wi = workitems['sample.c'].consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
@@ -1306,7 +1306,7 @@ class TestsWorkItems(FunctionalTests):
 
         wi = workitems['sample.d'].consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -1320,7 +1320,7 @@ class TestsWorkItems(FunctionalTests):
 
         decision_ae = workitems['sample.ae']
         decision_ae.consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_Transitions(self):
@@ -1386,7 +1386,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertIn(startea_paths[0], startp0_paths)
 
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 3)
@@ -1412,7 +1412,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(targets[0].id, 'sample.g0')
 
         workitems['sample.b'].consume()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         all_workitems = proc.result_multiple
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 2)
@@ -1447,7 +1447,7 @@ class TestsWorkItems(FunctionalTests):
         self.assertEqual(targets[0].id, 'sample.c')
 
         workitems['sample.b'].start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
         currenttransaction = proc.global_transaction
         self.assertEqual(len(currenttransaction.sub_transactions), 1)
@@ -1526,7 +1526,7 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_gateway_chain_end_event_d_b(self):
@@ -1535,10 +1535,10 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('d')['d']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         workitems['sample.b'].consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_gateway_chain_end_event_b(self):
@@ -1547,7 +1547,7 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('b')['b']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def _process_parallel_join(self):
@@ -1604,11 +1604,11 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('d')['d']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
 
         workitems['sample.b'].consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
         self.assertFalse(proc._finished)
 
@@ -1618,10 +1618,10 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('a')['a']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         workitems['sample.b'].consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
         self.assertTrue(proc._finished)
 
@@ -1631,19 +1631,19 @@ class TestGatewayChain(FunctionalTests):
         start_wi = pd.start_process('b')['b']
         wi, proc = start_wi.consume()
         wi.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.a'])
         workitems['sample.a'].start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
         self.assertTrue(proc._finished)
 
 
-    def  _process_start_Parallel_process_isUnique(self):
+    def  _process_start_Parallel_process_is_unique(self):
         """
         """
         pd = ProcessDefinition(**{'id':u'sample'})
-        pd.isUnique = True
+        pd.is_unique = True
         self.app['sample'] = pd
         pd.defineNodes(
                 s = StartEventDefinition(),
@@ -1668,8 +1668,8 @@ class TestGatewayChain(FunctionalTests):
         self.config.scan(example)
         return pd
 
-    def test_isUnique(self):
-        pd = self. _process_start_Parallel_process_isUnique()
+    def test_is_unique(self):
+        pd = self. _process_start_Parallel_process_is_unique()
         self.def_container.add_definition(pd)
         start_wis = pd.start_process()
         self.assertEqual(len(start_wis), 3)
@@ -1681,7 +1681,7 @@ class TestGatewayChain(FunctionalTests):
         wi, proc = start_b.consume()
         self.assertEqual(u'sample.b', wi.node.id)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertIn('sample.a', workitems.keys())
         wi_a = workitems['sample.a']
 
@@ -1772,15 +1772,15 @@ class EventsTests(FunctionalTests):
         import time
         time.sleep(2.2)
         self.assertEqual(len(event.callbacks), 1)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 1)
         self.assertEqual(sorted(workitems.keys()), ['sample.cie'])
-        workitems['sample.cie'].node.eventKind.definition.condition = return_true
+        workitems['sample.cie'].node.event_kind.definition.condition = return_true
         workitems['sample.cie'].node.definition._p_changed = 1
         transaction.commit()
         time.sleep(6)
         transaction.begin()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
         self.assertEqual(len(event.callbacks), 0)
 
@@ -1831,12 +1831,12 @@ class EventsTests(FunctionalTests):
         a_wi, proc = start_wi.consume()
         a_wi.start_test_activity()
         transaction.commit()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.tie'])
         import time
         time.sleep(6)
         transaction.begin()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(sorted(workitems.keys()), ['sample.b'])
 
 

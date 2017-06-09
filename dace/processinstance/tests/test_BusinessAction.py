@@ -6,7 +6,7 @@
 from pyramid.threadlocal import get_current_registry
 
 from dace.interfaces import IProcessDefinition
-from dace.util import  getWorkItem, getBusinessAction, find_entities
+from dace.util import  get_work_item, get_business_action, find_entities
 import dace.processinstance.tests.example.process as example
 from dace.processdefinition.processdef import ProcessDefinition
 from dace.processdefinition.activitydef import ActivityDefinition, SubProcessDefinition
@@ -136,7 +136,7 @@ class TestsBusinessAction(FunctionalTests):
         actions_y_executed =  [a for a in actions_y if a.isexecuted]
         self.assertEqual(len(actions_y_executed), 1)
         self.assertIn(action_y, actions_y_executed)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         self.assertIn('sample.x', workitems.keys())
         self.assertIn('sample.y', workitems.keys())
@@ -183,7 +183,7 @@ class TestsBusinessAction(FunctionalTests):
         self.assertEqual(len(actions_y_validated_alice), 2)
 
         # get sample.y business action for alice
-        allaction_y_alice = getBusinessAction(objecta, self.request, 'sample', 'y')
+        allaction_y_alice = get_business_action(objecta, self.request, 'sample', 'y')
         self.assertEqual(len(allaction_y_alice), 5)# 2 pour actions_y_validated_alice et 3 pour le StartWorkItem Y (Une nouvelle execution)
         self.assertIn(actions_y_validated_alice[0], allaction_y_alice)
         self.assertIn(actions_y_validated_alice[1], allaction_y_alice)
@@ -204,14 +204,14 @@ class TestsBusinessAction(FunctionalTests):
             action.before_execution(objecta, self.request)
             action.execute(objecta, self.request, None, **{})
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 1)
         self.assertIn('sample.x', workitems.keys())
         workitems['sample.x'].start_test_empty()
         actions_x[0].before_execution(objecta, self.request)
         actions_x[0].execute(objecta, self.request, None, **{})
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
 
@@ -548,7 +548,7 @@ class TestsBusinessAction(FunctionalTests):
         action_b.before_execution(objectb, self.request)
         action_b.execute(objectb, self.request, None, **{})
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn('sample.x', nodes_workitems)
@@ -583,7 +583,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y.execute(objecta, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.x', nodes_workitems)
@@ -599,7 +599,7 @@ class TestsBusinessAction(FunctionalTests):
     def test_actions_YLC_TestBefore(self):
         self.logAdmin()
         y, pd = self._process_valid_actions()
-        ActionYLC.testBefore = True
+        ActionYLC.test_before = True
         y._init_behaviors([ActionYLC])
         self.def_container.add_definition(pd)
         self._test_actions_YLC(pd, y)
@@ -644,7 +644,7 @@ class TestsBusinessAction(FunctionalTests):
         action_y.execute(objectc, self.request, None, **{})
         self.assertIs(action_y.workitem, wi)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         nodes_workitems = [w for w in workitems.keys()]
         self.assertEqual(len(workitems), 1)
         self.assertIn(u'sample.x', nodes_workitems)
@@ -904,7 +904,7 @@ class TestsBusinessAction(FunctionalTests):
         action_x.execute(objectc, self.request, 
                          {'object': objectc}, **{})
         proc = action_x.process
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         workitems_ids = list(workitems.keys())
         self.assertEqual(len(workitems_ids), 1)
         self.assertIn('sample.y', workitems_ids)
@@ -913,7 +913,7 @@ class TestsBusinessAction(FunctionalTests):
         import time
         time.sleep(6)
         transaction.begin()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         workitems_ids = list(workitems.keys())
         self.assertEqual(len(workitems_ids), 0)
         self.assertEqual(proc._finished, True)
@@ -1024,20 +1024,20 @@ class TestsPotentialActions(FunctionalTests):
         actiona.execute(objecta, self.request, {'object':objecta})
         process = actiona.process
         process.execute_action(objecta, self.request, 'b', {}, False)
-        wis = process.getWorkItems()
+        wis = process.get_work_items()
         actions_ids = list(wis.keys())
         self.assertEqual(len(actions_ids), 2)
         self.assertIn('sample.a', actions_ids)
         self.assertIn('sample.c', actions_ids)
         process.execute_action(objecta, self.request, 
                                'a', {'object':objecta}, False)
-        wis = process.getWorkItems()
+        wis = process.get_work_items()
         actions_ids = list(wis.keys())
         self.assertEqual(len(actions_ids), 1)
         self.assertIn('sample.b', actions_ids)
         process.execute_action(objecta, self.request, 'b', {}, False)
         process.execute_action(objecta, self.request, 'c', {}, False)
-        wis = process.getWorkItems()
+        wis = process.get_work_items()
         actions_ids = list(wis.keys())
         self.assertEqual(len(actions_ids), 0)
 
@@ -1082,7 +1082,7 @@ class TestsSubProcess(FunctionalTests):
                                      -----
         """
         sp = ProcessDefinition(**{'id':u'sub_process'})
-        sp.isSubProcess = True
+        sp.is_sub_process = True
         self.app['sub_process'] = sp
         sp.defineNodes(
                 ss = StartEventDefinition(),
@@ -1148,9 +1148,9 @@ class TestsSubProcess(FunctionalTests):
         self.app['objecta'] = objecta
         action_sp.before_execution(objecta, self.request)
         action_sp.execute(objecta, self.request, None, **{})
-        wi_sa = getWorkItem(objecta, self.request, 'sub_process', 'sa')
+        wi_sa = get_work_item(objecta, self.request, 'sub_process', 'sa')
         proc =  action_sp.process
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 3)
         self.assertIn(wi_sa, workitems.values())
         workitems_keys = workitems.keys()
@@ -1162,7 +1162,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sa', workitems_keys)
 
         wi_sa.consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
@@ -1174,7 +1174,7 @@ class TestsSubProcess(FunctionalTests):
 
         wi_sb = workitems['sub_process.sb'].consume()
         wi_sb.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 1)
         workitems_keys = workitems.keys()
         self.assertIn('sample.y', workitems_keys)
@@ -1182,7 +1182,7 @@ class TestsSubProcess(FunctionalTests):
         wi_y = workitems['sample.y'].consume()
         wi_y.start_test_activity()
         wi_y.node.finish_behavior(wi_y)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 
     def test_subprocess_multiinstance(self):
@@ -1214,7 +1214,7 @@ class TestsSubProcess(FunctionalTests):
         #sub_process 1 ('objecta')
         action_sp.before_execution(objectc, self.request)
         action_sp.execute(objectc, self.request, None, **{})
-        wi_sa = getWorkItem(objectc, self.request, 'sub_process', 'sa')
+        wi_sa = get_work_item(objectc, self.request, 'sub_process', 'sa')
         proc =  action_sp.process
 
         item = action_sp.sub_process.execution_context.involved_entity('item')
@@ -1223,7 +1223,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(len(items), 1)
         self.assertIn(objecta, items)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 3)
         self.assertIn(wi_sa, workitems.values())
         workitems_keys = workitems.keys()
@@ -1236,7 +1236,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sa', workitems_keys)
 
         wi_sa.consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 4)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
@@ -1248,7 +1248,7 @@ class TestsSubProcess(FunctionalTests):
 
         wi_sb = workitems['sub_process.sb'].consume()
         wi_sb.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         workitems_keys = workitems.keys()
         self.assertIn('sample.y', workitems_keys)
@@ -1257,7 +1257,7 @@ class TestsSubProcess(FunctionalTests):
         wi_y = workitems['sample.y'].consume()
         wi_y.start_test_activity()
         wi_y.node.finish_behavior(wi_y)
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         workitems_keys = workitems.keys()
         self.assertEqual(len(workitems), 1)
         self.assertIn('sample.sp', workitems_keys)
@@ -1265,7 +1265,7 @@ class TestsSubProcess(FunctionalTests):
         #sub_process 2 ('objectb')
         action_sp2.before_execution(objectc, self.request)
         action_sp2.execute(objectc, self.request, None, **{})
-        wi_sa = getWorkItem(objectc, self.request, 'sub_process', 'sa')
+        wi_sa = get_work_item(objectc, self.request, 'sub_process', 'sa')
         proc =  action_sp2.process
 
 
@@ -1275,7 +1275,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertEqual(len(items), 1)
         self.assertIn(objectb, items)
 
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 2)
         self.assertIn(wi_sa, workitems.values())
         workitems_keys = workitems.keys()
@@ -1286,7 +1286,7 @@ class TestsSubProcess(FunctionalTests):
         self.assertIn('sub_process.sa', workitems_keys)
 
         wi_sa.consume().start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 3)
         workitems_keys = workitems.keys()
         self.assertIn('sample.sp', workitems_keys)# action is not valide
@@ -1297,6 +1297,6 @@ class TestsSubProcess(FunctionalTests):
 
         wi_sb = workitems['sub_process.sb'].consume()
         wi_sb.start_test_activity()
-        workitems = proc.getWorkItems()
+        workitems = proc.get_work_items()
         self.assertEqual(len(workitems), 0)
 

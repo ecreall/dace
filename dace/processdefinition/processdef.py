@@ -25,10 +25,10 @@ class ProcessDefinition(Entity):
     nodes = CompositeMultipleProperty('nodes', 'process', True)
     transitions = CompositeMultipleProperty('transitions', 'process', True)
     TransitionDefinitionFactory = TransitionDefinition
-    isControlled = False
-    isSubProcess = False
-    isVolatile = False
-    isUnique = False
+    is_controlled = False
+    is_sub_process = False
+    is_volatile = False
+    is_unique = False
     discriminator = 'Application'
 
     def __init__(self, **kwargs):
@@ -37,14 +37,14 @@ class ProcessDefinition(Entity):
         self.contexts = PersistentList()
 
     def __call__(self, **kwargs):
-        return Process(self, self._startTransition, **kwargs)
+        return Process(self, self._start_transition, **kwargs)
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ProcessDefinition(%r)" % self.id
 
     def _dirty(self):
         try:
-            del self._startTransition
+            del self._start_transition
         except AttributeError:
             pass
 
@@ -75,14 +75,14 @@ class ProcessDefinition(Entity):
 
     def _normalize_definition(self):
         new_transitions = ()
-        orphan_nodes = [node for node in self.nodes \
+        orphan_nodes = [node for node in self.nodes
                         if self._is_start_orphan(node)]
         if orphan_nodes:
             start_events = self._get_start_events()
             empty_start_event = None
             if start_events:
                 for s_e in start_events:
-                    if s_e.eventKind is None:
+                    if s_e.event_kind is None:
                         empty_start_event = s_e
                         break
 
@@ -90,7 +90,7 @@ class ProcessDefinition(Entity):
                 empty_start_event = StartEventDefinition()
 
             p_g = ParallelGatewayDefinition()
-            if not (empty_start_event in self.nodes):
+            if empty_start_event not in self.nodes:
                 self.defineNodes(emptystart=empty_start_event, startpg=p_g)
             else:
                 self.defineNodes(startpg=p_g)
@@ -99,24 +99,24 @@ class ProcessDefinition(Entity):
             for oldtransition in oldtransitions:
                 oldtransition.set_source(p_g)
 
-            new_transitions += (TransitionDefinition(empty_start_event.__name__,
-                                                     'startpg'), )
+            new_transitions += (TransitionDefinition(
+                empty_start_event.__name__, 'startpg'), )
             for o_n in orphan_nodes:
-                new_transitions += (TransitionDefinition('startpg',
-                                                         o_n.__name__), )
+                new_transitions += (TransitionDefinition(
+                    'startpg', o_n.__name__), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
             new_transitions = ()
 
-        orphan_nodes = [node for node in self.nodes \
+        orphan_nodes = [node for node in self.nodes
                         if self._is_end_orphan(node)]
         if orphan_nodes:
             end_events = self._get_end_events()
             empty_end_event = None
             if end_events:
                 for e_e in end_events:
-                    if e_e.eventKind is None:
+                    if e_e.event_kind is None:
                         empty_end_event = e_e
                         break
 
@@ -124,7 +124,7 @@ class ProcessDefinition(Entity):
                 empty_end_event = EndEventDefinition()
 
             e_g = ExclusiveGatewayDefinition()
-            if not (empty_end_event in self.nodes):
+            if empty_end_event not in self.nodes:
                 self.defineNodes(emptyend=empty_end_event, endeg=e_g)
             else:
                 self.defineNodes(endeg=e_g)
@@ -136,8 +136,8 @@ class ProcessDefinition(Entity):
             new_transitions += (TransitionDefinition(
                 'endeg', empty_end_event.__name__), )
             for o_n in orphan_nodes:
-                new_transitions += (TransitionDefinition(o_n.__name__,
-                                                         'endeg'), )
+                new_transitions += (TransitionDefinition(
+                    o_n.__name__, 'endeg'), )
 
         if new_transitions:
             self.defineTransitions(*new_transitions)
@@ -155,8 +155,8 @@ class ProcessDefinition(Entity):
                 for oldtransition in oldtransitions:
                     oldtransition.set_source(p_g)
 
-                self.defineTransitions(TransitionDefinition(s_e.__name__,
-                                                            'mergepg'))
+                self.defineTransitions(TransitionDefinition(
+                    s_e.__name__, 'mergepg'))
 
     def _normalize_endevents(self):
         end_events = self._get_end_events()
@@ -168,8 +168,8 @@ class ProcessDefinition(Entity):
                 for oldtransition in oldtransitions:
                     oldtransition.set_target(e_g)
 
-                self.defineTransitions(TransitionDefinition('mergeeg',
-                                                            e_e.__name__))
+                self.defineTransitions(TransitionDefinition(
+                    'mergeeg', e_e.__name__))
 
     def _get_start_events(self):
         result = []
@@ -188,18 +188,17 @@ class ProcessDefinition(Entity):
         return result
 
     @reify
-    def _startTransition(self):
+    def _start_transition(self):
         start_events = self._get_start_events()
         if len(start_events) != 1:
             raise InvalidProcessDefinition(
-                    "Multiple start events",
-                    [id for (id, a) in start_events]
-                    )
+                "Multiple start events",
+                [id for (id, a) in start_events])
 
         return start_events[0].outgoing[0]
 
     def start_process(self, node_name=None):
-        if self.isUnique and self.is_started:
+        if self.is_unique and self.is_started:
             if node_name:
                 return {node_name: None}
 
@@ -207,7 +206,7 @@ class ProcessDefinition(Entity):
 
         # une transaction globale pour chaque demande
         global_transaction = Transaction()
-        start_transition = self._startTransition
+        start_transition = self._start_transition
         startevent = start_transition.source
         # une transaction pour un evenement (pour l'instant c'est un evenement)
         sub_transaction = global_transaction.start_subtransaction(
@@ -237,4 +236,3 @@ class ProcessDefinition(Entity):
             (IProcess.__identifier__,)) & \
             processid_index.eq(self.id)
         return list(query.execute().all())
-

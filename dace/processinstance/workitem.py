@@ -29,7 +29,8 @@ class UserDecision(LockableElement):
     def first_transitions(self):
         result = set()
         for initiator in self.initiators:
-            result = result.union(self.path._get_transitions_source(initiator))
+            result = result.union(
+                self.path._get_transitions_source(initiator))
 
         return set(self.path.first).union(result)
 
@@ -44,7 +45,7 @@ class UserDecision(LockableElement):
     def __eq__(self, other):
         return isinstance(other, UserDecision) and self.path.equal(other.path)
 
-    def consume(self):# pragma: no cover
+    def consume(self):  # pragma: no cover
         pass
 
 
@@ -79,7 +80,7 @@ class StartWorkItem(UserDecision):
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(self.process_id)
         started_processes = pd.started_processes
-        if pd.isUnique and started_processes:
+        if pd.is_unique and started_processes:
             proc = started_processes[0]
             self.process = proc
             wi = proc[self.node.__name__]._get_workitem()
@@ -99,14 +100,14 @@ class StartWorkItem(UserDecision):
         proc.defineGraph(pd)
         proc.start()
         self.process = proc
-        self.path.transitions = [proc[t.__name__] \
-                                for t in self.path.transitions]
+        self.path.transitions = [proc[t.__name__]
+                                 for t in self.path.transitions]
         self.path._dirty()
         start_transaction = proc.global_transaction.start_subtransaction(
-                            'Start', (self.path.first[0]), initiator=self)
+            'Start', (self.path.first[0]), initiator=self)
         proc[self.path.sources[0].__name__].start(start_transaction)
         replay_transaction = proc.global_transaction.start_subtransaction(
-                                  'Replay', path=self.path, initiator=self)
+            'Replay', path=self.path, initiator=self)
         proc.replay_path(self, replay_transaction)
         proc.global_transaction.remove_subtransaction(replay_transaction)
         wi = proc[self.node.__name__]._get_workitem()
@@ -168,7 +169,7 @@ class BaseWorkItem(LockableElement, Object):
         return self.node.process
 
     def start(self):
-        pass # pragma: no cover
+        pass  # pragma: no cover
 
     def add_action(self, action):
         action.workitem = self
@@ -189,7 +190,7 @@ class BaseWorkItem(LockableElement, Object):
                 action.call(action)
 
     def validate(self):
-        raise NotImplementedError # pragma: no cover
+        raise NotImplementedError  # pragma: no cover
 
     def concerned_nodes(self):
         return {self.node}
@@ -205,7 +206,7 @@ class WorkItem(BaseWorkItem):
         super(WorkItem, self).__init__(node)
 
     def start(self):
-        raise NotImplementedError # pragma: no cover
+        raise NotImplementedError  # pragma: no cover
 
     def validate(self):
         """If all transitions (including incoming TODO) are async, return True
@@ -215,10 +216,10 @@ class WorkItem(BaseWorkItem):
         global_request = get_current_request()
         return True and not self.is_locked(global_request)
 
-    def start_test_activity(self): #for tests
+    def start_test_activity(self):  # for tests
         self.node.finish_behavior(self)
 
-    def start_test_empty(self): #for tests
+    def start_test_empty(self):  # for tests
         pass
 
     def __eq__(self, other):
@@ -239,19 +240,20 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return not self.concerned_nodes()
 
     def consume(self):
-        if self.__parent__ is None: # deleted by another consumer
-            wi = self.process[self.node.__name__]._get_workitem()
-            if wi is not None:
-                wi.set_actions(self.actions)
+        if self.__parent__ is None:  # deleted by another consumer
+            workitem = self.process[self.node.__name__]._get_workitem()
+            if workitem is not None:
+                workitem.set_actions(self.actions)
 
-            return wi
+            return workitem
 
         replay_transaction = self.process.global_transaction.start_subtransaction(
-                                    'Replay', path= self.path, initiator=self)
+            'Replay', path=self.path, initiator=self)
         self.process.replay_path(self, replay_transaction)
-        self.process.global_transaction.remove_subtransaction(replay_transaction)
-        wi = self.process[self.node.__name__]._get_workitem()
-        return wi
+        self.process.global_transaction.remove_subtransaction(
+            replay_transaction)
+        workitem = self.process[self.node.__name__]._get_workitem()
+        return workitem
 
     def validate(self):
         """If all transitions (including incoming TODO) are async, return True
@@ -274,4 +276,4 @@ class DecisionWorkItem(BaseWorkItem, UserDecision):
         return {n for n in result if not n in self.validations}
 
     def __eq__(self, other):
-        return   UserDecision.__eq__(self, other) and self.node is other.node
+        return UserDecision.__eq__(self, other) and self.node is other.node

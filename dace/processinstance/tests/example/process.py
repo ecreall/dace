@@ -97,8 +97,8 @@ def cardB(process):
     return 3
 
 class ActionY(LimitedCardinality):
-    loopCardinality = cardB
-    isSequential = True
+    loop_cardinality = cardB
+    is_sequential = True
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -112,8 +112,8 @@ class ActionY(LimitedCardinality):
     state_validation = state_validationA
 
 class ActionYP(LimitedCardinality):
-    loopCardinality = cardB
-    isSequential = False
+    loop_cardinality = cardB
+    is_sequential = False
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -127,7 +127,7 @@ class ActionYP(LimitedCardinality):
     state_validation = state_validationA
 
 class ActionYPI(InfiniteCardinality):
-    isSequential = False
+    is_sequential = False
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -141,7 +141,7 @@ class ActionYPI(InfiniteCardinality):
     state_validation = state_validationA
 
 class ActionYI(InfiniteCardinality):
-    isSequential = True
+    is_sequential = True
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -160,9 +160,9 @@ def dataInputRef(process):
     return request.objects
 
 class ActionYD(DataInput):
-    loopDataInputRef = dataInputRef
-    dataIsPrincipal = False
-    isSequential = True
+    loop_data_input_ref = dataInputRef
+    data_is_principal = False
+    is_sequential = True
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -182,9 +182,9 @@ class ActionYD(DataInput):
 
 
 class ActionYDp(DataInput):
-    loopDataInputRef = dataInputRef
-    dataIsPrincipal = True
-    isSequential = True
+    loop_data_input_ref = dataInputRef
+    data_is_principal = True
+    is_sequential = True
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -207,7 +207,7 @@ def loppdata(context, request, process, appstruct):
 
 
 class ActionYLD(LoopActionDataInput):
-    loopDataInputRef = loppdata
+    loop_data_input_ref = loppdata
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -233,9 +233,9 @@ def loopmaximumc(process):
 
 class ActionYLC(LoopActionCardinality):
 
-    loopMaximum = loopmaximumc
-    loopCondition = loppcondition
-    testBefore = False
+    loop_maximum = loopmaximumc
+    loop_condition = loppcondition
+    test_before = False
     #identification et classification
     groups = ['groupY']
     process_id = 'sample'
@@ -326,9 +326,9 @@ class ActionSP(ElementaryAction):
     state_validation = state_validationA
 
 class ActionSPMI(DataInput):
-    loopDataInputRef = dataInputRef
-    dataIsPrincipal = True
-    isSequential = True
+    loop_data_input_ref = dataInputRef
+    data_is_principal = True
+    is_sequential = True
     #identification et classification
     groups = ['groupSP']
     process_id = 'sample'

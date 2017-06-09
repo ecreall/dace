@@ -5,10 +5,10 @@
 # author: Amen Souissi
 from dace.testing import FunctionalTests
 from dace.util import (
-    allSubobjectsOfType,
-    allSubobjectsOfKind,
-    subobjectsOfType,
-    subobjectsOfKind)
+    all_subobjects_of_type,
+    all_subobjects_of_kind,
+    subobjects_of_type,
+    subobjects_of_kind)
 from .example.objects import ObjectA, ObjectB, ObjectC, IObjectB, IObjectC
 
 
@@ -17,7 +17,7 @@ class TestRequest(FunctionalTests):
     def _del_objects(self):
         try:
             self.app.remove('object1')
-        except :
+        except:
             pass
 
     def _create_objects(self):
@@ -26,7 +26,7 @@ class TestRequest(FunctionalTests):
         object3 = ObjectB()
         object4 = ObjectB()
         object5 = ObjectC()
-     
+
         object2.setproperty('composition_mu', [object5])
         object1.setproperty('composition_mu', [object3, object4, object2])
 
@@ -36,20 +36,20 @@ class TestRequest(FunctionalTests):
 
     def test_allSubobjects(self):
         object1, object2, object3, object4, object5 = self._create_objects()
-        result = list(allSubobjectsOfType(object1, IObjectB))
+        result = list(all_subobjects_of_type(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = list(allSubobjectsOfKind(object1, IObjectB))
+        result = list(all_subobjects_of_kind(object1, IObjectB))
 
         self.assertEqual(len(result), 3)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
         self.assertTrue((object5 in result))
 
-        result = list(allSubobjectsOfType(object1, IObjectC))
+        result = list(all_subobjects_of_type(object1, IObjectC))
 
         self.assertEqual(len(result), 1)
         self.assertTrue((object5 in result))
@@ -57,19 +57,19 @@ class TestRequest(FunctionalTests):
 
     def test_subobjects(self):
         object1, object2, object3, object4, object5 = self._create_objects()
-        result = list(subobjectsOfType(object1, IObjectB))
+        result = list(subobjects_of_type(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = list(subobjectsOfKind(object1, IObjectB))
+        result = list(subobjects_of_kind(object1, IObjectB))
 
         self.assertEqual(len(result), 2)
         self.assertTrue((object3 in result))
         self.assertTrue((object4 in result))
 
-        result = list(subobjectsOfType(object1, IObjectC))
+        result = list(subobjects_of_type(object1, IObjectC))
 
         self.assertEqual(len(result), 0)
         self._del_objects()

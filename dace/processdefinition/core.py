@@ -38,7 +38,7 @@ class FlowNodeDefinition(BPMNElementDefinition):
         source_transaction.remove_subtransaction(source_path.transaction)
         yield decision_path
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "<%s %r>" % (self.__class__.__name__, self.__name__)
 
 
@@ -56,7 +56,7 @@ class Transaction(Persistent):
 
     def set_path(self, path):
         self.path = path
-        if self.path is not None and not (self.path.transaction is self):
+        if self.path is not None and self.path.transaction is not self:
             self.path.set_transaction(self)
 
     def add_subtransactions(self, subtransactions):
@@ -105,7 +105,7 @@ class Transaction(Persistent):
         sub_paths = []
         for subtransaction in self.sub_transactions:
             sub_paths.extend(subtransaction.find_allsubpaths_by_source(
-                                                            node, type))
+                node, type))
 
         if unique:
             sub_paths = [p for p in sub_paths if not p.equal(path)]
@@ -169,10 +169,10 @@ class Transaction(Persistent):
         self.path = None
         self.sub_transactions = []
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return 'Transaction('+self.type+'):\n' +\
-               'Path:'+repr(self.path)+ \
-               '\n Sub_Transactions:[\n'+\
+               'Path:'+repr(self.path) + \
+               '\n Sub_Transactions:[\n' +\
                '\n'.join([repr(t) for t in self.sub_transactions])+']'
 
     #def __eq__(self, other):
@@ -312,7 +312,6 @@ class Path(Persistent):
     def _get_transitions_source(self, node):
         return {t for t in self.transitions if t.source is node}
 
-
     def _get_transitions_target(self, node):
         return {t for t in self.transitions if t.target is node}
 
@@ -347,7 +346,7 @@ class Path(Persistent):
 
         return len(self.transitions) == len(other.transitions)
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return 'Path(' + ', '.join([repr(t) for t in self.transitions]) + ')'
 
 

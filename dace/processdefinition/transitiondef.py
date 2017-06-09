@@ -24,11 +24,11 @@ class TransitionDefinition(Object):
     source = SharedUniqueProperty('source', 'outgoing', False)
     process = SharedUniqueProperty('process', 'transitions', False)
 
-    def __init__(self, 
-                 source_id, 
-                 target_id, 
-                 condition=always_true, 
-                 sync=False, 
+    def __init__(self,
+                 source_id,
+                 target_id,
+                 condition=always_true,
+                 sync=False,
                  **kwargs):
         super(TransitionDefinition, self).__init__(**kwargs)
         self.id = '%s-%s' % (source_id, target_id)
@@ -61,6 +61,7 @@ class TransitionDefinition(Object):
     def equal(self, other):
         return self.id == other.id
 
-    def __repr__(self):# pragma: no cover
-        return "%s(%r, %r)" % (self.__class__.__name__,
-                self.source, self.target)
+    def __repr__(self):  # pragma: no cover
+        return "%s(%r, %r)" % (
+            self.__class__.__name__,
+            self.source, self.target)

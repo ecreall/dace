@@ -1,4 +1,4 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
@@ -10,7 +10,7 @@ from substanced.util import get_oid
 
 from dace.processinstance.event import DelayedCallback
 from dace.util import (
-    find_catalog, getAllSystemActions,
+    find_catalog, get_all_system_actions,
     get_system_request, BaseJob)
 from dace import log
 
@@ -55,7 +55,7 @@ def run():
         last_transaction_by_machine[cache_key] = last_tid
         transaction.begin()
         try:
-            system_actions = [a for a in getAllSystemActions()
+            system_actions = [a for a in get_all_system_actions()
                               if getattr(a, 'process', None) or
                               a.isstart]
             log.info("new zodb transactions, actions to check: %s",

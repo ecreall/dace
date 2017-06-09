@@ -40,7 +40,7 @@ def update_process_definitions(root):
 def remove_unique_process_instances_evolve(root, registry):
     runtime = root['runtime']
     processes = [p for p in list(runtime.processes)
-                 if getattr(p.definition, 'isUnique', False)]
+                 if getattr(p.definition, 'is_unique', False)]
     for proc in processes:
         runtime.delfromproperty('processes', proc)
 

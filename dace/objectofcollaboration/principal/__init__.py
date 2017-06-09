@@ -1,4 +1,4 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
@@ -23,7 +23,9 @@ class User(OriginUser, Entity):
 
     groups = SharedMultipleProperty('groups', 'members')
 
-    def __init__(self, password=None, email=None, tzname=None, locale=None, **kwargs):
+    def __init__(
+        self, password=None, email=None,
+        tzname=None, locale=None, **kwargs):
         OriginUser.__init__(self, password, email, tzname, locale)
         Entity.__init__(self, **kwargs)
 
@@ -41,14 +43,14 @@ class User(OriginUser, Entity):
         _message = message
         if _message is None:
             _message = Message(
-                subject = 'Account information for %s' % sitename,
-                recipients = [self.email],
-                body = render('dace:objectofcollaboration/principal/templates/resetpassword_email.pt',
-                              dict(reseturl=reseturl))
+                subject='Account information for %s' % sitename,
+                recipients=[self.email],
+                body=render('dace:objectofcollaboration/principal/templates/resetpassword_email.pt',
+                            dict(reseturl=reseturl))
                 )
         mailer = get_mailer(request)
         mailer.send(_message)
-    
+
     @property
     def user_groups(self):
         return self.groups

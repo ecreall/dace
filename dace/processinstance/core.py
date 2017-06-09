@@ -33,7 +33,7 @@ PROCESS_HISTORY_KEY = 'process_history'
 
 class BPMNElement(Entity):
     def __init__(self, definition, **kwargs):
-        super(BPMNElement,self).__init__(**kwargs)
+        super(BPMNElement, self).__init__(**kwargs)
         self.id = definition.id
         if not self.title:
             self.title = definition.title
@@ -51,7 +51,7 @@ class FlowNode(BPMNElement):
     process = SharedUniqueProperty('process', 'nodes', False)
 
     def __init__(self, definition, **kwargs):
-        super(FlowNode,self).__init__( definition, **kwargs)
+        super(FlowNode, self).__init__(definition, **kwargs)
 
     def prepare(self):
         registry = get_current_registry()
@@ -61,10 +61,10 @@ class FlowNode(BPMNElement):
         self.start(transaction)
 
     def find_executable_paths(self, source_path, source):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
     def start(self, transaction):
-        raise NotImplementedError# pragma: no cover
+        raise NotImplementedError  # pragma: no cover
 
     def play(self, transitions):
         registry = get_current_registry()
@@ -72,16 +72,16 @@ class FlowNode(BPMNElement):
         self.process.play_transitions(self, transitions)
 
     def replay_path(self, decision, transaction):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
     def stop(self):
-        pass# pragma: no cover
+        pass  # pragma: no cover
 
     @property
     def definition(self):
         return self.process.definition[self.__name__]
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "%s(%r)" % (
             self.__class__.__name__,
             self.id
@@ -117,15 +117,15 @@ class MakerFlowNode(FlowNode):
             if transition.sync or transition.validate(self.process):
                 node = transition.target
                 initial_path = Path([transition])
-                global_transaction.start_subtransaction(type='Find', 
-                                                    path=initial_path, 
-                                                    initiator=self)
+                global_transaction.start_subtransaction(
+                    type='Find', path=initial_path, initiator=self)
                 executable_paths = node.find_executable_paths(
-                                            initial_path, self)
+                    initial_path, self)
                 for executable_path in executable_paths:
-                    dwi = DecisionWorkItem(executable_path, 
-                           self.process[executable_path.targets[0].__name__],
-                           self)
+                    dwi = DecisionWorkItem(
+                        executable_path,
+                        self.process[executable_path.targets[0].__name__],
+                        self)
                     if dwi.node.__name__ in workitems:
                         workitems[dwi.node.__name__].merge(dwi)
                     else:
@@ -135,9 +135,9 @@ class MakerFlowNode(FlowNode):
 
     def refresh_decisions(self, transaction, transitions):
         workitems = self._calculate_decisions(transaction, transitions)
-        new_workitems = [wi for wi in workitems.values() \
-                         if not (wi in self.workitems)]
-        if not  new_workitems:
+        new_workitems = [wi for wi in workitems.values()
+                         if wi not in self.workitems]
+        if not new_workitems:
             return
 
         for decision_workitem in new_workitems:
@@ -151,18 +151,18 @@ class MakerFlowNode(FlowNode):
             self.addtoproperty('workitems', workitem)
 
     def get_allconcernedworkitems(self):
-        allprocessworkitems = self.process.getAllWorkItems()
-        result = [wi for wi in allprocessworkitems \
-                 if isinstance(wi, DecisionWorkItem) and \
-                    self in wi.concerned_nodes()]
+        allprocessworkitems = self.process.get_all_work_items()
+        result = [wi for wi in allprocessworkitems
+                  if isinstance(wi, DecisionWorkItem) and
+                  self in wi.concerned_nodes()]
 
         return result
 
     def replay_path(self, decision, transaction):
         allconcernedkitems = self.get_allconcernedworkitems()
-        for wi in allconcernedkitems:
-            if decision.path.is_segment(wi.path):
-                decision = wi
+        for workitem in allconcernedkitems:
+            if decision.path.is_segment(workitem.path):
+                decision = workitem
                 break
 
         if decision in allconcernedkitems:
@@ -186,28 +186,28 @@ class BehavioralFlowNode(MakerFlowNode):
         yield decision_path
 
     def _get_workitem(self):
-        workitems = [w for w in self.workitems if w.validate() and \
+        workitems = [w for w in self.workitems if w.validate() and
                      isinstance(w, WorkItem)]
         if workitems:
             return workitems[0]
 
-        workitems = [w for w in self.process.getAllWorkItems(
-                                              node_id=self.__name__) \
+        workitems = [w for w in self.process.get_all_work_items(
+                     node_id=self.__name__)
                      if w.validate()]
         if workitems:
-            wi = workitems[0]
-            if isinstance(wi, DecisionWorkItem):
-                wi = wi.consume()
-                if wi is not None:
-                    self.addtoproperty('workitems', wi)
+            workitem = workitems[0]
+            if isinstance(workitem, DecisionWorkItem):
+                workitem = workitem.consume()
+                if workitem is not None:
+                    self.addtoproperty('workitems', workitem)
 
-                return wi
+                return workitem
 
         return None
 
     def prepare(self):
         paths = self.process.global_transaction.find_allsubpaths_for(
-                                                       self, 'Replay')
+            self, 'Replay')
         user_decision = None
         if paths:
             user_decision = paths[0].transaction.initiator
@@ -231,13 +231,13 @@ class BehavioralFlowNode(MakerFlowNode):
         registry.notify(ActivityStarted(self))
 
     def finish_behavior(self, work_item):
-        if work_item  and not isinstance(work_item, StartWorkItem):
+        if work_item and not isinstance(work_item, StartWorkItem):
             self.delfromproperty('workitems', work_item)
 
         registry = get_current_registry()
         registry.notify(WorkItemFinished(work_item))
         paths = self.process.global_transaction.find_allsubpaths_for(
-                                                        self, 'Start')
+            self, 'Start')
         if paths:
             for path in set(paths):
                 source_transaction = path.transaction.__parent__
@@ -268,20 +268,20 @@ class BehavioralFlowNode(MakerFlowNode):
                                not cdecision.path.is_segment(work_item.path):
                                 # don't cdecision.node.stop()
                                 cdecision.__parent__.delfromproperty(
-                                           'workitems', cdecision)
+                                    'workitems', cdecision)
 
                         break
 
             start_transition = first_transitions[0]
             self.process.play_transitions(self, [start_transition])
             paths = self.process.global_transaction.find_allsubpaths_by_source(
-                                                                   self, 'Find')
+                self, 'Find')
             if paths:
                 for path in paths:
                     if work_item.path.contains_transition(path.first[0]):
                         source_transaction = path.transaction.__parent__
                         source_transaction.remove_subtransaction(
-                                                 path.transaction)
+                            path.transaction)
 
 
 class Error(Exception):
@@ -294,20 +294,11 @@ class Error(Exception):
 
     def __init__(self, **kwargs):
         super(Error, self).__init__()
-        if 'msg' in kwargs:
-            self.principalmessage = kwargs['msg']
-
-        if 'causes' in kwargs:
-            self.causes = kwargs['causes']
-
-        if 'solutions' in kwargs:
-            self.solutions = kwargs['solutions']
-
-        if 'type' in kwargs:
-            self.type = kwargs['type']
-
-        if 'template' in kwargs:
-            self.template = kwargs['template']
+        self.principalmessage = kwargs.get('msg', '')
+        self.causes = kwargs.get('causes', '')
+        self.solutions = kwargs.get('solutions', '')
+        self.type = kwargs.get('type', '')
+        self.template = kwargs.get('template', '')
 
 
 class ValidationError(Error):
@@ -337,14 +328,8 @@ class Step(object):
 
     def __init__(self, **kwargs):
         super(Step, self).__init__()
-        self.wizard = None
-        if 'wizard' in kwargs:
-            self.wizard = kwargs['wizard']
-
-        self.step_id = ''
-        if 'step_id' in kwargs:
-            self.step_id = kwargs['step_id']
-
+        self.wizard = kwargs.get('wizard', None)
+        self.step_id = kwargs.get('step_id', '')
         self._outgoing = PersistentList()
         self._incoming = PersistentList()
 
@@ -372,7 +357,7 @@ class Behavior(Step):
         instance = None
         if 'wizard' in kw and kw['wizard'] is not None:
             wizard = kw['wizard']
-            _stepinstances = dict([(s.behavior_id, s) for s in  \
+            _stepinstances = dict([(s.behavior_id, s) for s in
                                    list(dict(wizard.stepinstances).values())])
             instance = _stepinstances[cls.behavior_id]
         else:
@@ -417,7 +402,7 @@ class Behavior(Step):
 
     def cancel_execution(self, context, request, **kw):
         pass
-        
+
     def redirect(self, context, request, **kw):
         pass  # pragma: no cover
 
@@ -428,11 +413,11 @@ def default_condition(context, request):
 
 class Transition(Persistent):
 
-    def __init__(self, 
-                 source, 
-                 target, 
-                 id, 
-                 condition=(lambda x, y:True), 
+    def __init__(self,
+                 source,
+                 target,
+                 id,
+                 condition=(lambda x, y: True),
                  isdefault=False):
         self.wizard = source.wizard
         self.source = source
@@ -476,7 +461,7 @@ class Wizard(Behavior):
             except Exception:
                 pass
 
-            transitioninstance = Transition(sourceinstance, targetinstance, 
+            transitioninstance = Transition(sourceinstance, targetinstance,
                                             transitionid, condition, default)
             self.transitionsinstances.append((transitionid, transitioninstance))
 
@@ -489,7 +474,7 @@ class EventHandler(FlowNode):
 
     def _init_boundaryEvents(self, definition):
         self.boundaryEvents = [defi.create()
-                for defi in definition.boundaryEvents]
+                               for defi in definition.boundaryEvents]
         for bedef in definition.boundaryEvents:
             beinstance = bedef.create()
             beinstance.id = bedef.id
@@ -499,13 +484,14 @@ class EventHandler(FlowNode):
 
 DEFAULTMAPPING_ACTIONS_VIEWS = {}
 
+
 @implementer(IProcessStarted)
 class ProcessStarted:
 
     def __init__(self, process):
         self.process = process
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ProcessStarted(%r)" % self.process
 
 
@@ -515,7 +501,7 @@ class ProcessFinished:
     def __init__(self, process):
         self.process = process
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ProcessFinished(%r)" % self.process
 
 
@@ -524,7 +510,7 @@ class WorkItemFinished:
     def __init__(self, workitem):
         self.workitem =  workitem
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "WorkItemFinished(%r)" % self.node_id
 
 
@@ -533,7 +519,7 @@ class ActivityPrepared:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ActivityPrepared(%r)" % self.activity
 
 
@@ -542,7 +528,7 @@ class ActivityFinished:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ActivityFinished(%r)" % self.activity
 
 
@@ -551,7 +537,7 @@ class ActivityStarted:
     def __init__(self, activity):
         self.activity = activity
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ActivityStarted(%r)" % self.activity
 
 
@@ -562,7 +548,7 @@ class ActivityExecuted:
         self.contexts = contexts
         self.user = user
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "ActivityExecuted(%r)" % self.activity
 
 
@@ -574,7 +560,7 @@ class ProcessError(Exception):
 @subscriber(ActivityPrepared)
 @subscriber(ActivityStarted)
 @subscriber(ActivityFinished)
-def activity_handler(event):# pragma: no cover
+def activity_handler(event):  # pragma: no cover
     log.info('%s %s', threading.current_thread().ident, event)
 
 

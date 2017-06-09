@@ -31,11 +31,13 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
                 node = transition.target
                 initial_path = source_path.clone()
                 source_transaction = source_path.transaction.__parent__
-                source_transaction.remove_subtransaction(source_path.transaction)
-                source_transaction.start_subtransaction(type='Find', 
-                                    path=initial_path, initiator=self)
+                source_transaction.remove_subtransaction(
+                    source_path.transaction)
+                source_transaction.start_subtransaction(
+                    type='Find', path=initial_path, initiator=self)
                 initial_path.add_transition(transition)
-                executable_paths = node.find_executable_paths(initial_path, self)
+                executable_paths = node.find_executable_paths(
+                    initial_path, self)
                 for executable_path in executable_paths:
                     yield executable_path
 
@@ -65,8 +67,11 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
             transition = list(work_item.path._get_transitions_source(self))[0]
             self.process.play_transitions(self, [transition])
 
-        paths = self.process.global_transaction.find_allsubpaths_for(self, 'Start')
-        paths.extend(self.process.global_transaction.find_allsubpaths_by_source(self, 'Find'))
+        paths = self.process.global_transaction.find_allsubpaths_for(
+            self, 'Start')
+        paths.extend(
+            self.process.global_transaction.find_allsubpaths_by_source(
+                self, 'Find'))
         if paths:
             for path in paths:
                 source_transaction = path.transaction.__parent__
@@ -103,7 +108,7 @@ class ParallelGateway(Gateway):
         # pour le mode replay End
         validated = True
         for node in incoming_nodes:
-            if not (node in  validated_nodes):
+            if node not in validated_nodes:
                 validated = False
                 break
 
@@ -114,12 +119,13 @@ class ParallelGateway(Gateway):
                     for path in list(paths):
                         initial_path = path.clone()
                         source_transaction = path.transaction.__parent__
-                        source_transaction.remove_subtransaction(path.transaction)
-                        source_transaction.start_subtransaction(type='Find', 
-                                                            path=initial_path, 
-                                                            initiator=self)
+                        source_transaction.remove_subtransaction(
+                            path.transaction)
+                        source_transaction.start_subtransaction(
+                            type='Find', path=initial_path, initiator=self)
                         initial_path.add_transition(transition)
-                        executable_paths = node.find_executable_paths(initial_path, self)
+                        executable_paths = node.find_executable_paths(
+                            initial_path, self)
                         for executable_path in executable_paths:
                             yield executable_path
 
@@ -133,7 +139,7 @@ class ParallelGateway(Gateway):
             source_nodes = set([t.source for t in path._get_transitions_target(self)])
             validated_nodes = validated_nodes.union(source_nodes)
 
-        if (len(validated_nodes) == len(incoming_nodes)):
+        if len(validated_nodes) == len(incoming_nodes):
             registry = get_current_registry()
             registry.notify(ActivityStarted(self))
             self.play(self.outgoing)
@@ -161,9 +167,9 @@ class ParallelGateway(Gateway):
             source_node = self.process[key]
             if hasattr(source_node, 'refresh_decisions'):
                 source_node.refresh_decisions(
-                                re_transaction, transitions)
+                    re_transaction, transitions)
 
 
 # parallel avec condition avec default
 class InclusiveGateway(Gateway):
-    pass# pragma: no cover
+    pass  # pragma: no cover

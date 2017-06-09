@@ -34,6 +34,7 @@ from dace.processinstance import event as event_mod
 
 class ConsumeTasks(threading.Thread):
     terminated = False
+
     def __init__(self, registry, event):
         threading.Thread.__init__(self)
         self.registry = registry
@@ -46,10 +47,12 @@ class ConsumeTasks(threading.Thread):
         manager.push({'registry': self.registry, 'request': None})
         loop = IOLoop.instance()
         ctx = zmq.Context()
+
         def callback():
             s = ctx.socket(zmq.PULL)
             s.setsockopt(zmq.LINGER, 0)
             s.bind(get_socket_url())
+
             def execute_next(action):
                 # action is a list with one pickle
                 method, obj = pickle.loads(action[0])
@@ -164,8 +167,8 @@ def start_intermediate_events_callback():
         node = getattr(wi, 'node', None)
         if isinstance(node, IntermediateCatchEvent):
             if node.execution_prepared:
-                log.info("Calling %s.eventKind.prepare_for_execution()", node)
-                node.eventKind.prepare_for_execution(True)
+                log.info("Calling %s.event_kind.prepare_for_execution()", node)
+                node.event_kind.prepare_for_execution(True)
     # commit to execute after commit hooks
     transaction.commit()
 

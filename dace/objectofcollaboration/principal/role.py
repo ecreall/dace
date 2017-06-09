@@ -1,4 +1,4 @@
-# Copyright (c) 2014 by Ecreall under licence AGPL terms 
+# Copyright (c) 2014 by Ecreall under licence AGPL terms
 # available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
@@ -11,10 +11,10 @@ DACE_ROLES = {}
 
 class role(object):
 
-    def __init__(self, 
-                 name='', 
-                 superiors=[], 
-                 lowers=[], 
+    def __init__(self,
+                 name='',
+                 superiors=[],
+                 lowers=[],
                  islocal=False):
         self.name = name
         self.superiors = superiors
@@ -28,6 +28,7 @@ class role(object):
             ob.superiors = list(ob.superiors)
             ob.superiors.extend(self.superiors)
             ob.superiors = list(set(ob.superiors))
+
             def get_allsuperiors(role_ob):
                 superiors = list(role_ob.superiors)
                 for sup in role_ob.superiors:
@@ -53,7 +54,7 @@ class role(object):
                 role.all_superiors = list(set(role.all_superiors))
 
             DACE_ROLES[ob.name] = ob
- 
+
         venusian.attach(wrapped, callback)
         return wrapped
 
@@ -73,7 +74,7 @@ class Administrator(Role):
 @role(name='Collaborator', superiors=[Administrator])
 class Collaborator(Role):
     pass
-    
+
 
 @role(name='System', superiors=[Administrator])
 class System(Role):
@@ -88,4 +89,3 @@ class Anonymous(Role):
 @role(name='Owner', islocal=True)
 class Owner(Role):
     pass
-

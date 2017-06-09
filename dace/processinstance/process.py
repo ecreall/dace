@@ -22,9 +22,9 @@ from dace.interfaces import IProcess, IWorkItem
 from dace.util import find_catalog, find_service
 from dace.objectofcollaboration.object import Object
 from dace.descriptors import (
-        SHARED_MULTIPLE,
-        CompositeMultipleProperty, CompositeUniqueProperty,
-        SharedUniqueProperty, SharedMultipleProperty)
+    SHARED_MULTIPLE,
+    CompositeMultipleProperty, CompositeUniqueProperty,
+    SharedUniqueProperty, SharedMultipleProperty)
 from dace import log
 
 
@@ -52,9 +52,9 @@ class ExecutionContext(Object):
             return self.parent.root_execution_context()
 
     def add_sub_execution_context(self, ec):
-        """Add a sub execution context. A sub-execution context 
+        """Add a sub execution context. A sub-execution context
            is associated to a sub-process"""
-        if not(ec in self.sub_execution_contexts):
+        if ec not in self.sub_execution_contexts:
             self.sub_execution_contexts.append(ec)
             ec.parent = self
 
@@ -71,7 +71,7 @@ class ExecutionContext(Object):
         return set(result)
 
     def all_involveds(self):
-        """Return all involved entities. 
+        """Return all involved entities.
            The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_involveds()
@@ -84,7 +84,7 @@ class ExecutionContext(Object):
         return set(result)
 
     def all_createds(self):
-        """Return all created entities. 
+        """Return all created entities.
            The search includes sub-execution contexts"""
         root = self.root_execution_context()
         return root._sub_createds()
@@ -99,12 +99,13 @@ class ExecutionContext(Object):
             if relation_result:
                 index_key = name+'_index'
                 i = self.get_localdata(index_key)
-                result[name] = {'name': name,
-                            'type':'collection',
-                            'assocition_kind': properties[name],
-                            'index': i,
-                            'is_current': True,
-                            'entities': relation_result}
+                result[name] = {
+                    'name': name,
+                    'type': 'collection',
+                    'assocition_kind': properties[name],
+                    'index': i,
+                    'is_current': True,
+                    'entities': relation_result}
                 continue
 
             relation_result = self.involved_entity(name)
@@ -116,7 +117,7 @@ class ExecutionContext(Object):
                 continue
 
             result[name] = {'name': name,
-                            'type':'element',
+                            'type': 'element',
                             'assocition_kind': properties[name],
                             'index': i,
                             'is_current': True,
@@ -153,21 +154,24 @@ class ExecutionContext(Object):
                 index = self.get_localdata(index_key)+1
                 for i in range(index)[1:]:
                     prop_name = name+'_'+str(i)
-                    self._init_property(prop_name, 
-                            self.dynamic_properties_def[prop_name])
-                    result[prop_name] = {'name': name,
-                            'type':'collection',
-                            'assocition_kind': properties[name],
-                            'index': i,
-                            'is_current': (i==(index-1)),
-                            'entities': self.getproperty(prop_name)}
+                    self._init_property(
+                        prop_name,
+                        self.dynamic_properties_def[prop_name])
+                    result[prop_name] = {
+                        'name': name,
+                        'type': 'collection',
+                        'assocition_kind': properties[name],
+                        'index': i,
+                        'is_current': i == (index-1),
+                        'entities': self.getproperty(prop_name)}
             else:
-                result[name] = {'name': name,
-                            'type':'element',
-                            'assocition_kind': properties[name],
-                            'index': -1,
-                            'is_current': None,
-                            'entities': self.involved_entities(name)}
+                result[name] = {
+                    'name': name,
+                    'type': 'element',
+                    'assocition_kind': properties[name],
+                    'index': -1,
+                    'is_current': None,
+                    'entities': self.involved_entities(name)}
 
         return result
 
@@ -197,7 +201,7 @@ class ExecutionContext(Object):
             self.addtoproperty(name, value)
         else:
             self.properties_names.append((name, type))
-            self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 
+            self.dynamic_properties_def[name] = (SHARED_MULTIPLE,
                                                  'involvers', True)
             self._init_property(name, self.dynamic_properties_def[name])
             self.addtoproperty(name, value)
@@ -247,7 +251,7 @@ class ExecutionContext(Object):
 
     def find_subinvolved_entity(self, name, index=-1):
         result = self.get_involved_entity(name, index)
-        if result is not None :
+        if result is not None:
             return [result]
         else:
             result = []
@@ -264,7 +268,7 @@ class ExecutionContext(Object):
     # involved_entities start
     def involved_entities(self, name=None):
         result = self.get_involved_entities(name)
-        if result :
+        if result:
             return result
 
         result = self.find_involved_entities(name)
@@ -339,13 +343,13 @@ class ExecutionContext(Object):
 
     def find_created_entity(self, name, index=-1):
         root = self.root_execution_context()
-        return  root.find_subcreated_entity(name, index)
+        return root.find_subcreated_entity(name, index)
     # created_entity end
 
     # created_entities start
     def created_entities(self, name=None):
         result = self.get_created_entities(name)
-        if result :
+        if result:
             return result
 
         result = self.find_created_entities(name)
@@ -365,7 +369,7 @@ class ExecutionContext(Object):
     def find_created_entities(self, name=None):
         root = self.root_execution_context()
         result_created = root.all_createds()
-        result = [e for e in root.find_involved_entities(name) \
+        result = [e for e in root.find_involved_entities(name)
                   if e in result_created]
         return result
     # created_entities end
@@ -419,13 +423,12 @@ class ExecutionContext(Object):
                 self.addtoproperty(name, value)
             else:
                 self.properties_names.append((prop_name, type))
-                self.dynamic_properties_def[name] = (SHARED_MULTIPLE, 
+                self.dynamic_properties_def[name] = (SHARED_MULTIPLE,
                                                      'involvers', True)
                 self._init_property(name, self.dynamic_properties_def[name])
                 self.addtoproperty(name, value)
 
         self._reindex()
-
 
     def remove_collection(self, name, values):
         index_key = name+'_index'
@@ -490,7 +493,7 @@ class ExecutionContext(Object):
     # involved_collections start
     def involved_collections(self, name=None):
         result = self.get_involved_collections(name)
-        if result :
+        if result:
             return result
 
         result = self.find_involved_collections(name)
@@ -503,7 +506,7 @@ class ExecutionContext(Object):
         index_key = name+'_index'
         result = []
         if hasattr(self, index_key):
-            for index in range(self.get_localdata(index_key)) :
+            for index in range(self.get_localdata(index_key)):
                 result.append(self.get_involved_collection(name, (index+1)))
 
         return result
@@ -563,7 +566,7 @@ class ExecutionContext(Object):
     # created_collections start
     def created_collections(self, name=None):
         result = self.get_created_collections(name)
-        if result :
+        if result:
             return result
 
         result = self.find_created_collections(name)
@@ -576,7 +579,7 @@ class ExecutionContext(Object):
         index_key = name+'_index'
         result = []
         if hasattr(self, index_key):
-            for index in range(self.get_localdata(index_key)) :
+            for index in range(self.get_localdata(index_key)):
                 result.append(self.get_created_collection(name, (index+1)))
 
         return result
@@ -596,7 +599,6 @@ class ExecutionContext(Object):
         root = self.root_execution_context()
         return root.find_subcreated_collections(name)
     # created_collections end
-
 
     #Data
     def add_data(self, name, data):
@@ -623,7 +625,7 @@ class ExecutionContext(Object):
 
     def find_subdata(self, name, index=-1):
         result = self.get_localdata(name, index)
-        if result is not None :
+        if result is not None:
             return [result]
         else:
             result = []
@@ -642,19 +644,19 @@ class Process(Entity):
 
     nodes = CompositeMultipleProperty('nodes', 'process', True)
     transitions = CompositeMultipleProperty('transitions', 'process', True)
-    execution_context = CompositeUniqueProperty('execution_context'
-                                              , 'process', True)
+    execution_context = CompositeUniqueProperty(
+        'execution_context', 'process', True)
 
     _started = False
     _finished = False
     # if attached to a subprocess
     attachedTo = None
 
-    def __init__(self, definition, startTransition, **kwargs):
+    def __init__(self, definition, start_transition, **kwargs):
         super(Process, self).__init__(**kwargs)
         self.id = definition.id
         self.global_transaction = Transaction()
-        self.startTransition = startTransition
+        self.start_transition = start_transition
         if not self.title:
             self.title = definition.title
 
@@ -670,7 +672,6 @@ class Process(Entity):
             transaction.commit()
         except Exception:
             transaction.abort()
-        
 
     def defineGraph(self, definition):
         for nodedef in definition.nodes:
@@ -689,11 +690,11 @@ class Process(Entity):
 
     def definition(self):
         def_container = find_service('process_definition_container')
-        pd = None
+        proce_def = None
         if def_container is not None:
-            pd = def_container.get_definition(self.id)
-            
-        return pd
+            proce_def = def_container.get_definition(self.id)
+
+        return proce_def
 
     definition = property(definition)
 
@@ -702,8 +703,8 @@ class Process(Entity):
         return self.definition.discriminator
 
     @property
-    def isSubProcess(self):
-        return self.definition.isSubProcess
+    def is_sub_process(self):
+        return self.definition.is_sub_process
 
     def replay_path(self, decision, transaction):
         path = decision.path
@@ -739,56 +740,57 @@ class Process(Entity):
                 executed_nodes.append(node)
                 node.replay_path(decision, transaction)
 
-    def getWorkItems(self):
+    def get_work_items(self):
         dace_catalog = find_catalog('dace')
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
         p_uid = get_oid(self, None)
         query = object_provides_index.any((IWorkItem.__identifier__,)) & \
-                process_inst_uid_index.any((int(p_uid),))
+            process_inst_uid_index.any((int(p_uid),))
         workitems = query.execute().all()
         result = {}
-        self.result_multiple = {} # for tests
-        for wi in workitems:
-            if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
-                for sub_process in wi.node.sub_processes:
-                    result.update(sub_process.getWorkItems())
+        self.result_multiple = {}  # for tests
+        for workitem in workitems:
+            if isinstance(workitem.node, SubProcess) and\
+               workitem.node.sub_processes:
+                for sub_process in workitem.node.sub_processes:
+                    result.update(sub_process.get_work_items())
 
-            if wi.node.id in result:
-                self.result_multiple[wi.node.id].append(wi)
+            if workitem.node.id in result:
+                self.result_multiple[workitem.node.id].append(workitem)
             else:
-                result[wi.node.id] = wi
-                self.result_multiple[wi.node.id] = [wi]
+                result[workitem.node.id] = workitem
+                self.result_multiple[workitem.node.id] = [workitem]
 
         return result
 
-    def getAllWorkItems(self, node_id=None):
+    def get_all_work_items(self, node_id=None):
         dace_catalog = find_catalog('dace')
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
         p_uid = get_oid(self, None)
         query = object_provides_index.any((IWorkItem.__identifier__,)) & \
-                process_inst_uid_index.any((int(p_uid),))
+            process_inst_uid_index.any((int(p_uid),))
         if node_id is not None:
             node_id_index = dace_catalog['node_id']
             query = query & node_id_index.eq(self.id+'.'+node_id)
 
         workitems = query.execute().all()
         result = []
-        for wi in workitems:
-            if wi is None:
-                log.error('getAllWorkItems: one of the wi is None for process %s', p_uid)
+        for workitem in workitems:
+            if workitem is None:
+                log.error('get_all_work_items: one of the wi is None for process %s', p_uid)
                 continue
 
-            if isinstance(wi.node, SubProcess) and wi.node.sub_processes:
-                for sub_process in wi.node.sub_processes:
-                    result.extend(sub_process.getAllWorkItems())
+            if isinstance(workitem.node, SubProcess) and \
+               workitem.node.sub_processes:
+                for sub_process in workitem.node.sub_processes:
+                    result.extend(sub_process.get_all_work_items())
 
-            if not wi in result:
-                result.append(wi)
+            if not workitem in result:
+                result.append(workitem)
 
         return result
-
 
     def start(self):
         if self._started:
@@ -800,7 +802,7 @@ class Process(Entity):
         registry.notify(ProcessStarted(self))
 
     def execute(self):
-        start_events = [self[s.__name__] for s in \
+        start_events = [self[s.__name__] for s in
                         self.definition._get_start_events()]
         for start_event in start_events:
             start_event.prepare()
@@ -821,17 +823,16 @@ class Process(Entity):
             for transition in transitions:
                 next_node = transition.target
                 starttransaction = self.global_transaction.start_subtransaction(
-                                            'Start',
-                                            transitions=(transition,),
-                                            initiator=transition.source)
+                    'Start', transitions=(transition,),
+                    initiator=transition.source)
                 next_node(starttransaction)
                 if self._finished:
                     break
 
-    def execute_action(self, context, request, 
+    def execute_action(self, context, request,
                        action_id, appstruct, ignor_validation=True):
         try:
-            workitems = self.getWorkItems()
+            workitems = self.get_work_items()
             workitem = workitems[self.id+'.'+action_id]
             action = workitem.actions[0]
             if not ignor_validation:
@@ -845,7 +846,7 @@ class Process(Entity):
 
     def get_actions(self, action_id):
         try:
-            workitems = self.getWorkItems()
+            workitems = self.get_work_items()
             workitem = workitems[self.id+'.'+action_id]
             return workitem.actions
         except Exception:
@@ -862,5 +863,5 @@ class Process(Entity):
         for action in actions:
             action.reindex()
 
-    def __repr__(self):# pragma: no cover
+    def __repr__(self):  # pragma: no cover
         return "Process(%r)" % self.definition.id

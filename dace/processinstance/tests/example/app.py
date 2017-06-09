@@ -6,7 +6,7 @@
 
 from pyramid.httpexceptions import HTTPFound
 
-from dace.util import getWorkItem
+from dace.util import get_work_item
 from dace.catalog.interfaces import ISearchableObject
 
 
@@ -15,7 +15,7 @@ from dace.catalog.interfaces import ISearchableObject
 class Action(object):
 
     def __call__(self, form):
-        work_item = getWorkItem(None, form.request, 'process_id', 'activity_id')
+        work_item = get_work_item(None, form.request, 'process_id', 'activity_id')
         work_item.lock()
         data = form.extractData()
         work_item.start(*data)
@@ -33,7 +33,7 @@ class StartBLink(object):
 
     def render(self):
         # need the permission, the action context, the action context's state
-        wi = getWorkItem(None, self.request, 'sample', 'b')
+        wi = get_work_item(None, self.request, 'sample', 'b')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -45,7 +45,7 @@ class StartBLink(object):
 class StartCLink(object):
 
     def render(self):
-        wi = getWorkItem(None, self.request, 'sample', 'c')
+        wi = get_work_item(None, self.request, 'sample', 'c')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -58,7 +58,7 @@ class StartDLink(object):
 
     def render(self):
         # need the permission, the action context, the action context's state
-        wi = getWorkItem(None, self.request, 'sample', 'd')
+        wi = get_work_item(None, self.request, 'sample', 'd')
         if wi is None:
             return u""
         p_uid = ISearchableObject(wi).process_inst_uid()
@@ -69,27 +69,27 @@ class StartDLink(object):
 
 class StartB(object):
     def render(self):
-        wi = getWorkItem(None, self.request, 'sample', 'b')
+        wi = get_work_item(None, self.request, 'sample', 'b')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartC(object):
     def render(self):
-        wi = getWorkItem(None, self.request, 'sample', 'c')
+        wi = get_work_item(None, self.request, 'sample', 'c')
         wi.start(['azerty', 'qwerty'])
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartD(object):
     def render(self):
-        wi = getWorkItem(None, self.request, 'sample', 'd')
+        wi = get_work_item(None, self.request, 'sample', 'd')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))
 
 
 class StartA(object):
     def render(self):
-        wi = getWorkItem(None, self.request, 'sample', 'a')
+        wi = get_work_item(None, self.request, 'sample', 'a')
         wi.start()
         return HTTPFound(self.request.resource_url(self.context,'@@index'))

@@ -17,8 +17,8 @@ from substanced.util import get_oid
 
 from dace.util import (
     find_service, get_obj, find_entities,
-    getBusinessAction, getAllBusinessAction,
-    getSite, request_memoize)
+    get_business_action, get_all_business_actions,
+    get_root, request_memoize)
 from dace import _
 from .core import (
     EventHandler,
@@ -56,7 +56,7 @@ class ActionType:
     system = 3
 
 
-def getBusinessActionValidator(action_cls):
+def get_business_action_validator(action_cls):
 
     class BusinessActionValidator(Validator):
 
@@ -87,7 +87,7 @@ def validate_action(action, context, request, **kw):
     if not action.workitem.validate():
         return False, _('Workitem is not valid')
 
-    if getattr(action, 'isSequential', False) and action.is_locked(request):
+    if getattr(action, 'is_sequential', False) and action.is_locked(request):
         return False, _('Action is locked')
 
     elif not getattr(action.roles_validation,
@@ -104,7 +104,7 @@ def validate_action(action, context, request, **kw):
 
     _assigned_to = list(action.assigned_to)
     if _assigned_to:
-        _assigned_to.append(getSite()['principals']['users']['admin'])
+        _assigned_to.append(get_root()['principals']['users']['admin'])
         current_user = get_current(request)
         if current_user not in _assigned_to:
             return False, _('Action is assigned to an other user')
@@ -123,14 +123,14 @@ class Activity(BehavioralFlowNode, EventHandler):
         if not isinstance(users, (list, tuple)):
             users = [users]
 
-        users = [u for u in users if not(u in self.assigned_to)]
+        users = [u for u in users if u not in self.assigned_to]
         self.assigned_to.extend(users)
 
     def unassigne(self, users):
         if not isinstance(users, (list, tuple)):
             users = [users]
 
-        users = [u for u in users if (u in self.assigned_to)]
+        users = [u for u in users if u in self.assigned_to]
         for user in users:
             self.assigned_to.remove(user)
 
@@ -148,13 +148,14 @@ class SubProcess(Activity):
 
     def _start_subprocess(self, action):
         def_container = find_service('process_definition_container')
-        pd = def_container.get_definition(getattr(self.definition.sub_process_definition,
-                                                  'id', self.definition.sub_process_definition))
-        proc = pd()
+        proc_def = def_container.get_definition(
+            getattr(self.definition.sub_process_definition,
+                    'id', self.definition.sub_process_definition))
+        proc = proc_def()
         proc.__name__ = proc.id
         runtime = find_service('runtime')
         runtime.addtoproperty('processes', proc)
-        proc.defineGraph(pd)
+        proc.defineGraph(proc_def)
         self.definition._init_subprocess(self.process, proc)
         proc.attachedTo = action
         proc.execute()
@@ -212,11 +213,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
            source_action.validate(context, request):
             return source_action
 
-        instances = getBusinessAction(context, request,
-                                      cls.node_definition.process.id,
-                                      cls.node_definition.__name__,
-                                      cls.behavior_id,
-                                      action_type=cls)
+        instances = get_business_action(
+            context, request,
+            cls.node_definition.process.id,
+            cls.node_definition.__name__,
+            action_type=cls)
 
         if instances is None:
             return None
@@ -231,21 +232,21 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
-        instance = getBusinessAction(context, request,
-                                      cls.node_definition.process.id,
-                                      cls.node_definition.__name__,
-                                      cls.behavior_id)
+        instance = get_business_action(
+            context, request,
+            cls.node_definition.process.id,
+            cls.node_definition.__name__,)
         return instance
 
     @classmethod
     def get_validator(cls, **kw):
-        return getBusinessActionValidator(cls)
+        return get_business_action_validator(cls)
 
     @property
     def potential_contexts_ids(self):
         try:
             contexts = self.process.execution_context.involved_entities(
-                                               self.processs_relation_id)
+                self.processs_relation_id)
             result = []
             for context in contexts:
                 try:
@@ -259,7 +260,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def actions(self):
-        allactions = getAllBusinessAction(self)
+        allactions = get_all_business_actions(self)
         return [ActionCall(a, self) for a in allactions]
 
     @property
@@ -280,7 +281,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             return self.node_definition
 
         return self.node.definition if isinstance(self.node, BPMNElement)\
-               else self.node
+            else self.node
 
     @property
     def node_id(self):
@@ -289,10 +290,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     @property
     def groups(self):
         return self.definition.groups
-
-    @property
-    def view_name(self):
-        return self.action_view.name
 
     @property
     def isautomatic(self):
@@ -308,18 +305,18 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def informations(self):# pragma: no cover
-        if self.process is not None:
-            return 'Description: ' + \
-                   self.description + \
-                   '\n Process: '+self.process.title
-        else:
-            return 'Description: ' + \
-                    self.description  + \
-                    '\n Process: '+self.node.process.id
+        return "Description: {description} \n Process: {process}".format(
+            description=self.process.description,
+            process=self.process.title if self.process
+            else self.node.process.id)
 
     @property
     def action_view(self):
         return DEFAULTMAPPING_ACTIONS_VIEWS.get(self.__class__, None)
+
+    @property
+    def view_name(self):
+        return self.action_view.name
 
     @property
     def assigned_to(self):
@@ -363,7 +360,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             query = {'isstart': 'True'}
 
         return get_current_request().resource_url(
-            obj, '@@'+self.view_name,  query=query)
+            obj, '@@'+self.view_name, query=query)
 
     def assigne_to(self, users):
         if not isinstance(users, (list, tuple)):
@@ -416,10 +413,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             if self.sub_process:
                 if ITEM_INDEX in kw:
                     self.sub_process.execution_context.add_involved_entity(
-                                                 ITEM_INDEX, kw[ITEM_INDEX])
+                        ITEM_INDEX, kw[ITEM_INDEX])
 
                 self.process.execution_context.add_sub_execution_context(
-                                       self.sub_process.execution_context)
+                    self.sub_process.execution_context)
 
     def finish_execution(self, context, request, **kw):
         self.after_execution(context, request, **kw)
@@ -461,6 +458,7 @@ class StartStep(Behavior, Persistent):
         kw.update(result_execution)
         self.after_execution(context, request, **kw)
 
+
 class EndStep(Behavior, Persistent):
 
     def __init__(self, **kwargs):
@@ -480,6 +478,7 @@ class EndStep(Behavior, Persistent):
             self.wizard.finish_execution(context, request, **kw)
 
         return self.redirect(context, request, **kw)
+
 
 class ElementaryAction(BusinessAction):
 
@@ -503,20 +502,20 @@ class ElementaryAction(BusinessAction):
 # Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
 class LoopActionCardinality(BusinessAction):
 
-    loopMaximum = None
-    loopCondition = None
-    testBefore = False
+    loop_maximum = None
+    loop_condition = None
+    test_before = False
 
     def __init__(self, workitem, **kwargs):
         super(LoopActionCardinality, self).__init__(workitem, **kwargs)
-        self.loopMaximum = self.loopMaximum.__func__(self.process)
+        self.loop_maximum = self.loop_maximum.__func__(self.process)
 
     def _executeBefore(self, context, request, appstruct, **kw):
         nbloop = 0
         result_execution = {}
-        while self.loopCondition.__func__(context, request,
-                                    self.process, appstruct) and \
-              nbloop < self.loopMaximum:
+        while self.loop_condition.__func__(
+            context, request, self.process, appstruct) and \
+                nbloop < self.loop_maximum:
             result = self.start(context, request, appstruct, **kw)
             result_execution.update(result)
             nbloop += 1
@@ -526,27 +525,27 @@ class LoopActionCardinality(BusinessAction):
     def _executeAfter(self, context, request, appstruct, **kw):
         nbloop = 0
         result_execution = {}
-        while nbloop < self.loopMaximum:
+        while nbloop < self.loop_maximum:
             result = self.start(context, request, appstruct, **kw)
             result_execution.update(result)
             nbloop += 1
-            if not self.loopCondition.__func__(context, request,
-                                        self.process, appstruct):
+            if not self.loop_condition.__func__(
+                    context, request, self.process, appstruct):
                 break
 
         return result_execution
 
     def execute(self, context, request, appstruct, **kw):
-        super(LoopActionCardinality, self).execute(context, request,
-                                                   appstruct, **kw)
+        super(LoopActionCardinality, self).execute(
+            context, request, appstruct, **kw)
         result_execution = {}
         try:
-            if self.testBefore:
+            if self.test_before:
                 result_execution = self._executeBefore(
-                                          context, request, appstruct, **kw)
+                    context, request, appstruct, **kw)
             else:
                 result_execution = self._executeAfter(
-                                          context, request, appstruct, **kw)
+                    context, request, appstruct, **kw)
         except ExecutionError as error:
             self.finish_execution(context, request, **kw)
             raise error
@@ -561,13 +560,13 @@ class LoopActionCardinality(BusinessAction):
 
 class LoopActionDataInput(BusinessAction):
 
-    loopDataInputRef = None
+    loop_data_input_ref = None
 
     def execute(self, context, request, appstruct, **kw):
         super(LoopActionDataInput, self).execute(context, request,
                                                  appstruct, **kw)
-        instances = self.loopDataInputRef.__func__(context, request,
-                                             self.process, appstruct)
+        instances = self.loop_data_input_ref.__func__(
+            context, request, self.process, appstruct)
         result_execution = {}
         for item in instances:
             if kw:
@@ -587,12 +586,11 @@ class LoopActionDataInput(BusinessAction):
 
 
 class MultiInstanceAction(BusinessAction):
-    loopCardinality = None
-    isSequential = False
-
+    loop_cardinality = None
+    is_sequential = False
 
     def is_locked(self, request):
-        if not self.isSequential:
+        if not self.is_sequential:
             return False
 
         return super(MultiInstanceAction, self).is_locked(request)
@@ -600,11 +598,10 @@ class MultiInstanceAction(BusinessAction):
 
 class LimitedCardinality(MultiInstanceAction):
 
-
     def __init__(self, workitem, **kwargs):
         super(LimitedCardinality, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
-        self.numberOfInstances = self.loopCardinality.__func__(self.process)
+        self.numberOfInstances = self.loop_cardinality.__func__(self.process)
         for instance_num in range(self.numberOfInstances):
             #@TODO solution plus simple
             ActionInstance._init_attributes_(ActionInstance, self)
@@ -617,20 +614,20 @@ class LimitedCardinality(MultiInstanceAction):
 
 class InfiniteCardinality(MultiInstanceAction):
 
-    loopCardinality = -1
+    loop_cardinality = -1
 
     def before_execution(self, context, request, **kw):
-        if self.isSequential:
+        if self.is_sequential:
             self.lock(request)
             self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
-        if self.isSequential:
+        if self.is_sequential:
             self.unlock(request)
             self.workitem.unlock(request)
 
     def cancel_execution(self, context, request, **kw):
-        if self.isSequential:
+        if self.is_sequential:
             self.unlock(request)
             self.workitem.unlock(request)
 
@@ -647,23 +644,24 @@ class InfiniteCardinality(MultiInstanceAction):
 
 class DataInput(MultiInstanceAction):
 
-    loopDataInputRef = None
-    dataIsPrincipal = True
+    loop_data_input_ref = None
+    data_is_principal = True
 
     def __init__(self, workitem, **kwargs):
         super(DataInput, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
-        # loopDataInputRef renvoie une liste d'elements identifiables
-        self.instances = self.loopDataInputRef.__func__(self.process)
+        # loop_data_input_ref renvoie une liste d'elements identifiables
+        self.instances = self.loop_data_input_ref.__func__(self.process)
         for instance in self.instances:
-            if self.dataIsPrincipal:
-                ActionInstanceAsPrincipal._init_attributes_(ActionInstanceAsPrincipal, self)
-                self.workitem.actions.append(ActionInstanceAsPrincipal(
-                                              instance, self, workitem))
+            if self.data_is_principal:
+                ActionInstanceAsPrincipal._init_attributes_(
+                    ActionInstanceAsPrincipal, self)
+                self.workitem.actions.append(
+                    ActionInstanceAsPrincipal(instance, self, workitem))
             else:
                 ActionInstance._init_attributes_(ActionInstance, self)
-                self.workitem.actions.append(ActionInstance(
-                                   instance, self, workitem))
+                self.workitem.actions.append(
+                    ActionInstance(instance, self, workitem))
 
             self.isexecuted = True
 
@@ -706,30 +704,23 @@ class ActionInstance(BusinessAction):
         return None
 
     @property
-    def informations(self):# pragma: no cover
-        item_id = str(self.item)
-        if not isinstance(self.item, int):
-            item_id = self.item.title
+    def informations(self):  # pragma: no cover
+        return ("Description: {description} \n "
+                "Process: {process} \n Instance: {item}").format(
+            description=self.process.description,
+            process=self.process.title if self.process
+            else self.node.process.id,
+            item=self.item.title if not isinstance(self.item, int)
+            else str(self.item))
 
-        if self.process is not None:
-            return 'Description: ' + \
-                   self.description + \
-                   '\n Process: ' + \
-                   self.process.title+'\n Instance: '+item_id
-        else:
-            return 'Description: ' + \
-                   self.description + \
-                   '\n Process: ' + \
-                   self.node.process.id+'\n Instance: '+item_id
-
-    def before_execution(self,context, request, **kw):
+    def before_execution(self, context, request, **kw):
         self.lock(request)
-        if self.principalaction.isSequential:
+        if self.principalaction.is_sequential:
             self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
         self.unlock(request)
-        if self.principalaction.isSequential:
+        if self.principalaction.is_sequential:
             self.workitem.unlock(request)
 
         if not self.principalaction.instances:
@@ -737,7 +728,7 @@ class ActionInstance(BusinessAction):
 
     def cancel_execution(self, context, request, **kw):
         self.unlock(request)
-        if self.principalaction.isSequential:
+        if self.principalaction.is_sequential:
             self.workitem.unlock(request)
 
     def start(self, context, request, appstruct, **kw):
@@ -754,7 +745,7 @@ class ActionInstance(BusinessAction):
             result_execution = self.start(context, request, appstruct, **kw)
         except ExecutionError as error:
             self.unlock(request)
-            if self.principalaction.isSequential:
+            if self.principalaction.is_sequential:
                 self.workitem.unlock(request)
 
             raise error
@@ -778,7 +769,7 @@ class ActionInstanceAsPrincipal(ActionInstance):
             return False, _('Context not valid')
 
         return super(ActionInstanceAsPrincipal, self).validate_mini(
-                                             context, request, **kw)
+            context, request, **kw)
 
     def execute(self, context, request, appstruct, **kw):
         if kw is not None:
@@ -786,6 +777,6 @@ class ActionInstanceAsPrincipal(ActionInstance):
         else:
             kw = {ITEM_INDEX: self.item}
         return super(ActionInstanceAsPrincipal, self).execute(
-                             context, request, appstruct, **kw)
+            context, request, appstruct, **kw)
 
 # il faut ajouter le callAction dans BPMN 2.0 c'est CallActivity
