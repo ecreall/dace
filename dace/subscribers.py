@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms
-# avalaible on http://www.gnu.org/licenses/agpl.html
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
@@ -123,16 +123,24 @@ class ConsumeTasks(threading.Thread):
 
 consumetasks = None
 curr_sigint_handler = signal.getsignal(signal.SIGINT)
+curr_sigterm_handler = signal.getsignal(signal.SIGTERM)
 
 
 def sigint_handler(*args):
     stop_ioloop()
     curr_sigint_handler(*args)
 
+
+def sigterm_handler(*args):
+    stop_ioloop()
+    curr_sigterm_handler(*args)
+
+
 # executed when 'system' app is started
 def start_ioloop(event):
     """Start loop."""
     signal.signal(signal.SIGINT, sigint_handler)
+    signal.signal(signal.SIGTERM, sigterm_handler)
     global consumetasks
     if consumetasks is None:
         registry = get_current_registry()
@@ -153,11 +161,11 @@ def start_intermediate_events_callback():
     query = catalog['object_provides'].any((IWorkItem.__identifier__,))
     results = query.execute().all()
     for wi in results:
-        node = wi.node
+        node = getattr(wi, 'node', None)
         if isinstance(node, IntermediateCatchEvent):
             if node.execution_prepared:
+                log.info("Calling %s.eventKind.prepare_for_execution()", node)
                 node.eventKind.prepare_for_execution(True)
-            log.info("Calling %s.eventKind.prepare_for_execution()", node)
     # commit to execute after commit hooks
     transaction.commit()
 

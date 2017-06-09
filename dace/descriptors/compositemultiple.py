@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
@@ -22,8 +22,7 @@ class CompositeMultipleProperty(Descriptor):
 
     def _get(self, obj):
         contents_keys = obj.__dict__.get(self.key, _empty)
-        return list(filter(lambda x: x is not None,
-                           (obj.get(key, None) for key in contents_keys)))
+        return [o for o in (obj.get(key, None) for key in contents_keys) if o is not None]
 
     def __get__(self, obj, objtype=None):
         if obj is None:

@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms
-# avalaible on http://www.gnu.org/licenses/agpl.html
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author:  Vincent Fretin, Amen Souissi
@@ -57,7 +57,6 @@ class RequestMemojito(object):
             if val is _marker:
                 val = func(*args, **kwargs)
                 cache[key] = val
-                setattr(request, self.propname, cache)
             return val
         return memogetter
 

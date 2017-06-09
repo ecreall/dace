@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms
-# avalaible on http://www.gnu.org/licenses/agpl.html
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -27,9 +27,7 @@ from substanced.interfaces import IUserLocator
 from substanced.principal import DefaultUserLocator
 from substanced.util import (
     find_objectmap,
-    find_catalog as fcsd,
     get_oid,
-    find_service as fssd,
     BrokenWrapper)
 
 from dace.interfaces import (
@@ -50,6 +48,33 @@ STRING_PUNCTUATION = ' ' + string.punctuation.translate(
     {ord(c): None for c in SPECIAL_CHAR})
 
 NAME_RE_MAPPING = {ord(c): '-' for c in STRING_PUNCTUATION}
+
+
+class RequestMemojito(object):
+    propname = '_memojito_'
+
+    def request_memoize(self, func):
+
+        def memogetter(*args, **kwargs):
+            request = get_current_request()
+            cache = getattr(request, self.propname, _marker)
+            if cache is _marker:
+                setattr(request, self.propname, dict())
+                cache = getattr(request, self.propname)
+
+            # XXX this could be potentially big, a custom key should
+            # be used if the arguments are expected to be big
+            key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
+            val = cache.get(key, _marker)
+            if val is _marker or getattr(request, 'test', False) or \
+               getattr(request, 'invalidate_cache', False):
+                val = func(*args, **kwargs)
+                cache[key] = val
+            return val
+        return memogetter
+
+_m = RequestMemojito()
+request_memoize = _m.request_memoize
 
 
 class BaseJob(object):
@@ -232,14 +257,12 @@ def get_obj(oid, only_exists=False):
     return obj
 
 
-def find_catalog(name=None):
-    resource = getSite()
-    return fcsd(resource, name)
+def find_catalog(name):
+    return get_current_request().root['catalogs'].get(name, None)
 
 
-def find_service(name=None):
-    resource = getSite()
-    return fssd(resource, name)
+def find_service(name):
+    return get_current_request().root.get(name, None)
 
 
 def allSubobjectsOfType(root=None, interface=None):
@@ -350,6 +373,7 @@ def always_false(context, request):
     return False, _('Default validation')
 
 
+@request_memoize
 def getBusinessAction(context,
                       request,
                       process_id,
@@ -383,13 +407,10 @@ def getBusinessAction(context,
     pd = def_container.get_definition(process_id)
     # Add start workitem
     if not pd.isControlled:
-        s_wi = pd.start_process(node_id)[node_id]
-        if s_wi:
-            swisactions = (action for action in s_wi.actions
-                           if action_type is None or \
-                              action._class_.__name__ == action_type.__name__)
-            allactions.extend(action for action in swisactions
-                              if action.validate_mini(context, request)[0])
+        swisactions = get_start_workitems_actions(
+            pd, node_id, isautomatic=False, action_type=action_type)
+        allactions.extend(action for action in swisactions
+                          if action.validate_mini(context, request)[0])
 
     if allactions:
         return allactions
@@ -439,6 +460,10 @@ def getAllBusinessAction(context,
                          behavior_id=None,
                          process_discriminator=None,
                          action_type=None):
+    process_ids = process_id
+    if process_id and not isinstance(process_id, (list, tuple)):
+        process_ids = [process_id]
+
     if request is None:
         request = get_current_request()
 
@@ -462,19 +487,19 @@ def getAllBusinessAction(context,
         isautomatic_index = dace_catalog['isautomatic']
         query = query & isautomatic_index.eq(True)
 
-    if process_id:
+    if process_ids:
         process_id_index = dace_catalog['process_id']
-        query = query & process_id_index.eq(process_id)
-        allprocessdef = [def_container.get_definition(process_id)]
+        query = query & process_id_index.any(process_ids)
+        allprocessdef = [def_container.get_definition(p_id) for p_id in process_ids]
     else:
         if process_discriminator:
-            allprocessdef = [pd for pd in def_container.definitions \
+            allprocessdef = [pd for pd in def_container.definitions
                              if any(context.__provides__(pd_context)
-                                    for pd_context in pd.contexts) and \
-                                pd.discriminator == process_discriminator and \
+                                    for pd_context in pd.contexts) and
+                                pd.discriminator == process_discriminator and
                                 not pd.isControlled]
         else:
-            allprocessdef = [pd for pd in def_container.definitions \
+            allprocessdef = [pd for pd in def_container.definitions
                              if not pd.isControlled]
 
     if node_id:
@@ -490,18 +515,28 @@ def getAllBusinessAction(context,
                             context, request)[0]]
     # Add start workitem
     for pd in allprocessdef:
-        wis = (wi for wi in pd.start_process(node_id).values() if wi)
-        for wi in wis:
-            swisactions = (action for action in wi.actions \
-                           if (not isautomatic or \
-                               (isautomatic and action.isautomatic)) and \
-                              (action_type is None or \
-                               action._class_.__name__ == action_type.__name__))
-
-            allactions.extend(action for action in swisactions
-                              if action.validate_mini(context, request)[0])
+        swisactions = get_start_workitems_actions(
+            pd, node_id, isautomatic=isautomatic, action_type=action_type)
+        allactions.extend(action for action in swisactions
+                          if action.validate_mini(context, request)[0])
 
     return allactions
+
+
+@request_memoize
+def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
+    # node_id can be None, so we need to iterate on all wis
+    wis = (wi for wi in pd.start_process(node_id).values() if wi)
+    actions = []
+    for wi in wis:
+        swisactions = [action for action in wi.actions
+                       if (not isautomatic or
+                           (isautomatic and action.isautomatic)) and
+                          (action_type is None or
+                           action._class_.__name__ == action_type.__name__)]
+        actions.extend(swisactions)
+
+    return actions
 
 
 def getWorkItem(context, request, process_id, node_id):
@@ -822,31 +857,3 @@ def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
             dc.start()
 
     transaction.get().addAfterCommitHook(after_commit_hook)
-
-
-class RequestMemojito(object):
-    propname = '_memojito_'
-
-    def request_memoize(self, func):
-
-        def memogetter(*args, **kwargs):
-            request = get_current_request()
-            cache = getattr(request, self.propname, _marker)
-            if cache is _marker:
-                setattr(request, self.propname, dict())
-                cache = getattr(request, self.propname)
-
-            # XXX this could be potentially big, a custom key should
-            # be used if the arguments are expected to be big
-            key = (func.__module__, func.__name__, args, tuple(sorted(kwargs.items())))
-            val = cache.get(key, _marker)
-            if val is _marker or getattr(request, 'test', False) or \
-               getattr(request, 'invalidate_cache', False):
-                val = func(*args, **kwargs)
-                cache[key] = val
-                setattr(request, self.propname, cache)
-            return val
-        return memogetter
-
-_m = RequestMemojito()
-request_memoize = _m.request_memoize

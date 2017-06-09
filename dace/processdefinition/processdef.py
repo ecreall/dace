@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -205,7 +205,7 @@ class ProcessDefinition(Entity):
 
             return {}
 
-        #une transaction globale pour chaque demande
+        # une transaction globale pour chaque demande
         global_transaction = Transaction()
         start_transition = self._startTransition
         startevent = start_transition.source
@@ -214,14 +214,9 @@ class ProcessDefinition(Entity):
             type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         if node_name is None:
-            start_workitems = {wi.node.__name__: wi for wi in start_workitems}
             return start_workitems
 
-        for wi in start_workitems:
-            if node_name == wi.node.__name__:
-                return {node_name: wi}
-
-        return {node_name: None}
+        return {node_name: start_workitems.get(node_name, None)}
 
     @property
     def is_started(self):
@@ -242,3 +237,4 @@ class ProcessDefinition(Entity):
             (IProcess.__identifier__,)) & \
             processid_index.eq(self.id)
         return list(query.execute().all())
+

@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -252,44 +252,35 @@ class Path(Persistent):
 
     @reify
     def first(self):
-        if self.transitions:
-            source_transitions = []
-            for transition in self.transitions:
-                is_source = True
-                for inc in transition.source.incoming:
-                    if  self.contains_transition(inc):
-                        is_source = False
-                        break
+        source_transitions = []
+        for transition in self.transitions:
+            is_source = True
+            for inc in transition.source.incoming:
+                if self.contains_transition(inc):
+                    is_source = False
+                    break
 
-                if is_source:
-                    source_transitions.append(transition)
+            if is_source:
+                source_transitions.append(transition)
 
-            return source_transitions
-
-        return []
+        return source_transitions
 
     @reify
     def latest(self):
-        if self.transitions:
-            target_transitions = []
-            for transition in self.transitions:
-                is_target = True
-                for inc in transition.target.outgoing:
-                    if  self.contains_transition(inc):
-                        is_target = False
-                        break
+        target_transitions = []
+        for transition in self.transitions:
+            is_target = True
+            for inc in transition.target.outgoing:
+                if self.contains_transition(inc):
+                    is_target = False
+                    break
 
-                if is_target:
-                    target_transitions.append(transition)
+            if is_target:
+                target_transitions.append(transition)
 
-            return target_transitions
-
-        return []
+        return target_transitions
 
     def next(self, transition):
-        if not self.contains_transition(transition):
-            return None
-
         return self._get_transitions_source(transition.target)
 
     def clone(self):
@@ -319,13 +310,11 @@ class Path(Persistent):
         return False
 
     def _get_transitions_source(self, node):
-        return list({(t.source, t.target): t for t in self.transitions \
-                      if t.source is node}.values())
+        return {t for t in self.transitions if t.source is node}
 
 
     def _get_transitions_target(self, node):
-        return list({(t.source, t.target): t for t in self.transitions \
-                            if t.target is node}.values())
+        return {t for t in self.transitions if t.target is node}
 
     @reify
     def get_multiple_target(self):
@@ -353,7 +342,7 @@ class Path(Persistent):
             return False
 
         for transition in other.transitions:
-            if not (transition in self.transitions):
+            if not transition in self.transitions:
                 return False
 
         return len(self.transitions) == len(other.transitions)

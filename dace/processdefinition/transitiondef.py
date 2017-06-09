@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -58,7 +58,7 @@ class TransitionDefinition(Object):
         self.id = '%s-%s' % (self.source_id, self.target_id)
         self.setproperty('source', newsource)
 
-    def equal(self, other): #deprecated
+    def equal(self, other):
         return self.id == other.id
 
     def __repr__(self):# pragma: no cover

@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -9,12 +9,12 @@ import random
 
 from pyramid.threadlocal import get_current_request
 
-from substanced.util import get_oid, find_service
+from substanced.util import get_oid
 from substanced.principal import User
 
 from dace.relations import connect, disconnect, find_relations
 from dace.objectofcollaboration.principal import Group
-from dace.util import getSite
+from dace.util import getSite, find_service
 from .role import DACE_ROLES, Anonymous as RoleAnonymous
 
 
@@ -71,14 +71,14 @@ def get_roles(user=None, obj=None,
             u'target_id': get_oid(obj)}
     opts[u'reftype'] = 'Role'
     roles = [r.relation_id for r in find_relations(obj, opts).all()]
-    principals = find_service(root, 'principals')
+    principals = find_service('principals')
     sd_admin = principals['users']['admin']
     if sd_admin is user and 'Admin' not in roles:
         roles.append('Admin')
 
     groups = []
     if not ignore_groups:
-        groups.extend(getattr(user, 'groups', []))
+        groups.extend(getattr(user, 'user_groups', []))
 
     for group in groups:
         roles.extend(get_roles(group, obj, root))
@@ -184,12 +184,12 @@ def has_role(role, user=None, ignore_superiors=False, root=None):
         #TODO use cookies to find roles
 
     if 'Admin' in  normalized_roles:
-        principals = find_service(root, 'principals')
+        principals = find_service('principals')
         sd_admin = principals['users']['admin']
         if sd_admin is user:
             return True
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
@@ -232,12 +232,12 @@ def has_any_roles(user=None,
         return RoleAnonymous.name in normalized_roles
 
     if 'Admin' in  normalized_roles:
-        principals = find_service(root, 'principals')
+        principals = find_service('principals')
         sd_admin = principals['users']['admin']
         if sd_admin is user:
             return True
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     for role in normalized_roles:
         context = normalized_roles[role]
@@ -319,10 +319,15 @@ def get_objects_with_role(user=None, role=None, root=None):
     if root is None:
         root = getSite()
 
-    opts = {u'source_id': get_oid(user)}
-    opts[u'relation_id'] = role
-    opts[u'reftype'] = 'Role'
-    objects = [r.target for r in find_relations(root, opts).all()]
+    groups = list(getattr(user, 'user_groups', []))
+    groups.append(user)
+    objects = []
+    for principal in groups:
+        opts = {u'source_id': get_oid(principal)}
+        opts[u'relation_id'] = role
+        opts[u'reftype'] = 'Role'
+        objects.extend([r.target for r in find_relations(root, opts).all()])
+
     objects = list(set(objects))
     if root in objects:
         objects.remove(root)
@@ -334,7 +339,7 @@ def get_access_keys(user, root=None, to_exclude=[]):
     if isinstance(user, Anonymous):
         return ['anonymous']
 
-    principals = find_service(user, 'principals')
+    principals = find_service('principals')
     sd_admin = principals['users']['admin']
     pricipal_root = getSite()
     if root is None:
@@ -346,7 +351,7 @@ def get_access_keys(user, root=None, to_exclude=[]):
         return list(set([('admin'+'_'+str(root_oid)).lower(),
                 ('admin'+'_'+str(principal_root_oid)).lower()]))
 
-    groups = list(getattr(user, 'groups', []))
+    groups = list(getattr(user, 'user_groups', []))
     groups.append(user)
     relations = []
     for group in groups:

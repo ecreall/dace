@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms
-# avalaible on http://www.gnu.org/licenses/agpl.html
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
@@ -19,6 +19,7 @@ class SharedMultipleProperty(Descriptor):
         self.opposite = opposite
         self.isunique = isunique
         self.key = '_' + propertyref + '_value'
+        self.v_attr = '_v_' + propertyref
 
     def _get(self, obj):
         """Return a tuple (references, need_cleanup)
@@ -27,15 +28,26 @@ class SharedMultipleProperty(Descriptor):
         ResourceRef that evaluated to None and so can be removed.
         """
         references = obj.__dict__.get(self.key, _empty)
-        values = list(filter(lambda x: x is not None,
-                      (get_ref(o) for o in references)))
+        values = [e for e in (get_ref(o) for o in references) if e is not None]
         return values, len(references) != len(values)
 
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
 
-        return self._get(obj)[0]
+        try:
+            results = getattr(obj, self.v_attr)  # without third arg to trigger AttributeError
+            try:
+                # we need to check if each object has not been removed from their container
+                return [o for o in results if getattr(o, '__name__', None) is not None]
+            except POSKeyError:
+                # in case of zeopack (see comments in base.py:ResourceRef)
+                raise AttributeError
+        except AttributeError:
+            # We don't use "return self._get(obj)[0]" for perf reason
+            results = [e for e in (get_ref(o) for o in obj.__dict__.get(self.key, _empty)) if e is not None]
+            setattr(obj, self.v_attr, results)
+            return results
 
     def add(self, obj, value, initiator=True, moving=None):
         if value is None:
@@ -101,5 +113,10 @@ class SharedMultipleProperty(Descriptor):
                 relations.remove(value)
 
     def init(self, obj):
+        try:
+            delattr(obj, self.v_attr)
+        except AttributeError:
+            pass
+
         if getattr(obj, self.key, _marker) is _marker:
             setattr(obj, self.key, PersistentList())

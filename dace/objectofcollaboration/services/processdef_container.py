@@ -1,5 +1,5 @@
 # Copyright (c) 2014 by Ecreall under licence AGPL terms 
-# avalaible on http://www.gnu.org/licenses/agpl.html 
+# available on http://www.gnu.org/licenses/agpl.html
 
 # licence: AGPL
 # author: Amen Souissi
@@ -31,11 +31,8 @@ class ProcessDefinitionContainer(Entity):
         definition.init_definition()
 
     def get_definition(self, name):
-        for definition in self.definitions:
-            if definition.id == name:
-                return definition
-
-        return None
+        # Don't iterate on self.definitions property for performance reason.
+        return self.get(name, None)
 
 
 class process_definition(object):
