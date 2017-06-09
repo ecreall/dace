@@ -19,7 +19,7 @@ class MyProcess(ProcessDefinition):
 
     def init_definition(self):
         # define process nodes
-        self.defineNodes(
+        self.define_nodes(
             # start node: the beginning of the process
             start=StartEventDefinition(),
             # hello node
@@ -33,7 +33,7 @@ class MyProcess(ProcessDefinition):
             end=EndEventDefinition(),
         )
         # define transitions between process nodes
-        self.defineTransitions(
+        self.define_transitions(
             TransitionDefinition('start', 'hello'),
             TransitionDefinition('hello', 'end'),
         )

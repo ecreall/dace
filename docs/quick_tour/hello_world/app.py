@@ -11,7 +11,7 @@ from dace.processdefinition.eventdef import (
 from dace.objectofcollaboration.services.processdef_container import (
     process_definition)
 from dace.processinstance.activity import ElementaryAction
-from dace.util import getAllBusinessAction
+from dace.util import get_all_business_actions
 
 # Step 1: Define a behavior to execute. This behavior is an
 # 'ElementaryAction'. It means that the behavior is executed
@@ -32,7 +32,7 @@ class MyProcess(ProcessDefinition):
 
     def init_definition(self):
         # define process nodes
-        self.defineNodes(
+        self.define_nodes(
             # start node: the beginning of the process
             start=StartEventDefinition(),
             # hello node
@@ -46,7 +46,7 @@ class MyProcess(ProcessDefinition):
             end=EndEventDefinition(),
         )
         # define transitions between process nodes
-        self.defineTransitions(
+        self.define_transitions(
             TransitionDefinition('start', 'hello'),
             TransitionDefinition('hello', 'end'),
         )
@@ -57,10 +57,10 @@ class MyProcess(ProcessDefinition):
 # defined in our process.
 @view_config(name='my_process', renderer='json')
 def my_process_view(request):
-    # 'getAllBusinessAction' enable to retrieve all of
+    # 'get_all_business_actions' enable to retrieve all of
     # behaviors in all of process instances with the id
     # equal to 'myprocessid'
-    process_actions = getAllBusinessAction(
+    process_actions = get_all_business_actions(
         context=request.root,
         request=request,
         process_id='myprocessid')

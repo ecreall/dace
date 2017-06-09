@@ -136,7 +136,7 @@ New to DaCE? If so, some lines in the module merit an explanation:
 
 #. *Step 1 - Line 20*. The behavior is executed only on objects that implement the ``context``.
 
-#. *Step 3 - Line 63*. ``getAllBusinessAction`` retrieves all of behaviors in all of process instances of myprocessid for a given object. For more information about the DaCE utilities see :ref:`DaCE utilities <dace_utilities>`
+#. *Step 3 - Line 63*. ``get_all_business_actions`` retrieves all of behaviors in all of process instances of myprocessid for a given object. For more information about the DaCE utilities see :ref:`DaCE utilities <dace_utilities>`
 
 .. seealso::
    :ref:`Quick Tutorial Hello World <qtut_hello_world>`

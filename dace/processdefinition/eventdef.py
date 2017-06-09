@@ -21,12 +21,13 @@ class EventHandlerDefinition(FlowNodeDefinition):
     def __init__(self, **kwargs):
         super(EventHandlerDefinition, self).__init__(**kwargs)
 
+
 class EventDefinition(FlowNodeDefinition):
 
     def __init__(self, event_kind=None, **kwargs):
-        super(EventDefinition, self).__init__( **kwargs)
+        super(EventDefinition, self).__init__(**kwargs)
         self.event_kind = event_kind
-        self.contexts = ()
+        self.behaviors = ()
 
     def create(self):
         event_kind = self.event_kind and self.event_kind.create() or None

@@ -37,9 +37,7 @@ class ProcessDefinitionContainer(Entity):
 
 class process_definition(object):
 
-    def __init__(self, id, direct=False, **kw):
-        self.id = id
-        self.name = id
+    def __init__(self, direct=False, **kw):
         self.direct = direct
         self.kw = kw
 
