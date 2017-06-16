@@ -18,7 +18,7 @@ _ =  TranslationStringFactory('dace')
 
 
 def update_process_definitions(root):
-    from dace.objectofcollaboration.services import processdef_container
+    from dace.model.services import processdef_container
     def_container = root['process_definition_container']
     for definition in def_container.definitions:
         if hasattr(definition, '_broken_object'):

@@ -1,10 +1,10 @@
-from dace.processdefinition.processdef import ProcessDefinition
-from dace.processdefinition.activitydef import ActivityDefinition
-from dace.processdefinition.transitiondef import TransitionDefinition
-from dace.processdefinition.eventdef import (
+from dace.definition.processdef import ProcessDefinition
+from dace.definition.activitydef import ActivityDefinition
+from dace.definition.transitiondef import TransitionDefinition
+from dace.definition.eventdef import (
     StartEventDefinition,
     EndEventDefinition)
-from dace.objectofcollaboration.services.processdef_container import (
+from dace.model.services.processdef_container import (
 	process_definition)
 
 from .behaviors import (

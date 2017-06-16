@@ -2,15 +2,15 @@ from zope.interface import Interface
 
 from pyramid.view import view_config
 
-from dace.processdefinition.processdef import ProcessDefinition
-from dace.processdefinition.activitydef import ActivityDefinition
-from dace.processdefinition.transitiondef import TransitionDefinition
-from dace.processdefinition.eventdef import (
+from dace.definition.processdef import ProcessDefinition
+from dace.definition.activitydef import ActivityDefinition
+from dace.definition.transitiondef import TransitionDefinition
+from dace.definition.eventdef import (
     StartEventDefinition,
     EndEventDefinition)
-from dace.objectofcollaboration.services.processdef_container import (
+from dace.model.services.processdef_container import (
     process_definition)
-from dace.processinstance.activity import ElementaryAction
+from dace.instance.activity import ElementaryAction
 from dace.util import get_all_business_actions
 
 # Step 1: Define a behavior to execute. This behavior is an

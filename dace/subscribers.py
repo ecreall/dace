@@ -17,19 +17,19 @@ from pyramid.threadlocal import (
     get_current_registry, manager)
 
 from . import log
-from dace.objectofcollaboration.runtime import Runtime
+from dace.model.runtime import Runtime
 
 from substanced.event import RootAdded
 from substanced.util import find_service
 
 from dace.interfaces import IWorkItem
-from dace.processinstance.event import (
+from dace.instance.event import (
     IntermediateCatchEvent)
-from dace.objectofcollaboration.principal import Machine
-from dace.objectofcollaboration.principal.util import grant_roles
-from dace.objectofcollaboration.system import run_crawler
+from dace.model.principal import Machine
+from dace.model.principal.util import grant_roles
+from dace.model.system import run_crawler
 from dace.util import execute_callback, find_catalog, get_socket_url
-from dace.processinstance import event as event_mod
+from dace.instance import event as event_mod
 
 
 class ConsumeTasks(threading.Thread):
