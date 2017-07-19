@@ -42,8 +42,11 @@ class SharedMultipleProperty(Descriptor):
             results = getattr(obj, self.v_attr)
             try:
                 # we need to check if each object has not been
-                # removed from their container
-                return [o for o in results if o.__name__ is not None]
+                # removed from their container.
+                # we use hasattr(o, '__dict__') to check if the object's type is primitive
+                return [o for o in results
+                        if not hasattr(o, '__dict__') or
+                        getattr(o, '__name__', None) is not None]
             except POSKeyError:
                 # in case of zeopack (see comments in base.py:ResourceRef)
                 raise AttributeError
