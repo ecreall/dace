@@ -179,6 +179,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     context = NotImplemented
     processs_relation_id = NotImplemented
     actionType = NotImplemented
+    behavior_id = ''
     #validation
     relation_validation = NotImplemented
     roles_validation = NotImplemented
@@ -191,7 +192,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         super(BusinessAction, self).__init__(**kwargs)
         self.workitem = workitem
         self.isexecuted = False
-        self.behavior_id = self.node_id
+        self.behavior_id = self.behavior_id or self.node_id
         self.sub_process = None
         self.local_assigned_to = PersistentList()
         if self.title == '' or self.title is NotImplemented:
@@ -215,7 +216,6 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         instances = getBusinessAction(context, request,
                                       cls.node_definition.process.id,
                                       cls.node_definition.__name__,
-                                      cls.behavior_id,
                                       action_type=cls)
 
         if instances is None:
@@ -233,8 +233,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     def get_allinstances(cls, context, request, **kw):
         instance = getBusinessAction(context, request,
                                       cls.node_definition.process.id,
-                                      cls.node_definition.__name__,
-                                      cls.behavior_id)
+                                      cls.node_definition.__name__)
         return instance
 
     @classmethod
