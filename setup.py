@@ -18,12 +18,13 @@ requires = [
     ]
 
 setup(name='ecreall_dace',
-      version='1.0.3.dev0',
+      version='1.1.1.dev0',
       description='Data-centric engine',
       long_description=README + '\n\n' +  CHANGES,
       classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.4",
+        "Programming Language :: Python :: 3.6",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",

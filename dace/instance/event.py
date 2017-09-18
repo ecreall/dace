@@ -223,7 +223,6 @@ class EventKind(object):
     def definition(self):
         return self.event.definition.event_kind
 
-
 class ConditionalEvent(EventKind):
 
     def validate(self):

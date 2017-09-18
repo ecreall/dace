@@ -787,7 +787,7 @@ class Process(Entity):
                 for sub_process in workitem.node.sub_processes:
                     result.extend(sub_process.get_all_work_items())
 
-            if not workitem in result:
+            if workitem not in result:
                 result.append(workitem)
 
         return result
