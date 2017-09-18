@@ -33,12 +33,13 @@ Installation
 If you have already installed Substance D
 -----------------------------------------
 
-#. Add `ecreall_dace` in `requires` in the `setup.py` file.::
+#. Add `ecreall_dace` and 'mock' in `requires` in the `setup.py` file.::
 
     ...
     requires = [
         ...
         'ecreall_dace',
+        'mock',
         ]
     ...
 
