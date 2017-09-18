@@ -83,7 +83,7 @@ class TestsSignal(FunctionalTests):
         self.assertEqual(len(proc.get_work_items()), 2)
         self.assertEqual(sorted(proc.get_work_items().keys()), ['sample.a', 'sample.sc'])
 
-    def test_signal_event(self):
+    def xtest_signal_event(self):
         pd = self._process_definition()
         self.def_container.add_definition(pd)
         start_wi = pd.start_process('a')['a']
