@@ -225,7 +225,7 @@ class ProcessDefinition(Entity):
         query = object_provides_index.any(
             (IProcess.__identifier__,)) & \
             processid_index.eq(self.id)
-        return query.execute().__len__ > 0
+        return query.execute().__len__() > 0
 
     @property
     def started_processes(self):
