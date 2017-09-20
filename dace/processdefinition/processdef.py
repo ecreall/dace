@@ -202,7 +202,7 @@ class ProcessDefinition(Entity):
         return start_events[0].outgoing[0]
 
     def start_process(self, node_name=None):
-        if self.isUnique and self.started_processes:
+        if self.isUnique and self.is_started:
             if node_name:
                 return {node_name: None}
 
@@ -213,8 +213,8 @@ class ProcessDefinition(Entity):
         start_transition = self._startTransition
         startevent = start_transition.source
         # une transaction pour un evenement (pour l'instant c'est un evenement)
-        sub_transaction = global_transaction.start_subtransaction(type='Find',
-                                                                initiator=self)
+        sub_transaction = global_transaction.start_subtransaction(
+            type='Find', initiator=self)
         start_workitems = startevent.start_process(sub_transaction)
         if node_name is None:
             return start_workitems
@@ -222,13 +222,21 @@ class ProcessDefinition(Entity):
         return {node_name: start_workitems.get(node_name, None)}
 
     @property
+    def is_started(self):
+        dace_catalog = find_catalog('dace')
+        object_provides_index = dace_catalog['object_provides']
+        processid_index = dace_catalog['process_id']
+        query = object_provides_index.any(
+            (IProcess.__identifier__,)) & \
+            processid_index.eq(self.id)
+        return len(query.execute()) > 0
+
+    @property
     def started_processes(self):
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
-        query = object_provides_index.any((IProcess.__identifier__,)) & \
-                processid_index.eq(self.id)
-        results = query.execute().all()
-        # .all() returns a generator, convert it to a list
-        processes = [p for p in results]
-        return processes
+        query = object_provides_index.any(
+            (IProcess.__identifier__,)) & \
+            processid_index.eq(self.id)
+        return list(query.execute().all())
