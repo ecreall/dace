@@ -20,11 +20,11 @@ class MyBehavior(ElementaryAction):
     context = Interface
 
     def start(self, context, request, appstruct, **kw):
-        # Your code hear
+        # Your code here
         return {'message': 'Hello world!'}
 
 
-# Step 2: Define the process with her nodes and transitions
+# Step 2: Define the process with its nodes and transitions
 @process_definition(
     id='myprocessid',
     title='My process')
