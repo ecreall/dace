@@ -13,7 +13,7 @@ requires = [
     'pyzmq',
     'rwproperty',
     'substanced',
-    'tornado',
+    'tornado < 4',
     'zope.processlifetime',
     ]
 
