@@ -69,3 +69,58 @@ Then, we add a **vacations** attribute on the **Root** class to indicate that th
   from dace.descriptors import CompositeMultipleProperty
   ...
   vacations = CompositeMultipleProperty('vacations')
+
+
+Adding our first process
+------------------------
+
+Here's the first process that we want to implement for our vacation objects::
+
+  start -> pending -> accepted OR refused -> end
+
+After a vacation is created, it goes in *pending* state, then a user can accept or refuse the vacation, then it is the end of the process.
+
+It looks like this in the code::
+
+  @process_definition(
+      id='vacation_management',
+      title='Request vacation')
+  class VacationManagement(ProcessDefinition):
+
+      is_unique = False
+      is_volatile = True
+
+      def init_definition(self):
+          self.define_nodes(
+              start=StartEventDefinition(),
+              request=ActivityDefinition(
+                  behaviors=[RequestVacation],
+                  description='Employee requests vacation',
+                  title='Request vacation'
+              ),
+              eg=ExclusiveGatewayDefinition(),
+              accept=ActivityDefinition(
+                  behaviors=[Accept],
+                  description='Accept vacation',
+                  title='Accept'
+              ),
+              refuse=ActivityDefinition(
+                  behaviors=[Refuse],
+                  description='Refuse vacation',
+                  title='Refuse'
+              ),
+              eg1=ExclusiveGatewayDefinition(),
+              end=EndEventDefinition()
+          )
+
+          self.define_transitions(
+              TransitionDefinition('start', 'request'),
+              TransitionDefinition('request', 'eg'),
+              TransitionDefinition('eg', 'refuse'),
+              TransitionDefinition('eg', 'accept'),
+              TransitionDefinition('refuse', 'eg1'),
+              TransitionDefinition('accept', 'eg1'),
+              TransitionDefinition('eg1', 'end'),
+          )
+
+We define the node and transitions of the process. For more information about the different types of nodes provided by DaCe, see :ref:`node_types` section.
