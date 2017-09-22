@@ -6,6 +6,8 @@ Vacation management
 
 This tutorial aims to explain the main features of DaCe and how to use it with pyramid and Substance D to create a web app. For this purpose, we will use a vacation management app.
 
+The full source code of this example is available on `github <https://github.com/ecreall/hdm>`_.
+
 Create a Root for your application
 ----------------------------------
 
