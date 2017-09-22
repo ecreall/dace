@@ -6,10 +6,39 @@ Vacation management
 
 This tutorial aims to explain the main features of DaCe and how to use it with pyramid and Substance D to create a web app. For this purpose, we will use a vacation management app.
 
+Create a Root for your application
+----------------------------------
+
+First, you have to create a Root for your application::
+
+
+  from dace.interfaces import IEntity, IApplication
+  from dace.model.application import Application
+  from substanced.content import content
+  from substanced.util import renamer
+  from zope.interface import implementer
+
+  class IRoot(IEntity, IApplication):
+      pass
+
+  @content(
+    'Root',
+    icon='glyphicon glyphicon-home',
+    after_create='after_create')
+  @implementer(IRoot)
+  class Root(Application):
+
+      name = renamer()
+
+      def __init__(self, **kwargs):
+          super(Root, self).__init__(**kwargs)
+
+**after_create** method of **Application** will create catalogs after the root object is created.
+
 Create a vacation content
 -------------------------
 
-First, we create a new content::
+Then, we create a new content::
 
   from dace.interfaces import IEntity
   from dace.model.entity import Entity
@@ -32,3 +61,9 @@ To be able to use your content in DaCe processes, it needs to inherits from **da
 Notice that you have to use **self.set_data()** (from **dace.model.object.Object**) to set attributes on your content.
 
 See `Substance D documentation <https://docs.pylonsproject.org/projects/substanced/en/latest/content.html>`_ for more details on content creation.
+
+Then, we add a **vacations** attribute on the **Root** class to indicate that the root object may contain multiple vacation objects::
+
+  from dace.descriptors import CompositeMultipleProperty
+  ...
+  vacations = CompositeMultipleProperty('vacations')
