@@ -93,7 +93,7 @@ It looks like this in the code::
       def init_definition(self):
           self.define_nodes(
               start=StartEventDefinition(),
-              request=ActivityDefinition(
+              request_vacation=ActivityDefinition(
                   behaviors=[RequestVacation],
                   description='Employee requests vacation',
                   title='Request vacation'
@@ -124,3 +124,28 @@ It looks like this in the code::
           )
 
 We define the node and transitions of the process. For more information about the different types of nodes provided by DaCe, see :ref:`node_types` section.
+
+Behaviors
+---------
+
+Let's take a look at **request** node::
+
+  request_vacation=ActivityDefinition(
+      behaviors=[RequestVacation],
+      description='Employee requests vacation',
+      title='Request vacation'
+  )
+
+It is an **ActivityDefinition** node that declares a **RequestVacation** behavior. This behavior's start method is called each time a content enters in a **request** node. Here, we create a vacation content and set its state to `pending`. We add it to the **root** content via the **vacations** property that we created earlier on **root**. We also add a relation between the process instance and the vacation content. Here is the code of the behavior::
+
+  class RequestVacation(ElementaryAction):
+
+      context = IRoot
+
+      def start(self, context, request, appstruct, **kw):
+          vacation = Vacation(**appstruct)
+          vacation.state.append('pending')
+          context.addtoproperty('vacations', vacation)
+          self.process.execution_context.add_created_entity(
+              'vacation', vacation)
+          return {'message': 'vacation request added'}
