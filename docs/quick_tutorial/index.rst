@@ -11,6 +11,7 @@ Contents
     :maxdepth: 1
 
     hello_world
+    vacation_management
 
 Indices and tables
 ==================
