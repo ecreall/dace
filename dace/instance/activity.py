@@ -178,7 +178,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     node_definition = NotImplemented
     context = NotImplemented
-    processs_relation_id = NotImplemented
+    process_relation_id = NotImplemented
     actionType = NotImplemented
     behavior_id = ''
     #validation
@@ -247,7 +247,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
     def potential_contexts_ids(self):
         try:
             contexts = self.process.execution_context.involved_entities(
-                self.processs_relation_id)
+                self.process_relation_id)
             result = []
             for context in contexts:
                 try:
@@ -333,11 +333,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         entities = []
         try:
             entities = [self.process.execution_context.involved_entity(
-                        self.processs_relation_id)]
+                        self.process_relation_id)]
         except Exception:
             try:
                 entities = self.process.execution_context.involved_collection(
-                    self.processs_relation_id)
+                    self.process_relation_id)
             except Exception:
                 entities = find_entities((self.context,))
 

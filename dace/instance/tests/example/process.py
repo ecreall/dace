@@ -57,7 +57,7 @@ class ActionB(ElementaryAction):
     node_id = 'b'
     title = 'action b'
     context = IObjectA
-    processs_relation_id = 'objecta'
+    process_relation_id = 'objecta'
     #validation
     relation_validation = relation_validationA
     roles_validation = roles_validationA
@@ -357,7 +357,7 @@ class ActionSystem(ElementaryAction):
     node_id = 'system'
     title = 'action system'
     context = IObjectA
-    processs_relation_id = 'systemobject'
+    process_relation_id = 'systemobject'
     actionType = ActionType.system
     #validation
     relation_validation = relation_validationA
