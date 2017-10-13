@@ -32,7 +32,8 @@ This package is used in the following projects:
 Documentation
 -------------
 
-TODO
+- `Amen SOUISSI thesis <https://hal.inria.fr/tel-00935324v1>`__
+- `DaCE documentation <http://dace.readthedocs.io/en/latest/>`__
 
 
 Translations
@@ -60,6 +61,18 @@ Contribute
 - Issue Tracker: https://github.com/ecreall/dace/issues
 - Source Code: https://github.com/ecreall/dace
 
+
+How to build the documentation
+------------------------------
+
+::
+
+  cd docs
+  virtualenv ~/sphinx
+  source sphinx/bin/activate
+  pip install sphinx
+  make html
+  firefox _build/html/index.html
 
 License
 -------
