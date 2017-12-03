@@ -830,6 +830,7 @@ class DelayedCallback(object):
 
     def start(self):
         s = get_socket()
+        # first arg is the method name to call on second arg
         s.send_pyobj(('start_in_ioloop', self))
 
     def start_in_ioloop(self):

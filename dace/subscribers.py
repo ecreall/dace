@@ -53,22 +53,26 @@ class ConsumeTasks(threading.Thread):
             def execute_next(action):
                 # action is a list with one pickle
                 method, obj = pickle.loads(action[0])
-                # obj can be an oid, dc (DelayedCallback object) or
-                # Listener object
-                if method in ('stop', 'close', 'ack'):
-                    oid = obj
-                    dc = event_mod.callbacks.get(oid, None)
-                    if dc is not None:
-                        if method != 'ack':
-                            getattr(dc, method)()
-
-                        del event_mod.callbacks[oid]
+                # obj can be the DelayedCallback (dc)/Listener object or just
+                # the identifier (event._p_oid) in case of the stop/close
+                # method respectively.
+                if method in ('stop', 'close'):
+                    # obj is actually here the identifier which was used to
+                    # register the DelayedCallback/Listener
+                    # (identifier attribute on the object)
+                    identifier = obj
+                    dc_or_listener = event_mod.callbacks.get(identifier, None)
+                    if dc_or_listener is not None:
+                        # stop DelayedCallback or close Listener
+                        getattr(dc_or_listener, method)()
+                        del event_mod.callbacks[identifier]
                 else:
                     # system crawler doesn't have an identifier
                     # and so the DelayedCallback started from a SignalEvent
                     if obj.identifier is not None:
                         event_mod.callbacks[obj.identifier] = obj
 
+                    # mainly some_delayed_callback.start_in_ioloop()
                     getattr(obj, method)()
 
             self.stream = ZMQStream(s)
