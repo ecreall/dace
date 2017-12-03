@@ -56,7 +56,7 @@ class ConsumeTasks(threading.Thread):
                 # obj can be the DelayedCallback (dc)/Listener object or just
                 # the identifier (event._p_oid) in case of the stop/close
                 # method respectively.
-                if method in ('stop', 'close'):
+                if method in ('stop', 'close', 'ack'):
                     # obj is actually here the identifier which was used to
                     # register the DelayedCallback/Listener
                     # (identifier attribute on the object)
@@ -64,7 +64,9 @@ class ConsumeTasks(threading.Thread):
                     dc_or_listener = event_mod.callbacks.get(identifier, None)
                     if dc_or_listener is not None:
                         # stop DelayedCallback or close Listener
-                        getattr(dc_or_listener, method)()
+                        if method != 'ack':
+                            getattr(dc_or_listener, method)()
+
                         del event_mod.callbacks[identifier]
                 else:
                     # system crawler doesn't have an identifier
