@@ -21,7 +21,6 @@ class SharedMultipleProperty(Descriptor):
         self.opposite = opposite
         self.isunique = isunique
         self.key = '_' + propertyref + '_value'
-        self.v_attr = '_v_' + propertyref
 
     def _get(self, obj):
         """Return a tuple (references, need_cleanup)
@@ -37,26 +36,11 @@ class SharedMultipleProperty(Descriptor):
         if obj is None:
             return self
 
-        try:
-            # without third arg to trigger AttributeError
-            results = getattr(obj, self.v_attr)
-            try:
-                # we need to check if each object has not been
-                # removed from their container.
-                # we use hasattr(o, '__dict__') to check if the object's type is primitive
-                return [o for o in results
-                        if not hasattr(o, '__dict__') or
-                        getattr(o, '__name__', None) is not None]
-            except POSKeyError:
-                # in case of zeopack (see comments in base.py:ResourceRef)
-                raise AttributeError
-        except AttributeError:
-            # We don't use "return self._get(obj)[0]" for perf reason
-            results = [e for e in (get_ref(o) for o
-                       in obj.__dict__.get(self.key, _empty))
-                       if e is not None]
-            setattr(obj, self.v_attr, results)
-            return results
+        # We don't use "return self._get(obj)[0]" for perf reason
+        results = [e for e in (get_ref(o) for o
+                   in obj.__dict__.get(self.key, _empty))
+                   if e is not None]
+        return results
 
     def add(self, obj, value, initiator=True, moving=None):
         if value is None:
@@ -123,10 +107,5 @@ class SharedMultipleProperty(Descriptor):
                 relations.remove(value)
 
     def init(self, obj):
-        try:
-            delattr(obj, self.v_attr)
-        except AttributeError:
-            pass
-
         if getattr(obj, self.key, _marker) is _marker:
             setattr(obj, self.key, PersistentList())
