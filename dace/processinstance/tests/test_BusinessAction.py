@@ -184,7 +184,7 @@ class TestsBusinessAction(FunctionalTests):
 
         # get sample.y business action for alice
         allaction_y_alice = getBusinessAction(objecta, self.request, 'sample', 'y')
-        self.assertEqual(len(allaction_y_alice), 5)# 2 pour actions_y_validated_alice et 3 pour le StartWorkItem Y (Une nouvelle execution)
+        self.assertEqual(len(allaction_y_alice), 2)# 2 for actions_y_validated_alice. StartWorkItems are ignored (no new execution)
         self.assertIn(actions_y_validated_alice[0], allaction_y_alice)
         self.assertIn(actions_y_validated_alice[1], allaction_y_alice)
         workitems_y_alice = []
@@ -192,12 +192,8 @@ class TestsBusinessAction(FunctionalTests):
             if a.workitem not in workitems_y_alice:
                 workitems_y_alice.append(a.workitem)
 
-        self.assertEqual(len(workitems_y_alice), 2)
+        self.assertEqual(len(workitems_y_alice), 1)
         self.assertIn(workitems['sample.y'], workitems_y_alice)
-        workitems_y_alice.remove(workitems['sample.y'])
-        start_wi_y_alice = workitems_y_alice.pop()
-        self.assertEqual(isinstance(start_wi_y_alice, StartWorkItem), True)
-        self.assertEqual(len([a for a in allaction_y_alice if a.workitem is start_wi_y_alice]), 3)
 
         self.logAdmin()
         for action in actions_y_validated:

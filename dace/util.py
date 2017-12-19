@@ -379,7 +379,8 @@ def getBusinessAction(context,
                       process_id,
                       node_id,
                       behavior_id=None,
-                      action_type=None):
+                      action_type=None,
+                      validate=True):
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
@@ -398,10 +399,12 @@ def getBusinessAction(context,
     if action_type:
         object_type_class_index = dace_catalog['object_type_class']
         query = query & object_type_class_index.eq(action_type.__name__)
-
+    
     allactions = [action for action in query.execute().all()
-                  if getattr(action, 'validate_mini', always_false)(
+                  if not validate or getattr(action, 'validate_mini', always_false)(
                       context, request)[0]]
+    if allactions:
+        return allactions
 
     def_container = find_service('process_definition_container')
     pd = def_container.get_definition(process_id)
@@ -410,7 +413,7 @@ def getBusinessAction(context,
         swisactions = get_start_workitems_actions(
             pd, node_id, isautomatic=False, action_type=action_type)
         allactions.extend(action for action in swisactions
-                          if action.validate_mini(context, request)[0])
+                          if not validate or action.validate_mini(context, request)[0])
 
     if allactions:
         return allactions

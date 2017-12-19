@@ -216,7 +216,8 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         instances = getBusinessAction(context, request,
                                       cls.node_definition.process.id,
                                       cls.node_definition.__name__,
-                                      action_type=cls)
+                                      action_type=cls,
+                                      validate=kw.get('validate', True))
 
         if instances is None:
             return None
