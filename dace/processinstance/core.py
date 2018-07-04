@@ -361,6 +361,7 @@ class Behavior(Step):
     title = NotImplemented
     description = NotImplemented
     behavior_id = NotImplemented
+    tags = []
 
     def __init__(self, **kwargs):
         super(Behavior, self).__init__(**kwargs)

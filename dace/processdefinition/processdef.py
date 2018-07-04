@@ -31,6 +31,7 @@ class ProcessDefinition(Entity):
     isVolatile = False
     isUnique = False
     discriminator = 'Application'
+    tags = []
 
     def __init__(self, **kwargs):
         super(ProcessDefinition, self).__init__(**kwargs)

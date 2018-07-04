@@ -698,6 +698,10 @@ class Process(Entity):
     definition = property(definition)
 
     @property
+    def tags(self):
+        return self.definition.tags
+
+    @property
     def discriminator(self):
         return self.definition.discriminator
 

@@ -58,15 +58,15 @@ def run():
             system_actions = [a for a in getAllSystemActions()
                               if getattr(a, 'process', None) or
                               a.isstart]
-            log.info("new zodb transactions, actions to check: %s",
-                     len(system_actions))
+            # log.info("new zodb transactions, actions to check: %s",
+            #          len(system_actions))
             for action in system_actions:
                 _call_action(action)
 
         except Exception as e:
             log.exception(e)
 
-        log.info("actions to check: done")
+        # log.info("actions to check: done")
 
     run_crawler()
 

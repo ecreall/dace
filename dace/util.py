@@ -462,25 +462,38 @@ def getAllBusinessAction(context,
                          node_id=None,
                          behavior_id=None,
                          process_discriminator=None,
-                         action_type=None):
+                         action_type=None,
+                         action_tags=None,
+                         process_tags=None):
     process_ids = process_id
     if process_id and not isinstance(process_id, (list, tuple)):
         process_ids = [process_id]
 
     if request is None:
         request = get_current_request()
+    
+    tags = []
+    if action_tags:
+        tags = ['action-'+t for t in action_tags]
+
+    if process_tags:
+        tags.extend(['process-'+t for t in action_tags])
 
     def_container = find_service('process_definition_container')
     context_oid = str(get_oid(context))
     allprocessdef = []
     dace_catalog = find_catalog('dace')
     context_id_index = dace_catalog['context_id']
+    tags_index = dace_catalog['tags']
     potential_contexts_ids = dace_catalog['potential_contexts_ids']
     object_provides_index = dace_catalog['object_provides']
     query = object_provides_index.any((IBusinessAction.__identifier__,)) & \
             context_id_index.any(tuple([d.__identifier__ \
                                    for d in context.__provides__.__iro__])) & \
             potential_contexts_ids.any(['any', context_oid])
+    
+    if tags:
+        query = query & tags_index.any(tags)
 
     if action_type:
         object_type_class_index = dace_catalog['object_type_class']

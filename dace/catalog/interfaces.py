@@ -27,6 +27,9 @@ class IObjectProvides(Interface):
 
 class ISearchableObject(Interface):
 
+    def tags():
+        pass
+
     def process_id():
         pass
 

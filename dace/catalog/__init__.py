@@ -100,6 +100,14 @@ class DaceCatalogViews(object):
         return adapter.oid()
 
     @indexview()
+    def tags(self, default):
+        adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
+        if adapter is None or not hasattr(adapter, 'tags'):
+            return default
+
+        return adapter.tags()
+
+    @indexview()
     def process_id(self, default):
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
@@ -184,6 +192,7 @@ class DaceIndexes(object):
     container_oid = Field()
     containers_oids = Keyword()
     oid = Field()
+    tags = Keyword()
     process_id = Field()
     process_discriminator = Field()
     node_id = Field()
@@ -399,6 +408,11 @@ class WorkItemSearch(Adapter):
 @implementer(ISearchableObject)
 class BusinessActionSearch(Adapter):
 
+    def tags(self):
+        tags = ['action-'+t for t in getattr(self.context, 'tags', [])]
+        tags.extend(['process-'+t for t in getattr(self.context.process, 'tags', [])])
+        return tags
+
     def process_id(self):
         return self.context.process_id
 
@@ -431,6 +445,9 @@ class BusinessActionSearch(Adapter):
 @adapter(context=IProcess)
 @implementer(ISearchableObject)
 class ProcessSearch(Adapter):
+
+    def tags(self):
+        return list(getattr(self.context, 'tags', []))
 
     def process_id(self):
         return self.context.id
