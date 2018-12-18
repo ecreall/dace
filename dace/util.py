@@ -530,9 +530,10 @@ def getAllBusinessAction(context,
                   if getattr(action, 'validate_mini', always_false)(
                             context, request)[0]]
     # Add start workitem
+    format_tags = '#{}#'.format('#'.join(tags)) if tags else ''
     for pd in allprocessdef:
         swisactions = get_start_workitems_actions(
-            pd, node_id, isautomatic=isautomatic, action_type=action_type)
+            pd, node_id, isautomatic=isautomatic, action_type=action_type, tags=format_tags)
         allactions.extend(action for action in swisactions
                           if action.validate_mini(context, request)[0])
 
@@ -540,17 +541,21 @@ def getAllBusinessAction(context,
 
 
 @request_memoize
-def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
+def get_start_workitems_actions(pd, node_id, isautomatic, action_type, tags=''):
     # node_id can be None, so we need to iterate on all wis
     wis = (wi for wi in pd.start_process(node_id).values() if wi)
     actions = []
+
+    def validate(action):
+        if not tags or any('#{}#'.format(t) in tags for t in getattr(action, 'tags', [])):
+            if not isautomatic or (isautomatic and action.isautomatic):
+                if not action_type or action._class_.__name__ == action_type.__name__:
+                    return True
+
+        return False
+
     for wi in wis:
-        swisactions = [action for action in wi.actions
-                       if (not isautomatic or
-                           (isautomatic and action.isautomatic)) and
-                          (action_type is None or
-                           action._class_.__name__ == action_type.__name__)]
-        actions.extend(swisactions)
+        actions.extend([action for action in wi.actions if validate(action)])
 
     return actions
 
