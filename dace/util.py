@@ -477,7 +477,7 @@ def getAllBusinessAction(context,
         tags = ['action-'+t for t in action_tags]
 
     if process_tags:
-        tags.extend(['process-'+t for t in action_tags])
+        tags.extend(['process-'+t for t in process_tags])
 
     def_container = find_service('process_definition_container')
     context_oid = str(get_oid(context))
@@ -545,9 +545,12 @@ def get_start_workitems_actions(pd, node_id, isautomatic, action_type, tags=''):
     # node_id can be None, so we need to iterate on all wis
     wis = (wi for wi in pd.start_process(node_id).values() if wi)
     actions = []
-
     def validate(action):
-        if not tags or any('#{}#'.format(t) in tags for t in getattr(action, 'tags', [])):
+        action_tags = getattr(action, 'tags', [])
+        process_tags = getattr(getattr(action.definition, 'process', None), 'tags', [])
+        if not tags \
+           or any('#action-{}#'.format(t) in tags for t in action_tags) \
+           or any('#process-{}#'.format(t) in tags for t in process_tags):
             if not isautomatic or (isautomatic and action.isautomatic):
                 if not action_type or action._class_.__name__ == action_type.__name__:
                     return True
