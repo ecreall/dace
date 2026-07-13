@@ -45,10 +45,12 @@ setup(name='ecreall_dace',
       include_package_data=True,
       zip_safe=False,
       install_requires=requires,
-      tests_require=requires,
+      tests_require=requires + ['mock'],
       test_suite="dace",
       extras_require=dict(
-          test=[],
+          # substanced's venusian scan imports its own test modules,
+          # which import mock (see docs/en/worklog.md, 2026-07-13)
+          test=['mock'],
       ),
       entry_points="""\
       """,

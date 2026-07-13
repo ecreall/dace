@@ -28,3 +28,11 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   archive.debian.org) et ajout de `libzmq3-dev`, nécessaire pour compiler
   pyzmq 14.4.1 (aucun wheel Python 3.6 n'existe), comme dans les prérequis
   historiques ; `actions/checkout` passé en v5 (dépréciation Node 20).
+- Deuxième run de CI : l'installation des dépendances est au vert et la suite
+  historique est vivante — 88 tests collectés, mais 88 erreurs sur un module
+  `mock` manquant. dace ne l'importe jamais lui-même : le scan venusian de
+  substanced (déclenché par `dace/testing.py` à la création du Configurator)
+  importe les modules de test de substanced, qui font `import mock` — la
+  raison exacte pour laquelle nova-ideo embarquait historiquement `mock` dans
+  ses requires. Corrigé par un extra `[test]` (`mock`, épinglé en 2.0.0) que
+  le workflow installe désormais.
