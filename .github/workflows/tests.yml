@@ -1,0 +1,25 @@
+name: tests-legacy
+
+# Best-effort CI for the legacy code base (Python 3.6 era).
+# Runs the historical test suite inside a python:3.6 container,
+# with the known-good dependency pins from constraints-legacy.txt.
+# To be stabilised during Phase 1 of the modernisation roadmap
+# (reproducible legacy build / "golden master") — see README.md.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  legacy-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run test suite in a Python 3.6 container
+        run: |
+          docker run --rm -v "$PWD":/src -w /src python:3.6-buster bash -ec "
+            pip install --no-cache-dir --upgrade 'pip<22' &&
+            pip install --no-cache-dir -c constraints-legacy.txt -e . &&
+            python setup.py test
+          "

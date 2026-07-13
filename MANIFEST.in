@@ -1,5 +1,6 @@
-include *.rst
+include *.md
 include LICENSE
+include constraints-legacy.txt
 recursive-include dace *.po
 recursive-include dace *.mo
 recursive-include dace *.pot

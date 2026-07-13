@@ -1,0 +1,11 @@
+# Minimal build configuration for the michaellaunay/dace fork.
+#
+# Deliberately limited to the PEP 518 [build-system] table so that the
+# legacy toolchain (Python 3.6, zc.buildout, older pip) keeps working:
+# package metadata stays in setup.py until Phase 3 of the modernisation
+# roadmap (see README.md), when it will migrate here as a full PEP 621
+# [project] table managed with uv.
+
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel"]
+build-backend = "setuptools.build_meta"

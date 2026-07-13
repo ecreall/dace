@@ -3,8 +3,8 @@ import os
 from setuptools import setup, find_packages
 
 here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.rst')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.rst')).read()
+README = open(os.path.join(here, 'README.md')).read()
+CHANGES = open(os.path.join(here, 'CHANGES.md')).read()
 
 requires = [
     'BTrees',
@@ -19,11 +19,11 @@ requires = [
 
 setup(name='ecreall_dace',
       version='1.1.1.dev0',
-      description='Data-centric engine',
-      long_description=README + '\n\n' +  CHANGES,
+      description='Data-centric workflow engine (maintained fork)',
+      long_description=README + '\n\n' + CHANGES,
+      long_description_content_type='text/markdown',
       classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.4",
         "Programming Language :: Python :: 3.6",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
@@ -32,8 +32,14 @@ setup(name='ecreall_dace',
         ],
       author='Amen Souissi',
       author_email='amensouissi@ecreall.com',
-      url='https://github.com/ecreall/dace/',
-      keywords='process',
+      maintainer='Michaël Launay (Logikascium)',
+      url='https://github.com/michaellaunay/dace/',
+      project_urls={
+          'Source': 'https://github.com/michaellaunay/dace',
+          'Tracker': 'https://github.com/michaellaunay/dace/issues',
+          'Historical upstream': 'https://github.com/ecreall/dace',
+      },
+      keywords='process workflow bpmn pyramid substanced',
       license="AGPLv3+",
       packages=find_packages(),
       include_package_data=True,
@@ -41,10 +47,9 @@ setup(name='ecreall_dace',
       install_requires=requires,
       tests_require=requires,
       test_suite="dace",
-      extras_require = dict(
+      extras_require=dict(
           test=[],
       ),
       entry_points="""\
       """,
       )
-
