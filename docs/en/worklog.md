@@ -16,3 +16,6 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   best-effort legacy CI workflow (`python:3.6-buster`).
 - Established the bilingual documentation structure (`docs/en`, `docs/fr`)
   and this worklog.
+- Ignored delivery artifacts (`*.patch`, `*.diff`, archives) and `git apply`
+  leftovers in `.gitignore`; removed `dace-docs-structure.patch`, committed
+  by mistake.

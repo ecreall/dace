@@ -9,6 +9,7 @@
 - Build metadata updated: fork URLs, maintainer field, Markdown `long_description`; minimal `pyproject.toml` added (PEP 518 `[build-system]` only — metadata stays in `setup.py` until the Phase 3 packaging migration); `MANIFEST.in` updated for Markdown files.
 - Added `constraints-legacy.txt` (known-good 2017 dependency pins extracted from nova-ideo's `versions.cfg`) and a best-effort GitHub Actions workflow running the test suite in a `python:3.6-buster` container (to be stabilised in Phase 1).
 - Bilingual documentation structure added (`docs/en/`, `docs/fr/`), including the worklog / fil de l'eau and a documentation policy (`docs/README.md`); stray `dace-fork-maj.zip` removed from version control.
+- `.gitignore` now excludes delivery artifacts (patches, diffs, archives) and `git apply` leftovers; stray `dace-docs-structure.patch` removed from version control.
 
 ### Planned (modernisation roadmap → 2.0.0)
 

@@ -9,3 +9,15 @@ bin/
 develop-eggs/
 parts/
 var/
+
+# Delivery artifacts (patches, archives) — apply/extract them, never commit them
+*.patch
+*.diff
+*.zip
+*.tar
+*.tar.*
+*.tgz
+
+# git apply / merge leftovers
+*.rej
+*.orig

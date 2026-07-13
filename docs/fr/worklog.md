@@ -16,3 +16,6 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   fonctionner) et d'un workflow de CI legacy best-effort (`python:3.6-buster`).
 - Mise en place de la structure de documentation bilingue (`docs/en`,
   `docs/fr`) et de ce fil de l'eau.
+- Exclusion des artefacts de livraison (`*.patch`, `*.diff`, archives) et des
+  résidus de `git apply` via `.gitignore` ; suppression de
+  `dace-docs-structure.patch`, commité par erreur.
