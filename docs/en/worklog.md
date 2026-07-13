@@ -19,3 +19,12 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
 - Ignored delivery artifacts (`*.patch`, `*.diff`, archives) and `git apply`
   leftovers in `.gitignore`; removed `dace-docs-structure.patch`, committed
   by mistake.
+- Analysed the first CI run: the 2016/2017 sdists (`zope.interface` 4.3.3,
+  and the same pattern in BTrees/persistent) no longer build with modern
+  setuptools — the `Feature` API they import was removed in setuptools 46 —
+  which made pip's resolution impossible. The workflow now installs
+  `setuptools<46` first.
+- Hardened the workflow for the archived Debian buster (apt repointed to
+  archive.debian.org) and added `libzmq3-dev`, required to compile
+  pyzmq 14.4.1 (no Python 3.6 wheel exists) as in the historical
+  prerequisites; bumped `actions/checkout` to v5 (Node 20 deprecation).

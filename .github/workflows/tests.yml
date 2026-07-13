@@ -5,6 +5,19 @@ name: tests-legacy
 # with the known-good dependency pins from constraints-legacy.txt.
 # To be stabilised during Phase 1 of the modernisation roadmap
 # (reproducible legacy build / "golden master") — see README.md.
+#
+# Era-compatibility notes (from the first CI run, 2026-07-13):
+# - setuptools < 46: the 2016/2017 sdists (zope.interface, BTrees,
+#   persistent, ...) still import the `Feature` API, removed in
+#   setuptools 46 (2020). Without the downgrade, their builds fail
+#   with "ImportError: cannot import name 'Feature'" and pip's
+#   resolver ends in ResolutionImpossible.
+# - Debian buster was archived in 2024: apt sources are repointed to
+#   archive.debian.org (Release files are frozen, hence
+#   Check-Valid-Until=false).
+# - libzmq3-dev: pyzmq 14.4.1 predates Python 3.6 wheels and must be
+#   compiled against the system libzmq — the same prerequisite as the
+#   historical install documentation.
 
 on:
   push:
@@ -15,11 +28,16 @@ jobs:
   legacy-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Run test suite in a Python 3.6 container
         run: |
           docker run --rm -v "$PWD":/src -w /src python:3.6-buster bash -ec "
+            sed -i 's|deb.debian.org|archive.debian.org|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list &&
+            sed -i '/buster-updates/d' /etc/apt/sources.list &&
+            apt-get update -o Acquire::Check-Valid-Until=false &&
+            apt-get install -y --no-install-recommends libzmq3-dev &&
             pip install --no-cache-dir --upgrade 'pip<22' &&
+            pip install --no-cache-dir 'setuptools<46' wheel &&
             pip install --no-cache-dir -c constraints-legacy.txt -e . &&
             python setup.py test
           "
