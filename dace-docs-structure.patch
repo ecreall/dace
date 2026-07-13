@@ -1,0 +1,257 @@
+diff --git a/CHANGES.md b/CHANGES.md
+index dac7629..eeb9d06 100644
+--- a/CHANGES.md
++++ b/CHANGES.md
+@@ -8,6 +8,7 @@
+ - `README.rst` and `CHANGES.rst` converted to Markdown (`README.md`, `CHANGES.md`); README rewritten with repository status, legacy requirements and the modernisation roadmap.
+ - Build metadata updated: fork URLs, maintainer field, Markdown `long_description`; minimal `pyproject.toml` added (PEP 518 `[build-system]` only — metadata stays in `setup.py` until the Phase 3 packaging migration); `MANIFEST.in` updated for Markdown files.
+ - Added `constraints-legacy.txt` (known-good 2017 dependency pins extracted from nova-ideo's `versions.cfg`) and a best-effort GitHub Actions workflow running the test suite in a `python:3.6-buster` container (to be stabilised in Phase 1).
++- Bilingual documentation structure added (`docs/en/`, `docs/fr/`), including the worklog / fil de l'eau and a documentation policy (`docs/README.md`); stray `dace-fork-maj.zip` removed from version control.
+ 
+ ### Planned (modernisation roadmap → 2.0.0)
+ 
+diff --git a/README.md b/README.md
+index 4a35bd2..611c9fc 100644
+--- a/README.md
++++ b/README.md
+@@ -49,6 +49,15 @@ A best-effort GitHub Actions workflow ([`.github/workflows/tests.yml`](.github/w
+ - [nova-ideo](https://github.com/ecreall/nova-ideo) and its variant [KuneAgi](https://github.com/ecreall/KuneAgi)
+ - [l'agenda commun](https://github.com/ecreall/lagendacommun)
+ 
++## Documentation
++
++Documentation lives in [`docs/`](docs/):
++
++- [`docs/en/`](docs/en/) — primary documentation, in English
++- [`docs/fr/`](docs/fr/) — documentation in French
++
++Audits, design documents and the worklog are maintained in both languages. See [`docs/README.md`](docs/README.md) for the documentation policy.
++
+ ## Roadmap — planned updates
+ 
+ The plan follows the Nova-Ideo modernisation audit (Logikascium, July 2026):
+diff --git a/dace-fork-maj.zip b/dace-fork-maj.zip
+deleted file mode 100644
+index 4f53cf23ed2e061f187c3a12f2b463c9086de61c..0000000000000000000000000000000000000000
+GIT binary patch
+literal 0
+HcmV?d00001
+
+literal 8119
+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
+
+diff --git a/docs/README.md b/docs/README.md
+new file mode 100644
+index 0000000..3fdcef3
+--- /dev/null
++++ b/docs/README.md
+@@ -0,0 +1,21 @@
++# Documentation
++
++Documentation policy for this repository (and, by extension, for the other
++repositories of the Nova-Ideo modernisation effort):
++
++- **Code, comments, commit messages and repository files** are written in
++  **English** by default.
++- [`en/`](en/) holds the **primary documentation, in English**.
++- [`fr/`](fr/) holds the **French documentation**.
++- **Audits, design documents and the worklog** are maintained **in both
++  languages**, under the same relative path and filename in `en/` and `fr/`
++  (e.g. `en/worklog.md` ↔ `fr/worklog.md`), so that each document can link to
++  its counterpart.
++- Whenever practical, translations are updated in the same change set as the
++  original.
++
++## Current contents
++
++| Document | English | French |
++|---|---|---|
++| Worklog / Fil de l'eau | [`en/worklog.md`](en/worklog.md) | [`fr/worklog.md`](fr/worklog.md) |
+diff --git a/docs/en/worklog.md b/docs/en/worklog.md
+new file mode 100644
+index 0000000..3b526db
+--- /dev/null
++++ b/docs/en/worklog.md
+@@ -0,0 +1,18 @@
++# Worklog
++
++Running log of the work on this repository, newest first.
++Version française : [`../fr/worklog.md`](../fr/worklog.md).
++
++## 2026-07-13
++
++- Forked `ecreall/dace` to `michaellaunay/dace`; maintenance resumed by
++  Michaël Launay (Logikascium).
++- Converted `README.rst` and `CHANGES.rst` to Markdown; rewrote the README
++  with the repository status and the modernisation roadmap.
++- Updated build metadata (`setup.py`: fork URLs, maintainer field, Markdown
++  long description); added a minimal PEP 518 `pyproject.toml`; updated
++  `MANIFEST.in`.
++- Added `constraints-legacy.txt` (known-good 2017 dependency pins) and a
++  best-effort legacy CI workflow (`python:3.6-buster`).
++- Established the bilingual documentation structure (`docs/en`, `docs/fr`)
++  and this worklog.
+diff --git a/docs/fr/worklog.md b/docs/fr/worklog.md
+new file mode 100644
+index 0000000..d55d5f5
+--- /dev/null
++++ b/docs/fr/worklog.md
+@@ -0,0 +1,18 @@
++# Fil de l'eau
++
++Journal au fil de l'eau des travaux sur ce dépôt, du plus récent au plus ancien.
++English version: [`../en/worklog.md`](../en/worklog.md).
++
++## 2026-07-13
++
++- Fork de `ecreall/dace` vers `michaellaunay/dace` ; reprise de la maintenance
++  par Michaël Launay (Logikascium).
++- Conversion de `README.rst` et `CHANGES.rst` en Markdown ; README réécrit avec
++  le statut du dépôt et la feuille de route de modernisation.
++- Mise à jour des métadonnées de build (`setup.py` : URLs du fork, champ
++  mainteneur, description longue en Markdown) ; ajout d'un `pyproject.toml`
++  minimal (PEP 518) ; mise à jour du `MANIFEST.in`.
++- Ajout de `constraints-legacy.txt` (épinglages de dépendances 2017 connus pour
++  fonctionner) et d'un workflow de CI legacy best-effort (`python:3.6-buster`).
++- Mise en place de la structure de documentation bilingue (`docs/en`,
++  `docs/fr`) et de ce fil de l'eau.

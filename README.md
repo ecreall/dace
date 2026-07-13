@@ -49,6 +49,15 @@ A best-effort GitHub Actions workflow ([`.github/workflows/tests.yml`](.github/w
 - [nova-ideo](https://github.com/ecreall/nova-ideo) and its variant [KuneAgi](https://github.com/ecreall/KuneAgi)
 - [l'agenda commun](https://github.com/ecreall/lagendacommun)
 
+## Documentation
+
+Documentation lives in [`docs/`](docs/):
+
+- [`docs/en/`](docs/en/) — primary documentation, in English
+- [`docs/fr/`](docs/fr/) — documentation in French
+
+Audits, design documents and the worklog are maintained in both languages. See [`docs/README.md`](docs/README.md) for the documentation policy.
+
 ## Roadmap — planned updates
 
 The plan follows the Nova-Ideo modernisation audit (Logikascium, July 2026):
