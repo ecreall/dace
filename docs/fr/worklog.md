@@ -36,3 +36,13 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   raison exacte pour laquelle nova-ideo embarquait historiquement `mock` dans
   ses requires. Corrigé par un extra `[test]` (`mock`, épinglé en 2.0.0) que
   le workflow installe désormais.
+
+
+## 2026-07-14
+
+- Suppression de la dependance C amont `cryptacular` de l'environnement de
+  CI (elle n'etait pas epinglee : pip compilait silencieusement le sdist
+  1.6.2). La reecriture drop-in maintenue (`michaellaunay/cryptacular` 2.x,
+  backends bcrypt PyCA + hashlib, compatible hash pour hash avec le module
+  deploye) est installee depuis son depot a la place ; `bcrypt`, `cffi` et
+  `pycparser` epingles pour la cible Python 3.6.

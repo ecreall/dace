@@ -35,3 +35,13 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   modules, which `import mock` — the very reason nova-ideo historically
   shipped `mock` in its requires. Fixed by adding a `[test]` extra
   (`mock`, pinned at 2.0.0) that the workflow now installs.
+
+
+## 2026-07-14
+
+- Removed the dead upstream `cryptacular` C dependency from the CI
+  environment (it was never pinned: pip was silently building the 1.6.2
+  sdist). The maintained drop-in rewrite (`michaellaunay/cryptacular` 2.x,
+  PyCA bcrypt + hashlib backends, hash-compatible with the deployed module)
+  is installed from its repository instead; `bcrypt`, `cffi` and `pycparser`
+  pinned for the Python 3.6 target.

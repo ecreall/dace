@@ -38,6 +38,7 @@ jobs:
             apt-get install -y --no-install-recommends libzmq3-dev &&
             pip install --no-cache-dir --upgrade 'pip<22' &&
             pip install --no-cache-dir 'setuptools<46' wheel &&
+            pip install --no-cache-dir -c constraints-legacy.txt 'git+https://github.com/michaellaunay/cryptacular.git#egg=cryptacular' &&
             pip install --no-cache-dir -c constraints-legacy.txt -e '.[test]' &&
             python setup.py test
           "
