@@ -4,6 +4,12 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""The relation object and its SDI editing schema.
+
+``RelationValue`` resolves its ends lazily through the objectmap and
+exposes the flattened interfaces of both ends — the keyword indexes
+used to query relations by interface.
+"""
 import deform
 import colander
 from persistent import Persistent
@@ -18,20 +24,24 @@ from .interfaces import IRelationValue
 
 
 def _interfaces_flattened(interfaces):
+    """Identifiers of the interfaces, base interfaces included."""
     return [i.__identifier__ for i in Declaration(*interfaces).flattened()]
 
 @colander.deferred
 def missing_target(node, kw):
+    """Colander deferred: default target from the edited relation."""
     context = node.bindings['context']
     return context.target_id
 
 @colander.deferred
 def missing_source(node, kw):
+    """Colander deferred: default source from the edited relation."""
     context = node.bindings['context']
     return context.source_id
 
 class RelationValueSchema(Schema):
 
+    """SDI editing schema of a relation (name, type, ends, tags)."""
     relation_id = colander.SchemaNode(
                 colander.String(),
                 widget = deform.widget.TextInputWidget(),
@@ -71,6 +81,7 @@ class RelationValueSchema(Schema):
 
 
 class RelationValuePropertySheet(PropertySheet):
+    """SDI property sheet exposing the schema."""
     schema = RelationValueSchema()
 
 
@@ -84,6 +95,7 @@ class RelationValuePropertySheet(PropertySheet):
 @implementer(IRelationValue)
 class RelationValue(Persistent):
 
+    """A stored relation: source/target oids, ``relation_id``, ``reftype``, ``tags``."""
     def __init__(self, source_id, target_id, relation_id=None,
             reftype=None, tags=None):
         self.source_id = source_id
@@ -107,10 +119,12 @@ class RelationValue(Persistent):
 
     @property
     def source(self):
+        """The source object (resolved via the objectmap, cached resolver)."""
         return self.__resolve(self.source_id)
 
     @property
     def target(self):
+        """The target object (resolved via the objectmap, cached resolver)."""
         return self.__resolve(self.target_id)
 
     def __repr__(self):
@@ -124,16 +138,20 @@ class RelationValue(Persistent):
 
     @property
     def from_interfaces(self):
+        """Interfaces provided by the source."""
         return providedBy(self.source)
 
     @property
     def from_interfaces_flattened(self):
+        """Source interfaces, flattened (indexed)."""
         return _interfaces_flattened(self.from_interfaces)
 
     @property
     def to_interfaces(self):
+        """Interfaces provided by the target."""
         return providedBy(self.target)
 
     @property
     def to_interfaces_flattened(self):
+        """Target interfaces, flattened (indexed)."""
         return _interfaces_flattened(self.to_interfaces)

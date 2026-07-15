@@ -4,6 +4,15 @@
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
 
+"""Composite (containment) to-many relation descriptor.
+
+The children live in the holder folder; the descriptor keeps their
+*names* in a ``PersistentList``. Adding re-parents (detaching from the
+previous composite property or container) and records
+``value.__property__``; ``isunique`` prevents duplicates; the
+``opposite`` end is maintained. Two historical FIXMEs are kept as-is
+(signature drift with the unique variant, ``__set__`` removal loop).
+"""
 from persistent.list import PersistentList
 
 from dace.descriptors import Descriptor
@@ -14,6 +23,7 @@ _empty = ()
 
 class CompositeMultipleProperty(Descriptor):
     
+    """To-many containment: the children live in the holder folder."""
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -21,16 +31,19 @@ class CompositeMultipleProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
+        """The contained children (resolved by stored names)."""
         contents_keys = obj.__dict__.get(self.key, _empty)
         return [o for o in (obj.get(key, None) for key in contents_keys) if o is not None]
 
     def __get__(self, obj, objtype=None):
+        """Descriptor read: the contained children, or the descriptor on the class."""
         if obj is None:
             return self
 
         return self._get(obj)
 
     def add(self, obj, value, initiator=True, moving=None):
+        """Adopt a child (re-parenting, ``__property__``, opposite, unique guard)."""
         if value is None:
             return
 
@@ -60,6 +73,7 @@ class CompositeMultipleProperty(Descriptor):
                 opposite_property.add(value, obj, False)
 
     def __set__(self, obj, values, initiator=True, moving=None):
+        """Replace the children by diff: remove the missing, adopt the new."""
         if not isinstance(values, (list, tuple, set)):
             values = [values]
 
@@ -79,6 +93,7 @@ class CompositeMultipleProperty(Descriptor):
 
     # FIXME not the same signature as compositeunique
     def remove(self, obj, values, initiator=True, moving=None):
+        """Unwire and delete child(ren) from the folder."""
         self.init(obj)
         contents_keys = obj.__dict__[self.key]
         if not isinstance(values, (list, tuple, set)):
@@ -98,5 +113,6 @@ class CompositeMultipleProperty(Descriptor):
                 obj.remove(value_name, moving=moving)
 
     def init(self, obj):
+        """Ensure the storage list exists."""
         if getattr(obj, self.key, _marker) is _marker:
             setattr(obj, self.key, PersistentList())

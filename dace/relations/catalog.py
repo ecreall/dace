@@ -3,6 +3,12 @@
 
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
+"""Creation of the relation catalog and its container.
+
+Seven indexes: the field indexes ``source_id``/``target_id``/
+``relation_id``/``reftype`` and the keyword indexes ``tags`` and the
+flattened interfaces of both ends.
+"""
 from hypatia.catalog import Catalog
 from hypatia.field import FieldIndex
 from hypatia.keyword import KeywordIndex
@@ -13,6 +19,7 @@ from .container import RelationsContainer
 
 
 def create_catalog(root):
+    """Install ``root['relations']`` (7 indexes) and ``root['relations_container']``."""
     catalog = Catalog()
     catalog['source_id'] = FieldIndex('source_id')
     catalog['target_id'] = FieldIndex('target_id')

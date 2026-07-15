@@ -4,16 +4,26 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Weak references for shared relations.
+
+``ResourceRef`` wraps a persistent object in a ZODB ``WeakRef`` and
+resolves it defensively: gone from the database, ghostified by a
+zeopack (``POSKeyError``) or removed from every container
+(``__name__ is None``) all resolve to ``None`` — shared properties
+then silently drop the dead reference.
+"""
 from persistent.wref import WeakRef
 from ZODB.POSException import POSKeyError
 
 
 class Descriptor(object):
+    """Marker base class of the four relation descriptors."""
     pass
 
 
 class ResourceRef(object):
 
+    """Defensive ZODB weak reference (see module docstring); hash/eq on the resolved object."""
     def __init__(self, resource):
         try:
             self.ref = WeakRef(resource)
@@ -21,6 +31,7 @@ class ResourceRef(object):
             self.ref = resource
 
     def __call__(self):
+        """Resolve to the live object, or ``None`` when gone/ghost/unparented."""
         if isinstance(self.ref, WeakRef):
             ref = self.ref()
             if ref is None:
@@ -73,10 +84,12 @@ class ResourceRef(object):
 
 
 def ref(resource):
+    """Wrap ``resource`` in a ``ResourceRef``."""
     return ResourceRef(resource)
 
 
 def get_ref(obj):
+    """Resolve a ``ResourceRef`` (identity on anything else)."""
     if isinstance(obj, ResourceRef):
         return obj()
     else:

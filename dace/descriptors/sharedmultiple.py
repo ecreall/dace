@@ -4,6 +4,13 @@
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
 
+"""Shared (reference) to-many relation descriptor.
+
+Stores a ``PersistentList`` of ``ResourceRef`` under
+``_<propertyref>_value``; dead references (see ``base``) are dropped
+lazily; ``isunique`` prevents duplicates; the ``opposite`` end is
+maintained automatically. ``__set__`` diffs old/new values.
+"""
 from persistent.list import PersistentList
 from ZODB.POSException import POSKeyError
 
@@ -16,6 +23,7 @@ _empty = ()
 
 class SharedMultipleProperty(Descriptor):
 
+    """To-many reference list with automatic opposite maintenance."""
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -33,6 +41,7 @@ class SharedMultipleProperty(Descriptor):
         return values, len(references) != len(values)
 
     def __get__(self, obj, objtype=None):
+        """Descriptor read: the resolved live values (inlined for performance)."""
         if obj is None:
             return self
 
@@ -43,6 +52,7 @@ class SharedMultipleProperty(Descriptor):
         return results
 
     def add(self, obj, value, initiator=True, moving=None):
+        """Append a reference (unique if ``isunique``), wiring the opposite end."""
         if value is None:
             return
 
@@ -62,11 +72,13 @@ class SharedMultipleProperty(Descriptor):
         obj.__dict__[self.key].append(ref(value))
 
     def _cleanup(self, obj):
+        """Rebuild the list without the dead references."""
         references = [o for o in obj.__dict__.get(self.key, _empty)
                       if get_ref(o) is not None]
         setattr(obj, self.key, PersistentList(references))
 
     def __set__(self, obj, values, initiator=True, moving=None):
+        """Replace the values by diff: remove the missing, add the new."""
         if not isinstance(values, (list, tuple, set, PersistentList)):
             values = [values]
 
@@ -87,6 +99,7 @@ class SharedMultipleProperty(Descriptor):
             self.add(obj, value_toadd)
 
     def remove(self, obj, values, initiator=True, moving=None):
+        """Remove value(s), unwiring the opposite end."""
         self.init(obj)
         relations = obj.__dict__[self.key]
         if not isinstance(values, (list, tuple, set)):
@@ -107,5 +120,6 @@ class SharedMultipleProperty(Descriptor):
                 relations.remove(value)
 
     def init(self, obj):
+        """Ensure the storage list exists."""
         if getattr(obj, self.key, _marker) is _marker:
             setattr(obj, self.key, PersistentList())

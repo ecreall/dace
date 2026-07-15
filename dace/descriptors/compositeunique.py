@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi, Vincent Fretin
 
+"""Composite (containment) to-one relation descriptor.
+
+The value physically lives in the holder folder; only the child *name*
+is stored under ``_<propertyref>_value``. Setting a value re-parents
+it (detaching it from its previous composite property or container),
+records the owning property on ``value.__property__`` and wires the
+``opposite`` end. Removing deletes the child from the folder.
+"""
 from dace.descriptors import Descriptor
 
 _marker = object()
@@ -11,6 +19,7 @@ _marker = object()
 
 class CompositeUniqueProperty(Descriptor):
     
+    """To-one containment: the child lives in the holder folder."""
     def __init__(self, propertyref='', opposite=None, isunique=False):
         self.propertyref = propertyref
         self.opposite = opposite
@@ -18,6 +27,7 @@ class CompositeUniqueProperty(Descriptor):
         self.key = '_' + propertyref + '_value'
 
     def _get(self, obj):
+        """The contained child (resolved by stored name), or ``None``."""
         current_value_name = obj.__dict__.get(self.key, None)
         if current_value_name is not None:
             return obj.get(current_value_name, None)
@@ -25,15 +35,22 @@ class CompositeUniqueProperty(Descriptor):
         return None
 
     def __get__(self, obj, objtype=None):
+        """Descriptor read: the contained child, or the descriptor on the class."""
         if obj is None:
             return self
 
         return self._get(obj)
 
     def add(self, obj, value, initiator=True, moving=None):
+        """Alias of ``__set__`` (uniform API with the multiple descriptors)."""
         self.__set__(obj, value, initiator, moving)
 
     def __set__(self, obj, value, initiator=True, moving=None):
+        """Adopt ``value``: detach it from its previous holder (composite
+        property or plain container), add it to the folder, record
+        ``__property__`` and wire the opposite end. ``moving`` preserves
+        move semantics through substanced.
+        """
         self.init(obj)
 
         current_value_name = obj.__dict__[self.key]
@@ -69,6 +86,7 @@ class CompositeUniqueProperty(Descriptor):
                 opposite_property.add(value, obj, False)
 
     def remove(self, obj, value, initiator=True, moving=None):
+        """Unwire and delete the child from the folder."""
         self.init(obj)
         current_value = self._get(obj)
         if current_value is not None and current_value == value:
@@ -84,5 +102,6 @@ class CompositeUniqueProperty(Descriptor):
             obj.remove(value_name, moving=moving)
 
     def init(self, obj):
+        """Ensure the storage slot exists."""
         if getattr(obj, self.key, _marker) is _marker:
             setattr(obj, self.key, None)

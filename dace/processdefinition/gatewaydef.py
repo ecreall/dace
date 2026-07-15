@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Gateway definitions.
+
+The ``find_startable_paths`` methods are the definition-side twins of
+the runtime exploration: exclusive gateways fork the exploration on
+every valid outgoing transition; parallel gateways join — they only
+proceed once every incoming branch has been explored (guarding against
+mixed exclusive forks). Inclusive gateways are a stub.
+"""
 from dace.processinstance.gateway import (
     ExclusiveGateway, ParallelGateway, InclusiveGateway)
 from .core import FlowNodeDefinition, Path
@@ -11,13 +19,16 @@ from .core import FlowNodeDefinition, Path
 
 
 class GatewayDefinition(FlowNodeDefinition):
+    """Base of gateway definitions."""
     factory = NotImplemented
 
 
 class ExclusiveGatewayDefinition(GatewayDefinition):
+    """XOR gateway definition."""
     factory = ExclusiveGateway
 
     def find_startable_paths(self, source_path, source):
+        """Fork the startable-path exploration on every valid outgoing transition."""
         for transition in self.outgoing:
             if transition.condition(None):
                 nodedef = self.process[transition.target_id]
@@ -36,9 +47,14 @@ class ExclusiveGatewayDefinition(GatewayDefinition):
 
 
 class ParallelGatewayDefinition(GatewayDefinition):
+    """AND gateway definition."""
     factory = ParallelGateway
 
     def find_startable_paths(self, source_path, source):
+        """Join logic over the ``Find`` explorations: yield outgoing paths only
+        once every incoming branch arrived; abort when a fork point is an
+        exclusive gateway (alternatives cannot satisfy an AND join).
+        """
         global_transaction = source_path.transaction.get_global_transaction()
         paths = global_transaction.find_allsubpaths_for(self, 'Find')
         test_path = Path()
@@ -83,4 +99,5 @@ class ParallelGatewayDefinition(GatewayDefinition):
 
 
 class InclusiveGatewayDefinition(GatewayDefinition):
+    """OR gateway — **not implemented** (stub kept for the metamodel)."""
     factory = InclusiveGateway

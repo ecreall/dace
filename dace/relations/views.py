@@ -4,6 +4,7 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""SDI view of a relation ('Vue' tab): renders the ends as links."""
 from substanced.sdi import mgmt_view
 from substanced.sdi import LEFT
 
@@ -19,11 +20,13 @@ from .values import RelationValue
     )
 class RelationValueView(object):
 
+    """Management view rendering a relation's id, type, ends and tags."""
     def __init__(self, context, request):
         self.context = context
         self.request = request
 
     def _source(self):
+        """URL/title of the source (empty when gone)."""
         source = self.context.source
         source_url = {}
         if source is not None:
@@ -31,6 +34,7 @@ class RelationValueView(object):
         return source_url
 
     def _target(self):
+        """URL/title of the target (empty when gone)."""
         target = self.context.target
         target_url = {}
         if target is not None:

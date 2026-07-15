@@ -79,3 +79,22 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   accessors (documented at class level by their naming grid) and a
   handful of small helpers. Next: tranche 3 = `processdefinition/` +
   `descriptors/` + `relations/`.
+
+
+- Tranche 3 of the docstring pass: the declarative metamodel
+  (`dace/processdefinition/`), the relation descriptors
+  (`dace/descriptors/`) and the oid-level relation catalog
+  (`dace/relations/`) — 177 docstrings from a full read of the twenty
+  modules. Highlights fixed in writing: the `Transaction`/`Path`
+  path-algebra (types, recursive path collection, lazy topology and its
+  `_dirty` invalidation), the graph normalisation and its synthetic
+  nodes (`startpg`, `endeg`, `mergepg`, `mergeeg` — the names daceui
+  displays), the definition-side startable-path exploration behind
+  virtual start work-items, the four descriptors' re-parenting and
+  `__property__` bookkeeping, the defensive `ResourceRef` (zeopack
+  ghosts), and the role of `relations/` as the storage of role grants
+  (`reftype` always 'Role'). Coverage: 32.4 % → 50.7 %
+  (processdefinition 24/24 classes, descriptors 6/6, relations 17/17).
+  Residue: constructors, `__repr__`s and a handful of small helpers.
+  Next: tranche 4 = `objectofcollaboration/` + `catalog/` + root
+  modules (`util.py` chiefly).

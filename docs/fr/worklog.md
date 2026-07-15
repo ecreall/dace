@@ -82,3 +82,23 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   (documentés au niveau classe par leur grille de nommage) et quelques
   petits utilitaires. Suite : tranche 3 = `processdefinition/` +
   `descriptors/` + `relations/`.
+
+
+- Tranche 3 de la passe de docstrings : le métamodèle déclaratif
+  (`dace/processdefinition/`), les descripteurs de relations
+  (`dace/descriptors/`) et le catalogue de relations par oid
+  (`dace/relations/`) — 177 docstrings après lecture intégrale des vingt
+  modules. Points fixés par écrit : l'algèbre de chemins
+  `Transaction`/`Path` (types, collecte récursive, topologie paresseuse
+  et son invalidation `_dirty`), la normalisation du graphe et ses nœuds
+  synthétiques (`startpg`, `endeg`, `mergepg`, `mergeeg` — les noms que
+  daceui affiche), l'exploration des chemins démarrables côté définition
+  derrière les work-items de départ virtuels, le re-parentage et la
+  comptabilité `__property__` des quatre descripteurs, le `ResourceRef`
+  défensif (fantômes de zeopack), et le rôle de `relations/` comme
+  stockage des attributions de rôles (`reftype` toujours 'Role').
+  Couverture : 32,4 % → 50,7 % (processdefinition 24/24 classes,
+  descriptors 6/6, relations 17/17). Résidu : constructeurs, `__repr__`
+  et quelques petits utilitaires. Suite : tranche 4 =
+  `objectofcollaboration/` + `catalog/` + modules racine (`util.py` en
+  tête).

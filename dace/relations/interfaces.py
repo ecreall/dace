@@ -5,6 +5,7 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""Interfaces and events contract of the relation subsystem."""
 from zope.interface import Interface, Attribute
 from zope.interface.interfaces import IObjectEvent
 

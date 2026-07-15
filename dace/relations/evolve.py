@@ -1,3 +1,7 @@
+"""Evolve step: remove relation oids from every non-relation catalog
+(they were historically indexed everywhere; the container now adds
+with events off).
+"""
 import logging
 import transaction
 
@@ -8,6 +12,7 @@ log = logging.getLogger('substanced')
 
 
 def unindex_relations_from_other_catalogs(root, registry):
+    """Sweep every catalog and unindex each stored relation oid; commit."""
     log.info('Unindexing relations from other catalogs...')
     catalogs = find_catalogs(root)
     container = get_relations_container(root)

@@ -4,6 +4,16 @@
 # licence: AGPL
 # author:  Vincent Fretin, Amen Souissi
 
+"""Oid-level relations, indexed in their own catalog.
+
+Distinct from ``dace.descriptors`` (containment/reference properties):
+here a relation is a ``RelationValue`` object (source oid, target oid,
+relation id, tags) stored in ``root['relations_container']`` and
+indexed in the ``root['relations']`` hypatia catalog. The principal
+role system stores its grants this way (``reftype`` is always
+``'Role'``). ``find_relations`` is memoised per request; ``connect``/
+``disconnect`` invalidate the cache.
+"""
 from pyramid.threadlocal import get_current_request
 from substanced.util import find_objectmap, set_oid
 from pyramid.traversal import find_root
@@ -12,12 +22,14 @@ from .values import RelationValue
 
 # TODO def get_relations_container(root, query)
 def get_relations_container(resource):
+    """``root['relations_container']`` (the relation storage)."""
     root = find_root(resource)
     return root['relations_container']
 
 
 # TODO get_relations_catalog(root, query)
 def get_relations_catalog(resource):
+    """``root['relations']`` (the relation catalog), or ``None``."""
     root = find_root(resource)
     return root.get('relations', None)
 
@@ -25,6 +37,7 @@ def get_relations_catalog(resource):
 INTERSECTION_ORDER = ['relation_id', 'source_id', 'target_id']
 
 def get_order(e):
+    """Sort key ordering query criteria by selectivity (relation, source, target)."""
     try:
         return INTERSECTION_ORDER.index(e[0])
     except ValueError:
@@ -33,15 +46,18 @@ def get_order(e):
 _marker = object()
 
 class RequestMemojito(object):
+    """Per-request memoisation helper (cache lives on the request object)."""
     propname = '_memojito_'
 
     def invalidate_cache(self):
+        """Reset the per-request cache."""
         request = get_current_request()
         if request:
             setattr(request, self.propname, dict())
 
     def request_memoize(self, func):
 
+        """Decorator memoising by (function, query items) — tailored to ``find_relations``."""
         def memogetter(*args, **kwargs):
             request = get_current_request()
             if not request:
@@ -68,6 +84,10 @@ invalidate_cache = _m.invalidate_cache
 # TODO def find_relations(root, query)
 @request_memoize
 def find_relations(resource, query):
+    """Query the relation catalog: intersect the criteria (most selective
+    first), resolve through the objectmap. ``value`` may be
+    ``('querytype', value)``; ``reftype`` is ignored (always 'Role').
+    """
     catalog = get_relations_catalog(resource)
     root = find_root(resource)
     objectmap = find_objectmap(root)
@@ -94,6 +114,7 @@ def find_relations(resource, query):
 
 
 def connect(source, target, **kwargs):
+    """Create and store a ``RelationValue`` between two resources (cache invalidated)."""
     container = get_relations_container(source)
     objectmap = find_objectmap(container)
     source_id, target_id = objectmap._refids_for(source, target)
@@ -106,6 +127,7 @@ def connect(source, target, **kwargs):
 
 
 def disconnect(relation):
+    """Remove a relation from its container (cache invalidated)."""
     parent = relation.__parent__
     parent.remove(relation.__name__, send_events=False)
     invalidate_cache()

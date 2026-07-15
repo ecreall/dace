@@ -5,6 +5,14 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""Relation indexing and cascade deletion.
+
+The catalog is created with the root; relations are (re)indexed on
+add/modify; when any object is removed (not moved), every relation
+where it is source or target is deleted — after notifying
+``RelationSourceDeleted``/``RelationTargetDeleted``, which role
+subscribers use to clean up grants.
+"""
 from pyramid.events import subscriber
 from pyramid.threadlocal import get_current_registry
 from pyramid.threadlocal import get_current_request
@@ -26,12 +34,14 @@ from .events import RelationSourceDeleted, RelationTargetDeleted
 
 @subscriber(RootAdded)
 def add_relations_catalog(event):
+    """Create the relation catalog and container with the root."""
     root = event.object
     create_catalog(root)
 
 
 @subscriber(IRelationAdded)
 def add_relation(event):
+    """Index a newly added relation."""
     relation = event.object
     catalog = get_relations_catalog(relation.source)
     objectid = oid_from_resource(relation)
@@ -40,6 +50,7 @@ def add_relation(event):
 
 @subscriber(IRelationModified)
 def update_relation(event):
+    """Reindex a modified relation."""
     relation = event.object
     catalog = get_relations_catalog(relation.source)
     objectid = oid_from_resource(relation)
@@ -49,6 +60,10 @@ def update_relation(event):
 @subscriber(IRelationDeleted)
 @subscribe_removed()
 def object_deleted(event):
+    """On removal (not moving): unindex a removed relation; for any other
+    object, cascade-delete the relations it sources or targets (with
+    notifications), then invalidate the request cache.
+    """
     if getattr(event, 'moving', False):
         return
 

@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Process definitions.
+
+A ``ProcessDefinition`` is built in code (``defineNodes`` /
+``defineTransitions``), normalised at registration (missing start/end
+events and orphan nodes wired through synthetic gateways), and acts as
+the factory of its ``Process`` instances. ``start_process`` computes the
+virtual start work-items offered before any instance exists.
+"""
 from pyramid.decorator import reify
 from persistent.list import PersistentList
 from zope.interface import implementer, Interface
@@ -23,6 +31,13 @@ from dace.objectofcollaboration.entity import Entity
 @implementer(IProcessDefinition)
 class ProcessDefinition(Entity):
 
+    """A declarative process definition (and factory of its instances).
+
+    Class flags: ``isUnique`` (singleton/system process), ``isSubProcess``,
+    ``isVolatile`` (instance removed with its holder), ``isControlled``,
+    ``discriminator``. ``contexts`` aggregates the context interfaces of
+    the activities (filled by ``defineNodes``).
+    """
     nodes = CompositeMultipleProperty('nodes', 'process', True)
     transitions = CompositeMultipleProperty('transitions', 'process', True)
     TransitionDefinitionFactory = TransitionDefinition
@@ -43,9 +58,11 @@ class ProcessDefinition(Entity):
         pass
 
     def __call__(self, **kwargs):
+        """Instantiate a ``Process`` bound to this definition."""
         return Process(self, self._startTransition, **kwargs)
 
     def _dirty(self):
+        """Invalidate the reified ``_startTransition``."""
         try:
             del self._startTransition
         except AttributeError:
@@ -55,6 +72,9 @@ class ProcessDefinition(Entity):
         return "ProcessDefinition(%r)" % self.id
 
     def defineNodes(self, **nodes):
+        """Register nodes: ids become ``'<pd.id>.<name>'``, names the kwarg
+        names; activity contexts are aggregated on the definition.
+        """
         self._dirty()
         for name, node in nodes.items():
             node.id = self.id + '.' + name
@@ -64,6 +84,7 @@ class ProcessDefinition(Entity):
                 node.init_process_contexts(self)
 
     def defineTransitions(self, *transitions):
+        """Register transitions (named by id) and resolve their ends."""
         self._dirty()
         for transition in transitions:
             transition.__name__ = transition.id
@@ -71,12 +92,21 @@ class ProcessDefinition(Entity):
             transition._init_ends()
 
     def _is_start_orphan(self, node):
+        """Node with no incoming transition (and not a start event)."""
         return not isinstance(node, StartEventDefinition) and not node.incoming
 
     def _is_end_orphan(self, node):
+        """Node with no outgoing transition (and not an end event)."""
         return not isinstance(node, EndEventDefinition) and not node.outgoing
 
     def _normalize_definition(self):
+        """Make the graph well-formed: wire start orphans behind an empty start
+        event through a synthetic parallel gateway (``startpg``), end orphans
+        to an empty end event through a synthetic exclusive gateway
+        (``endeg``), then normalise multi-branch start/end events
+        (``mergepg``/``mergeeg``). These synthetic names are the ones daceui
+        displays.
+        """
         new_transitions = ()
         orphan_nodes = [node for node in self.nodes \
                         if self._is_start_orphan(node)]
@@ -149,6 +179,7 @@ class ProcessDefinition(Entity):
         self._normalize_endevents()
 
     def _normalize_startevents(self):
+        """Insert ``mergepg`` after a start event with several outgoing branches."""
         start_events = self._get_start_events()
         for s_e in start_events:
             if len(s_e.outgoing) > 1:
@@ -162,6 +193,7 @@ class ProcessDefinition(Entity):
                                                             'mergepg'))
 
     def _normalize_endevents(self):
+        """Insert ``mergeeg`` before an end event with several incoming branches."""
         end_events = self._get_end_events()
         for e_e in end_events:
             if len(e_e.incoming) > 1:
@@ -175,6 +207,7 @@ class ProcessDefinition(Entity):
                                                             e_e.__name__))
 
     def _get_start_events(self):
+        """The start event definitions of the graph."""
         result = []
         for node in self.nodes:
             if isinstance(node, StartEventDefinition):
@@ -183,6 +216,7 @@ class ProcessDefinition(Entity):
         return result
 
     def _get_end_events(self):
+        """The end event definitions of the graph."""
         result = []
         for node in self.nodes:
             if isinstance(node, EndEventDefinition):
@@ -192,6 +226,7 @@ class ProcessDefinition(Entity):
 
     @reify
     def _startTransition(self):
+        """The single outgoing transition of the single start event (reified; raises ``InvalidProcessDefinition`` on multiple starts)."""
         start_events = self._get_start_events()
         if len(start_events) != 1:
             raise InvalidProcessDefinition(
@@ -202,6 +237,10 @@ class ProcessDefinition(Entity):
         return start_events[0].outgoing[0]
 
     def start_process(self, node_name=None):
+        """Compute the virtual start work-items (``{node_name: StartWorkItem}``)
+        under a fresh global transaction — or, for a started ``isUnique``
+        definition, nothing.
+        """
         if self.isUnique and self.is_started:
             if node_name:
                 return {node_name: None}
@@ -223,6 +262,7 @@ class ProcessDefinition(Entity):
 
     @property
     def is_started(self):
+        """True when an instance of this definition is indexed in the 'dace' catalog."""
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
@@ -233,6 +273,7 @@ class ProcessDefinition(Entity):
 
     @property
     def started_processes(self):
+        """The running instances of this definition (via the 'dace' catalog)."""
         dace_catalog = find_catalog('dace')
         object_provides_index = dace_catalog['object_provides']
         processid_index = dace_catalog['process_id']
