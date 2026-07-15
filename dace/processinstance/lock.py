@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Cooperative locking of decisions and actions.
+
+Thin wrapper over ``substanced.locking`` (1 h default duration):
+anonymous users never lock; objects flagged ``dont_lock`` (virtual
+start work-items and their actions, not yet in the ZODB) defer the
+lock/unlock operations as callbacks replayed by
+``BaseWorkItem.set_actions`` once the objects are persisted.
+"""
 from substanced.locking import (lock_resource,
                                 unlock_resource,
                                 could_lock_resource,
@@ -17,6 +25,7 @@ DEFAUT_DURATION = 3600
 
 def get_lock_operation(request):
 
+    """Deferred-lock callback factory (for ``dont_lock`` objects)."""
     def _lock(obj):
         obj.lock(request)
 
@@ -25,6 +34,7 @@ def get_lock_operation(request):
 
 def get_unlock_operation(request):
 
+    """Deferred-unlock callback factory (for ``dont_lock`` objects)."""
     def _unlock(obj):
         obj.unlock(request)
 
@@ -32,6 +42,7 @@ def get_unlock_operation(request):
 
 
 def get_useroruseroid(request):
+    """Current user, or the anonymous oid for anonymous sessions."""
     user = get_current(request)
     if isinstance(user, Anonymous):
         user = user.oid
@@ -41,12 +52,17 @@ def get_useroruseroid(request):
 
 class LockableElement(object):
 
+    """Mixin giving lock/unlock/is_locked semantics to work-items and
+    actions, with the ``dont_lock`` deferral described in the module
+    docstring.
+    """
     def __init__(self, **kwargs):
         super(LockableElement, self).__init__(**kwargs)
         self.dont_lock = False
         self.callbacks = []
 
     def call(self, obj):
+        """Run and clear the deferred lock callbacks against ``obj``."""
         for callback in self.callbacks:
             callback(obj)
 

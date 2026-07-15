@@ -4,6 +4,16 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Runtime backbone of the engine.
+
+Node lifecycle (``FlowNode`` and its refinements), user decisions
+(``MakerFlowNode`` computing ``DecisionWorkItem``s over the definition
+graph), behaviours (``Behavior``/``Wizard`` and their validation and
+execution policy), and the engine's notification events
+(``ProcessStarted``, ``ActivityExecuted``, ...) — including the
+subscriber that appends each executed activity to the entity's
+``process_history`` annotation (the data behind daceui's history view).
+"""
 import datetime
 import pytz
 import threading
@@ -32,6 +42,7 @@ PROCESS_HISTORY_KEY = 'process_history'
 
 
 class BPMNElement(Entity):
+    """Base of every runtime element: copies id/title/description from its definition."""
     def __init__(self, definition, **kwargs):
         super(BPMNElement,self).__init__(**kwargs)
         self.id = definition.id
@@ -45,6 +56,13 @@ class BPMNElement(Entity):
 @implementer(ILocation)
 class FlowNode(BPMNElement):
 
+    """A node of a running process.
+
+    Relations: ``incoming``/``outgoing`` transitions, owned ``workitems``,
+    back-reference ``process``. Subclasses implement ``start`` and the
+    path-exploration hook ``find_executable_paths``. ``definition``
+    resolves the matching node definition by name.
+    """
     incoming = SharedMultipleProperty('incoming', 'target', False)
     outgoing = SharedMultipleProperty('outgoing', 'source', False)
     workitems = CompositeMultipleProperty('workitems', None, False)
@@ -54,31 +72,39 @@ class FlowNode(BPMNElement):
         super(FlowNode,self).__init__( definition, **kwargs)
 
     def prepare(self):
+        """Notify ``ActivityPrepared`` (specialised by behavioural nodes)."""
         registry = get_current_registry()
         registry.notify(ActivityPrepared(self))
 
     def __call__(self, transaction):
+        """Alias for ``start(transaction)`` — nodes are played by calling them."""
         self.start(transaction)
 
     def find_executable_paths(self, source_path, source):
+        """Yield executable paths through this node (hook for path exploration)."""
         pass# pragma: no cover
 
     def start(self, transaction):
+        """Run the node within the given (path) transaction. Abstract."""
         raise NotImplementedError# pragma: no cover
 
     def play(self, transitions):
+        """Notify ``ActivityFinished`` and ask the process to play ``transitions``."""
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
         self.process.play_transitions(self, transitions)
 
     def replay_path(self, decision, transaction):
+        """Hook used when re-playing a user-chosen path (see MakerFlowNode)."""
         pass# pragma: no cover
 
     def stop(self):
+        """Stop hook (events, sub-processes); default: nothing to do."""
         pass# pragma: no cover
 
     @property
     def definition(self):
+        """The node definition of the same name in the process definition."""
         return self.process.definition[self.__name__]
 
     def __repr__(self):# pragma: no cover
@@ -90,10 +116,19 @@ class FlowNode(BPMNElement):
 
 class MakerFlowNode(FlowNode):
 
+    """A node that produces user decisions.
+
+    ``decide`` explores the outgoing graph (through ``Find``
+    sub-transactions) and materialises each executable path as a
+    ``DecisionWorkItem`` attached to this node; consuming one of them
+    replays the chosen path and cancels the siblings
+    (``finish_decisions``).
+    """
     def __init__(self, definition, **kwargs):
         super(MakerFlowNode, self).__init__(definition, **kwargs)
 
     def decide(self, transaction):
+        """Compute the decision work-items for the outgoing paths and attach them."""
         workitems = self._calculate_decisions(transaction)
         if not workitems:
             return
@@ -108,6 +143,10 @@ class MakerFlowNode(FlowNode):
                 node_to_execute.prepare_for_execution()
 
     def _calculate_decisions(self, transaction, transitions=None):
+        """Explore ``transitions`` (default: all outgoing) and return a dict of
+        ``DecisionWorkItem`` keyed by target-node name (merged when several
+        paths reach the same node).
+        """
         global_transaction = transaction.get_global_transaction()
         workitems = {}
         if transitions is None:
@@ -134,6 +173,7 @@ class MakerFlowNode(FlowNode):
         return workitems
 
     def refresh_decisions(self, transaction, transitions):
+        """Recompute decisions for ``transitions`` and attach only the new ones."""
         workitems = self._calculate_decisions(transaction, transitions)
         new_workitems = [wi for wi in workitems.values() \
                          if not (wi in self.workitems)]
@@ -151,6 +191,7 @@ class MakerFlowNode(FlowNode):
             self.addtoproperty('workitems', workitem)
 
     def get_allconcernedworkitems(self):
+        """All ``DecisionWorkItem`` of the process in which this node takes part."""
         allprocessworkitems = self.process.getAllWorkItems()
         result = [wi for wi in allprocessworkitems \
                  if isinstance(wi, DecisionWorkItem) and \
@@ -159,6 +200,7 @@ class MakerFlowNode(FlowNode):
         return result
 
     def replay_path(self, decision, transaction):
+        """Find the concerned decision matching ``decision`` and finish it."""
         allconcernedkitems = self.get_allconcernedworkitems()
         for wi in allconcernedkitems:
             if decision.path.is_segment(wi.path):
@@ -171,21 +213,33 @@ class MakerFlowNode(FlowNode):
             self.finish_decisions(None)
 
     def finish_decisions(self, work_item):
+        """Consume the chosen decision and cancel the alternatives (specialised)."""
         pass
 
 
 class BehavioralFlowNode(MakerFlowNode):
 
+    """A node carrying business behaviours (activities and events).
+
+    ``prepare`` creates the real ``WorkItem`` (transferring the actions
+    carried by a consumed ``StartWorkItem``/decision when re-playing);
+    ``finish_behavior`` closes it, cleans the ``Start`` paths and triggers
+    ``decide`` for what follows.
+    """
     def __init__(self, definition, **kwargs):
         super(BehavioralFlowNode, self).__init__(definition, **kwargs)
 
     def find_executable_paths(self, source_path, source):
+        """A behavioural node ends the exploration: yield the path as a decision."""
         decision_path = source_path.clone()
         source_transaction = source_path.transaction.__parent__
         source_transaction.remove_subtransaction(source_path.transaction)
         yield decision_path
 
     def _get_workitem(self):
+        """Return a valid ``WorkItem`` for this node, consuming a valid
+        ``DecisionWorkItem`` into a real one if needed; ``None`` otherwise.
+        """
         workitems = [w for w in self.workitems if w.validate() and \
                      isinstance(w, WorkItem)]
         if workitems:
@@ -206,6 +260,7 @@ class BehavioralFlowNode(MakerFlowNode):
         return None
 
     def prepare(self):
+        """Create the node work-item, wiring actions from the initiating decision."""
         paths = self.process.global_transaction.find_allsubpaths_for(
                                                        self, 'Replay')
         user_decision = None
@@ -231,6 +286,7 @@ class BehavioralFlowNode(MakerFlowNode):
         registry.notify(ActivityStarted(self))
 
     def finish_behavior(self, work_item):
+        """Close ``work_item``, notify, clean ``Start`` paths, then ``decide``."""
         if work_item  and not isinstance(work_item, StartWorkItem):
             self.delfromproperty('workitems', work_item)
 
@@ -246,6 +302,9 @@ class BehavioralFlowNode(MakerFlowNode):
         self.decide(self.process.global_transaction)
 
     def finish_decisions(self, work_item):
+        """Validate the chosen decision, cancel the sibling decisions sharing its
+        first transitions, play the chosen transition and clean ``Find`` paths.
+        """
         if work_item is not None:
             # _get_transitions_source returns a set, convert it to list to
             # retrieve the first item in the code at the end
@@ -286,6 +345,7 @@ class BehavioralFlowNode(MakerFlowNode):
 
 class Error(Exception):
 
+    """Base error carrying a user-facing message, causes, solutions and a template."""
     principalmessage = NotImplemented
     causes = NotImplemented
     solutions = NotImplemented
@@ -311,6 +371,7 @@ class Error(Exception):
 
 
 class ValidationError(Error):
+    """Raised when an action refuses a context/user (see ``validate_action``)."""
     principalmessage = u""
     causes = []
     solutions = []
@@ -319,6 +380,7 @@ class ValidationError(Error):
 
 
 class ExecutionError(Error):
+    """Raised by a behaviour's ``start`` to abort its execution cleanly."""
     principalmessage = u""
     causes = []
     solutions = []
@@ -328,13 +390,16 @@ class ExecutionError(Error):
 
 class Validator(object):
 
+    """Default action validator: always valid (see ``getBusinessActionValidator``)."""
     @classmethod
     def validate(cls, context, request, **kw):
+        """Return True or raise ``ValidationError``."""
         return True
 
 
 class Step(object):
 
+    """A step of a ``Wizard`` behaviour, wired by micro-transitions."""
     def __init__(self, **kwargs):
         super(Step, self).__init__()
         self.wizard = None
@@ -349,15 +414,23 @@ class Step(object):
         self._incoming = PersistentList()
 
     def add_outgoing(self, transition):
+        """Register an outgoing micro-transition."""
         self._outgoing.append(transition)
 
     def add_incoming(self, transition):
+        """Register an incoming micro-transition."""
         self._incoming.append(transition)
 
 
 @implementer(IBehavior)
 class Behavior(Step):
 
+    """Base class of every behaviour (business actions included).
+
+    Class-level identity (``behavior_id``, ``title``); instance retrieval
+    (``get_instance``); the execution policy ``execute`` = ``start`` +
+    ``after_execution`` + ``redirect``, with ``ExecutionError`` handled.
+    """
     title = NotImplemented
     description = NotImplemented
     behavior_id = NotImplemented
@@ -369,6 +442,7 @@ class Behavior(Step):
 
     @classmethod
     def get_instance(cls, context, request, **kw):
+        """Return the behaviour instance (from the wizard steps if any)."""
         instance = None
         if 'wizard' in kw and kw['wizard'] is not None:
             wizard = kw['wizard']
@@ -382,6 +456,7 @@ class Behavior(Step):
 
     @classmethod
     def get_validator(cls, **kw):
+        """Return the validator class used by views to pre-check the action."""
         return Validator  # defaultvalidator
 
     @property
@@ -390,6 +465,7 @@ class Behavior(Step):
         return self.__class__
 
     def validate(self, context, request, **kw):
+        """Instance-level validation hook (default: valid)."""
         return True  # action instance validation
 
     def before_execution(self, context, request, **kw):
@@ -423,11 +499,13 @@ class Behavior(Step):
 
 
 def default_condition(context, request):
+    """Default wizard-transition condition: always True."""
     return True
 
 
 class Transition(Persistent):
 
+    """Micro-transition between two wizard steps, guarded by ``condition``."""
     def __init__(self, 
                  source, 
                  target, 
@@ -444,10 +522,15 @@ class Transition(Persistent):
         self.id = id
 
     def validate(self, context, request, **args):
+        """Evaluate the condition for (context, request)."""
         return self.condition(context, request, **args)
 
 
 class Wizard(Behavior):
+    """A behaviour made of ``steps`` linked by ``transitions``
+    (tuples ``(source_id, target_id[, isdefault[, condition]])``),
+    instantiated per action.
+    """
     steps = {}
     transitions = ()
 
@@ -483,11 +566,13 @@ class Wizard(Behavior):
 
 class EventHandler(FlowNode):
 
+    """A node that may carry boundary events (implementation unfinished — FIXME)."""
     def __init__(self, definition, **kwargs):
         super(EventHandler, self).__init__(definition, **kwargs)
         self.boundaryEvents = []  # PersistentList()
 
     def _init_boundaryEvents(self, definition):
+        """Instantiate the boundary events of the definition (unfinished)."""
         self.boundaryEvents = [defi.create()
                 for defi in definition.boundaryEvents]
         for bedef in definition.boundaryEvents:
@@ -502,6 +587,7 @@ DEFAULTMAPPING_ACTIONS_VIEWS = {}
 @implementer(IProcessStarted)
 class ProcessStarted:
 
+    """Engine event: a process instance started."""
     def __init__(self, process):
         self.process = process
 
@@ -512,6 +598,7 @@ class ProcessStarted:
 @implementer(IProcessFinished)
 class ProcessFinished:
 
+    """Engine event: a process instance finished."""
     def __init__(self, process):
         self.process = process
 
@@ -521,6 +608,7 @@ class ProcessFinished:
 
 class WorkItemFinished:
 
+    """Engine event: a work-item was consumed/closed."""
     def __init__(self, workitem):
         self.workitem =  workitem
 
@@ -530,6 +618,7 @@ class WorkItemFinished:
 
 class ActivityPrepared:
 
+    """Engine event: a node prepared its work-item."""
     def __init__(self, activity):
         self.activity = activity
 
@@ -539,6 +628,7 @@ class ActivityPrepared:
 
 class ActivityFinished:
 
+    """Engine event: a node finished."""
     def __init__(self, activity):
         self.activity = activity
 
@@ -548,6 +638,7 @@ class ActivityFinished:
 
 class ActivityStarted:
 
+    """Engine event: a node started."""
     def __init__(self, activity):
         self.activity = activity
 
@@ -557,6 +648,7 @@ class ActivityStarted:
 
 class ActivityExecuted:
 
+    """Engine event: a business action ran, with its contexts and user."""
     def __init__(self, activity, contexts, user):
         self.activity = activity
         self.contexts = contexts
@@ -575,11 +667,16 @@ class ProcessError(Exception):
 @subscriber(ActivityStarted)
 @subscriber(ActivityFinished)
 def activity_handler(event):# pragma: no cover
+    """Log node lifecycle events (debug aid)."""
     log.info('%s %s', threading.current_thread().ident, event)
 
 
 @subscriber(ActivityExecuted)
 def activity_executed__handler(event):
+    """Append the executed activity to each entity's ``process_history``
+    annotation (date, state, user, activity ids/titles) — the source of
+    daceui's process-history view.
+    """
     now = datetime.datetime.now(tz=pytz.UTC)
     for context in event.contexts:
         if isinstance(context, Entity):

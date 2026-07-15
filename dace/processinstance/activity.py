@@ -5,6 +5,16 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Activities and business actions.
+
+``BusinessAction`` binds a behaviour to a process activity for a given
+context interface, guarded by the four validators evaluated in
+``validate_action``. The cardinality flavours (``ElementaryAction``,
+``LimitedCardinality``, ``InfiniteCardinality``, loops, data input)
+define how many times and under which locking discipline an action may
+run. Discovery is catalog-driven (see ``dace.util.getAllBusinessAction``
+and docs/en/architecture.md, section 5).
+"""
 from zope.interface import implementer
 from persistent import Persistent
 from persistent.list import PersistentList
@@ -40,6 +50,7 @@ from .workitem import UserDecision, StartWorkItem
 
 
 def always_true(process, context):
+    """Default validator body: accept."""
     return True
 
 
@@ -51,6 +62,7 @@ ACTIONSTEPID = '__actionstepid__'
 
 
 class ActionType:
+    """Action kinds: ``manual`` (UI), ``automatic`` (engine), ``system`` (reactor)."""
     automatic = 1
     manual = 2
     system = 3
@@ -58,6 +70,7 @@ class ActionType:
 
 def getBusinessActionValidator(action_cls):
 
+    """Build a ``Validator`` that checks an instance of ``action_cls`` exists for (context, request)."""
     class BusinessActionValidator(Validator):
 
         @classmethod
@@ -73,6 +86,12 @@ def getBusinessActionValidator(action_cls):
 
 @request_memoize
 def validate_action(action, context, request, **kw):
+    """The four-guard validation pipeline of a business action (memoised per
+    request): context interface, ``relation_validation``, not already
+    executed, work-item validity, sequential lock, ``roles_validation``,
+    ``processsecurity_validation``, ``state_validation``, and assignment.
+    Returns ``(bool, reason)``.
+    """
     if not context.__provides__(action.context):
         return False, _('Context is not valid')
 
@@ -115,11 +134,13 @@ def validate_action(action, context, request, **kw):
 @implementer(IActivity)
 class Activity(BehavioralFlowNode, EventHandler):
 
+    """Runtime activity: a behavioural node that can be assigned to users."""
     def __init__(self, definition):
         super(Activity, self).__init__(definition)
         self.assigned_to = PersistentList()
 
     def assigne_to(self, users):
+        """Add users to the node-level assignment list."""
         if not isinstance(users, (list, tuple)):
             users = [users]
 
@@ -127,6 +148,7 @@ class Activity(BehavioralFlowNode, EventHandler):
         self.assigned_to.extend(users)
 
     def unassigne(self, users):
+        """Remove users from the node-level assignment list."""
         if not isinstance(users, (list, tuple)):
             users = [users]
 
@@ -135,6 +157,7 @@ class Activity(BehavioralFlowNode, EventHandler):
             self.assigned_to.remove(user)
 
     def set_assignment(self, users=None):
+        """Replace the node-level assignment list."""
         self.assigned_to = PersistentList()
         if users is not None:
             self.assigne_to(users)
@@ -142,11 +165,15 @@ class Activity(BehavioralFlowNode, EventHandler):
 
 class SubProcess(Activity):
 
+    """Activity that spawns and tracks sub-process instances."""
     def __init__(self, definition):
         super(SubProcess, self).__init__(definition)
         self.sub_processes = PersistentList()
 
     def _start_subprocess(self, action):
+        """Instantiate the sub-process definition, register it in the runtime,
+        attach it to ``action`` and execute it.
+        """
         def_container = find_service('process_definition_container')
         pd = def_container.get_definition(getattr(self.definition.sub_process_definition,
                                                   'id', self.definition.sub_process_definition))
@@ -162,6 +189,7 @@ class SubProcess(Activity):
         return proc
 
     def stop(self):
+        """Force-finish and unregister every spawned sub-process."""
         runtime = find_service('runtime')
         for process in self.sub_processes:
             process._finished = True
@@ -175,6 +203,15 @@ class SubProcess(Activity):
 @implementer(ILocation, IBusinessAction)
 class BusinessAction(Wizard, LockableElement, Persistent):
 
+    """A behaviour bound to a process activity, applicable to a context.
+
+    Class attributes declare the contract: ``context`` (interface),
+    ``processs_relation_id`` (which involved entities it targets),
+    ``actionType`` and the four validators. Instances live on a work-item;
+    ``execute`` consumes the initiating decision, spawns a sub-process if
+    the node is a ``SubProcess``, and the flavours below define the
+    completion policy (``isexecuted``/``finish_execution``).
+    """
     node_definition = NotImplemented
     context = NotImplemented
     processs_relation_id = NotImplemented
@@ -203,6 +240,10 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_instance(cls, context, request, **kw):
+        """Return a valid instance for (context, request): the one referenced by
+        ``request.params['action_uid']`` when valid, else the first instance
+        found through the catalog (honouring ``isstart``).
+        """
         action_uid = request.params.get('action_uid', None)
         source_action = None
         if action_uid:
@@ -232,6 +273,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_allinstances(cls, context, request, **kw):
+        """All instances of this action for (context, request), via the catalog."""
         instance = getBusinessAction(context, request,
                                       cls.node_definition.process.id,
                                       cls.node_definition.__name__)
@@ -239,10 +281,15 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @classmethod
     def get_validator(cls, **kw):
+        """Validator checking that a valid instance exists (used by views)."""
         return getBusinessActionValidator(cls)
 
     @property
     def potential_contexts_ids(self):
+        """Oids of the involved entities this action targets
+        (``processs_relation_id``), or ``['any']`` — indexed, and matched by
+        ``getAllBusinessAction``'s query.
+        """
         try:
             contexts = self.process.execution_context.involved_entities(
                                                self.processs_relation_id)
@@ -259,15 +306,18 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def actions(self):
+        """Sub-actions applicable to this action itself, as ``ActionCall``s."""
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
 
     @property
     def process(self):
+        """The process instance (via the work-item)."""
         return self.workitem.process
 
     @property
     def node(self):
+        """The runtime node (via the work-item)."""
         return self.workitem.node
 
     @property
@@ -276,6 +326,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def definition(self):
+        """The activity definition (``node_definition`` or resolved from the node)."""
         if self.node_definition is not NotImplemented:
             return self.node_definition
 
@@ -296,14 +347,17 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def isautomatic(self):
+        """True for engine-run actions."""
         return self.actionType is ActionType.automatic
 
     @property
     def issystem(self):
+        """True for reactor-run actions."""
         return self.actionType is ActionType.system
 
     @property
     def isstart(self):
+        """True when carried by a (virtual) ``StartWorkItem``."""
         return isinstance(self.workitem, StartWorkItem)
 
     @property
@@ -323,12 +377,17 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
     @property
     def assigned_to(self):
+        """Action-level assignment, falling back to the node-level one."""
         if getattr(self, 'local_assigned_to', []):
             return self.local_assigned_to
 
         return getattr(self.node, 'assigned_to', [])
 
     def get_potential_context(self, request=None):
+        """Find an entity this action currently accepts: try the involved
+        entity/collection of ``processs_relation_id``, else search entities of
+        the context interface; return the first that validates.
+        """
         if request is None:
             request = get_current_request()
 
@@ -355,6 +414,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return None
 
     def url(self, obj):
+        """URL of the action's view on ``obj`` (with ``action_uid``/``isstart``)."""
         query = {}
         try:
             actionuid = get_oid(self)
@@ -366,6 +426,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             obj, '@@'+self.view_name,  query=query)
 
     def assigne_to(self, users):
+        """Add users to the action-level assignment list."""
         if not isinstance(users, (list, tuple)):
             users = [users]
 
@@ -373,6 +434,7 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         self.local_assigned_to.extend(users)
 
     def unassigne(self, users):
+        """Remove users from the action-level assignment list."""
         if not isinstance(users, (list, tuple)):
             users = [users]
 
@@ -381,11 +443,13 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             self.local_assigned_to.remove(user)
 
     def set_assignment(self, users=None):
+        """Replace the action-level assignment list."""
         self.local_assigned_to = PersistentList()
         if users is not None:
             self.assigne_to(users)
 
     def validate(self, context, request, **kw):
+        """Run ``validate_mini`` and raise ``ValidationError`` on refusal."""
         is_valid, message = self.validate_mini(context, request, **kw)
         if not is_valid:
             raise ValidationError(msg=message)
@@ -393,20 +457,28 @@ class BusinessAction(Wizard, LockableElement, Persistent):
         return True
 
     def validate_mini(self, context, request, **kw):
+        """Run the ``validate_action`` pipeline; return ``(bool, reason)``."""
         return validate_action(self, context, request, **kw)
 
     def before_execution(self, context, request, **kw):
+        """Lock the action and its work-item for the current user."""
         self.lock(request)
         self.workitem.lock(request)
 
     def _consume_decision(self):
+        """Consume the initiating decision when carried by a ``UserDecision``."""
         if isinstance(self.workitem, UserDecision):
             self.workitem.consume()
 
     def start(self, context, request, appstruct, **kw):
+        """The business payload. Subclass hook; return a result dict."""
         return {}
 
     def execute(self, context, request, appstruct, **kw):
+        """Common execution prelude: consume the decision; on a ``SubProcess``
+        node, spawn the sub-process and link execution contexts. Flavours call
+        ``start`` and decide completion.
+        """
         self._consume_decision()
         if self.isstart:
             return
@@ -422,9 +494,11 @@ class BusinessAction(Wizard, LockableElement, Persistent):
                                        self.sub_process.execution_context)
 
     def finish_execution(self, context, request, **kw):
+        """Terminal hook: delegate to ``after_execution``."""
         self.after_execution(context, request, **kw)
 
     def after_execution(self, context, request, **kw):
+        """Unlock action and work-item; close the behaviour once executed."""
         self.unlock(request)
         self.workitem.unlock(request)
         # TODO self.workitem is a real workitem?
@@ -432,13 +506,16 @@ class BusinessAction(Wizard, LockableElement, Persistent):
             self.workitem.node.finish_behavior(self.workitem)
 
     def redirect(self, context, request, **kw):
+        """Post-execution redirect hook (default: pass results through)."""
         return kw
 
     def cancel_execution(self, context, request, **kw):
+        """Unlock action and work-item without executing."""
         self.unlock(request)
         self.workitem.unlock(request)
 
     def reindex(self):
+        """Re-run the modification subscribers (refresh the catalog entry)."""
         event = ObjectModified(self)
         registry = get_current_registry()
         registry.subscribers((event, self), None)
@@ -446,10 +523,12 @@ class BusinessAction(Wizard, LockableElement, Persistent):
 
 class StartStep(Behavior, Persistent):
 
+    """First step of a wizard action: runs the common prelude then its payload."""
     def __init__(self, **kwargs):
         super(StartStep, self).__init__(**kwargs)
 
     def execute(self, context, request, appstruct, **kw):
+        """Run ``BusinessAction.execute`` on the wizard, then this step."""
         BusinessAction.execute(self.wizard, context, request, appstruct, **kw)
         result_execution = {}
         try:
@@ -463,10 +542,12 @@ class StartStep(Behavior, Persistent):
 
 class EndStep(Behavior, Persistent):
 
+    """Last step of a wizard action: marks the wizard executed and finishes it."""
     def __init__(self, **kwargs):
         super(EndStep, self).__init__(**kwargs)
 
     def execute(self, context, request, appstruct, **kw):
+        """Run the payload, mark the wizard executed, finish unless a sub-process runs."""
         result_execution = {}
         try:
             result_execution = self.start(context, request, appstruct, **kw)
@@ -483,7 +564,9 @@ class EndStep(Behavior, Persistent):
 
 class ElementaryAction(BusinessAction):
 
+    """One-shot action: a single ``start`` then done (``isexecuted``)."""
     def execute(self, context, request, appstruct, **kw):
+        """Prelude, payload, mark executed, finish (unless a sub-process runs)."""
         super(ElementaryAction, self).execute(context, request, appstruct, **kw)
         result_execution = {}
         try:
@@ -503,6 +586,9 @@ class ElementaryAction(BusinessAction):
 # Une loopAction ne peut etre une action avec des steps. Cela n'a pas de sens
 class LoopActionCardinality(BusinessAction):
 
+    """Loop action bounded by ``loopMaximum`` and ``loopCondition``
+    (``testBefore`` chooses while/do-while). Steps make no sense here.
+    """
     loopMaximum = None
     loopCondition = None
     testBefore = False
@@ -512,6 +598,7 @@ class LoopActionCardinality(BusinessAction):
         self.loopMaximum = self.loopMaximum.__func__(self.process)
 
     def _executeBefore(self, context, request, appstruct, **kw):
+        """While ``loopCondition``: run ``start`` (up to ``loopMaximum``)."""
         nbloop = 0
         result_execution = {}
         while self.loopCondition.__func__(context, request,
@@ -524,6 +611,7 @@ class LoopActionCardinality(BusinessAction):
         return result_execution
 
     def _executeAfter(self, context, request, appstruct, **kw):
+        """Run ``start`` then test ``loopCondition`` (up to ``loopMaximum``)."""
         nbloop = 0
         result_execution = {}
         while nbloop < self.loopMaximum:
@@ -537,6 +625,7 @@ class LoopActionCardinality(BusinessAction):
         return result_execution
 
     def execute(self, context, request, appstruct, **kw):
+        """Prelude then the chosen loop policy; mark executed and finish."""
         super(LoopActionCardinality, self).execute(context, request,
                                                    appstruct, **kw)
         result_execution = {}
@@ -561,6 +650,7 @@ class LoopActionCardinality(BusinessAction):
 
 class LoopActionDataInput(BusinessAction):
 
+    """Loop flavour whose iterations are driven by an input collection."""
     loopDataInputRef = None
 
     def execute(self, context, request, appstruct, **kw):
@@ -587,11 +677,13 @@ class LoopActionDataInput(BusinessAction):
 
 
 class MultiInstanceAction(BusinessAction):
+    """Base of multi-instance actions; ``isSequential`` rules the locking."""
     loopCardinality = None
     isSequential = False
 
 
     def is_locked(self, request):
+        """Parallel instances are never locked; sequential ones follow the lock."""
         if not self.isSequential:
             return False
 
@@ -601,6 +693,7 @@ class MultiInstanceAction(BusinessAction):
 class LimitedCardinality(MultiInstanceAction):
 
 
+    """Multi-instance action bounded by a cardinality evaluated at creation."""
     def __init__(self, workitem, **kwargs):
         super(LimitedCardinality, self).__init__(workitem, **kwargs)
         self.instances = PersistentList()
@@ -617,24 +710,29 @@ class LimitedCardinality(MultiInstanceAction):
 
 class InfiniteCardinality(MultiInstanceAction):
 
+    """Multi-instance action with no bound (the nova-ideo workhorse)."""
     loopCardinality = -1
 
     def before_execution(self, context, request, **kw):
+        """Lock only when sequential."""
         if self.isSequential:
             self.lock(request)
             self.workitem.lock(request)
 
     def after_execution(self, context, request, **kw):
+        """Unlock (sequential) and finish the behaviour once executed."""
         if self.isSequential:
             self.unlock(request)
             self.workitem.unlock(request)
 
     def cancel_execution(self, context, request, **kw):
+        """Unlock only when sequential."""
         if self.isSequential:
             self.unlock(request)
             self.workitem.unlock(request)
 
     def execute(self, context, request, appstruct, **kw):
+        """Prelude then payload; infinite actions never mark ``isexecuted``."""
         super(InfiniteCardinality, self).execute(context, request,
                                                  appstruct, **kw)
         result_execution = self.start(context, request, appstruct, **kw)
@@ -647,6 +745,7 @@ class InfiniteCardinality(MultiInstanceAction):
 
 class DataInput(MultiInstanceAction):
 
+    """Multi-instance action instantiated per item of an input collection."""
     loopDataInputRef = None
     dataIsPrincipal = True
 
@@ -671,6 +770,7 @@ class DataInput(MultiInstanceAction):
 class ActionInstance(BusinessAction):
 
     # principalaction = multi instance action
+    """Per-item action created by ``DataInput`` around a principal action."""
     def __init__(self, item, principalaction, workitem, **kwargs):
         super(ActionInstance, self).__init__(workitem, **kwargs)
         self.principalaction = principalaction
@@ -686,10 +786,12 @@ class ActionInstance(BusinessAction):
 
     @property
     def _class_(self):
+        """Report the principal action class (identity for validation)."""
         return self.principalaction.__class__
 
     @staticmethod
     def _init_attributes_(cls, principalaction):
+        """Copy the contract attributes from the principal action class."""
         cls.context = principalaction.context
         cls.node_definition = principalaction.node_definition
         cls.actionType = principalaction.actionType

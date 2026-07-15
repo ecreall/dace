@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Runtime gateways.
+
+``ExclusiveGateway`` turns each valid outgoing path into a user
+decision and, once one is consumed, cancels the sibling decisions and
+plays the chosen transition. ``ParallelGateway`` forks every valid
+outgoing transition and joins by waiting until all incoming branches
+have validated. ``InclusiveGateway`` is a stub — not implemented.
+"""
 from pyramid.threadlocal import get_current_registry
 
 from .core import ActivityFinished, ActivityStarted, FlowNode, MakerFlowNode
@@ -11,21 +19,30 @@ from dace.processdefinition.core import Path, Transaction
 
 
 class Gateway(FlowNode):
+    """Base class of gateways (no behaviour of its own)."""
     pass# pragma: no cover
 
 
 # non parallel avec condition avec default
 class ExclusiveGateway(Gateway, MakerFlowNode):
 
+    """XOR gateway: alternative paths, one winner.
+
+    ``start`` computes the decisions; ``finish_decisions`` validates the
+    chosen one, stops and removes the alternatives, plays the chosen
+    transition and cleans the ``Start``/``Find`` paths.
+    """
     def __init__(self, definition, **kwargs):
         super(ExclusiveGateway, self).__init__(definition, **kwargs)
 
     def start(self, transaction):
+        """Notify and compute the user decisions (``decide``)."""
         registry = get_current_registry()
         registry.notify(ActivityStarted(self))
         self.decide(transaction)
 
     def find_executable_paths(self, source_path, source):
+        """Fork the exploration on every valid outgoing transition."""
         for transition in self.outgoing:
             if transition.sync or transition.validate(self.process):
                 node = transition.target
@@ -40,6 +57,10 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
                     yield executable_path
 
     def finish_decisions(self, work_item):
+        """Close the chosen decision, cancel the sibling decisions (stopping
+        their nodes), play the chosen transition and drop the exploration
+        paths rooted here.
+        """
         registry = get_current_registry()
         registry.notify(ActivityFinished(self))
         if work_item is not None:
@@ -76,7 +97,13 @@ class ExclusiveGateway(Gateway, MakerFlowNode):
 # parallel sans condition sans default
 class ParallelGateway(Gateway):
 
+    """AND gateway: fork on start, join on ``find_executable_paths`` —
+    exploration only proceeds once every incoming branch is validated
+    (across ``Find`` and replayed ``Start`` paths); mixed exclusive
+    targets abort the exploration.
+    """
     def find_executable_paths(self, source_path, source):
+        """Join logic: yield outgoing explorations only when all branches arrived."""
         global_transaction = source_path.transaction.get_global_transaction()
         incoming_nodes = [t.source for t in self.incoming]
         paths = global_transaction.find_allsubpaths_for(self, 'Find')
@@ -124,6 +151,7 @@ class ParallelGateway(Gateway):
                             yield executable_path
 
     def start(self, transaction):
+        """Fire ``play`` on the outgoing transitions once every branch validated."""
         self._refresh_find_transactions(transaction)
         global_transaction = transaction.get_global_transaction()
         incoming_nodes = [t.source for t in self.incoming]
@@ -143,6 +171,7 @@ class ParallelGateway(Gateway):
                     source_transaction.remove_subtransaction(path.transaction)
 
     def _refresh_find_transactions(self, transaction):
+        """Ask upstream decision nodes to recompute their pending decisions."""
         global_transaction = transaction.get_global_transaction()
         find_transitions = {}
         startpaths = global_transaction.find_allsubpaths_for(self, 'Find')
@@ -166,4 +195,5 @@ class ParallelGateway(Gateway):
 
 # parallel avec condition avec default
 class InclusiveGateway(Gateway):
+    """OR gateway — **not implemented** (stub kept for the metamodel)."""
     pass# pragma: no cover

@@ -67,3 +67,18 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   727 fonctions à couvrir). La métrique rythme les tranches suivantes :
   2 = `processinstance/`, 3 = `processdefinition/` + `descriptors/` +
   `relations/`, 4 = `objectofcollaboration/` + `catalog/` + `util.py`.
+
+
+- Tranche 2 de la passe de docstrings : tout le runtime
+  (`dace/processinstance/`) — 224 docstrings insérés avec un outil AST
+  conscient des décorateurs, rédigés après lecture intégrale des sept
+  modules (cycle de vie des nœuds, décisions et annulation des
+  alternatives, actions métier et pipeline à quatre gardes,
+  événements/kinds et armement after-commit, work-items de départ
+  virtuels, passerelles, verrouillage coopératif, transitions runtime).
+  Couverture : 9,2 % → 32,4 % (processinstance : 9/9 modules,
+  60/63 classes, 175/321 fonctions). Résidu connu, laissé à la passe de
+  relecture : les ~45 accesseurs quasi jumeaux d'`ExecutionContext`
+  (documentés au niveau classe par leur grille de nommage) et quelques
+  petits utilitaires. Suite : tranche 3 = `processdefinition/` +
+  `descriptors/` + `relations/`.

@@ -65,3 +65,17 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   cover). The metric paces the next tranches: 2 = `processinstance/`,
   3 = `processdefinition/` + `descriptors/` + `relations/`,
   4 = `objectofcollaboration/` + `catalog/` + `util.py`.
+
+
+- Tranche 2 of the docstring pass: the whole runtime
+  (`dace/processinstance/`) — 224 docstrings inserted with an AST-based,
+  decorator-aware tool, written from a full read of the seven modules
+  (node lifecycle, decisions and their sibling-cancellation, business
+  actions and the four-guard pipeline, events/kinds and the after-commit
+  arming, virtual start work-items, gateways, cooperative locking,
+  runtime transitions). Coverage: 9.2 % → 32.4 % (processinstance:
+  9/9 modules, 60/63 classes, 175/321 functions). Known residue, left
+  for the review pass: the ~45 near-duplicate `ExecutionContext`
+  accessors (documented at class level by their naming grid) and a
+  handful of small helpers. Next: tranche 3 = `processdefinition/` +
+  `descriptors/` + `relations/`.

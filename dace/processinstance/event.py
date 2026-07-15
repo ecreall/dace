@@ -4,6 +4,17 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Runtime events and their kinds.
+
+``Event`` nodes (throwing/catching, start/intermediate/end) drive the
+process through the reactor: catching kinds arm themselves through
+``push_event_callback_after_commit`` (an after-commit hook scheduling an
+``EventJob`` on the IOLoop), so an event only exists once the data that
+created it is durably committed. ``TimerEvent`` waits for a
+date/duration, ``ConditionalEvent`` re-polls its predicate every second,
+``SignalEvent`` broadcasts/listens over a local zmq PUB/SUB socket, and
+``TerminateEvent`` makes an ``EndEvent`` skip the process cleanup.
+"""
 import time
 import transaction
 import datetime
@@ -30,6 +41,12 @@ callbacks = {}
 def push_event_callback_after_commit(event, callback, callback_params, deadline):
     # Create job object now before the end of the interaction so we have
     # the logged in user.
+    """Arm ``callback`` for ``event`` at ``deadline`` (ms), but only if the
+    current ZODB transaction commits: the ``EventJob`` is created *now* (to
+    capture the logged-in user), its callable is set in the after-commit
+    hook (the event then has a ``_p_oid``), and a ``DelayedCallback``
+    schedules it on the IOLoop.
+    """
     job = EventJob('system')
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.
@@ -47,6 +64,12 @@ def push_event_callback_after_commit(event, callback, callback_params, deadline)
 
 class Event(BehavioralFlowNode, FlowNode):
 
+    """A runtime event node.
+
+    ``execution_prepared``/``execution_finished`` guard double execution;
+    ``start`` executes the kind then finishes the behaviour;
+    ``replay_path`` executes it when reached through a user decision.
+    """
     def __init__(self, definition, eventKind, **kwargs):
         super(Event, self).__init__(definition, **kwargs)
         self.eventKind = eventKind
@@ -59,10 +82,12 @@ class Event(BehavioralFlowNode, FlowNode):
         pass
 
     def prepare_for_execution(self):
+        """Mark the event armed (kinds refine this by scheduling themselves)."""
         self.execution_prepared = True
         self.execution_finished = False
 
     def start(self, transaction):
+        """If a work-item is available: execute the kind and finish the behaviour."""
         wi = self._get_workitem()
         if wi is not None:
             super(Event, self).start(transaction)
@@ -74,6 +99,7 @@ class Event(BehavioralFlowNode, FlowNode):
             self.stop()
 
     def replay_path(self, decision, transaction):
+        """Execute on replay if not already done, then continue the replay."""
         if not self.execution_finished:
             self.execute()
             self.finish_behavior(decision)
@@ -89,15 +115,18 @@ class Event(BehavioralFlowNode, FlowNode):
         pass # pragma: no cover
 
     def stop(self):
+        """Disarm the event."""
         self.execution_prepared = False
 
 
 class Throwing(Event):
 
+    """Event that *emits*: validated then started as soon as it is prepared."""
     def validate(self):
         return True
 
     def prepare_for_execution(self):
+        """Fire immediately when valid (throwing events do not wait)."""
         if not self.execution_prepared:
             super(Throwing, self).prepare_for_execution()
             if self.validate():
@@ -106,6 +135,7 @@ class Throwing(Event):
                 self.stop()
 
     def execute(self):
+        """Delegate to the kind's ``execute`` (signal broadcast, ...)."""
         if self.eventKind is None:
             return
 
@@ -114,7 +144,9 @@ class Throwing(Event):
 
 class Catching(Event):
 
+    """Event that *waits*: arming is delegated to the kind (timer, signal, ...)."""
     def validate(self):
+        """Delegate to the kind's ``validate`` (empty kind: always valid)."""
         if self.eventKind is None:
             return True
 
@@ -122,6 +154,7 @@ class Catching(Event):
 
     def prepare_for_execution(self):
         # If it's a empty StartEvent, execute the callback directly.
+        """Empty kind: fire now; otherwise let the kind schedule itself."""
         if not self.execution_prepared:
             super(Catching, self).prepare_for_execution()
             if self.eventKind is None:
@@ -133,6 +166,7 @@ class Catching(Event):
                 self.eventKind.prepare_for_execution()
 
     def stop(self):
+        """Disarm the event and its kind."""
         super(Catching, self).stop()
         if self.eventKind is not None:
             self.eventKind.stop()
@@ -140,7 +174,9 @@ class Catching(Event):
 
 class StartEvent(Catching):
 
+    """Catching event that starts the process (guarded by ``process._started``)."""
     def start(self, transaction):
+        """Start the process once, through the available work-item."""
         if not self.process._started:
             wi = self._get_workitem()
             if wi is not None:
@@ -155,17 +191,25 @@ class StartEvent(Catching):
 
 
 class IntermediateThrowEvent(Throwing):
+    """Throwing event in the middle of a flow."""
     pass # pragma: no cover
 
 
 class IntermediateCatchEvent(Catching):
+    """Catching event in the middle of a flow (timers, signals, conditions)."""
     pass # pragma: no cover
 
 
 class EndEvent(Throwing):
 
 
+    """Throwing event closing the process: stops every node, clears the
+    work-items, notifies ``ProcessFinished``, unwinds a finished
+    sub-process into its parent (``attachedTo``) and removes volatile
+    processes from their holder — unless the kind is ``TerminateEvent``.
+    """
     def finish_behavior(self, work_item):
+        """Finish then run the process-closing policy described on the class."""
         super(EndEvent, self).finish_behavior(work_item)
         if isinstance(self.eventKind, TerminateEvent):
             return
@@ -205,33 +249,42 @@ class EndEvent(Throwing):
 class EventKind(object):
 
     # cette operation est appelee par les evenements "Catching"
+    """Behaviour of an event: ``validate``/``prepare_for_execution`` (catching) and ``execute`` (throwing)."""
     def validate(self):
+        """Catching side: may the event fire now?"""
         return True
 
     def prepare_for_execution(self, restart=False):
+        """Catching side: schedule the wake-up (``restart=True`` on app restart)."""
         pass # pragma: no cover
 
     # cette operation est appelee par les evenements "Throwing"
     def execute(self):
+        """Throwing side: emit."""
         pass # pragma: no cover
 
     def stop(self):
+        """Disarm (cancel scheduled callbacks / close streams)."""
         pass # pragma: no cover
 
     @property
     def definition(self):
+        """The matching ``EventKindDefinition``."""
         return self.event.definition.eventKind
 
 
 class ConditionalEvent(EventKind):
 
+    """Catching kind polling ``definition.condition(process)`` every second."""
     def validate(self):
+        """Evaluate the condition against the process."""
         return self.definition.condition(self.event.process)
 
     def prepare_for_execution(self, restart=False):
         self._push_callback()
 
     def _callback(self):
+        """Fire if the condition holds, else re-schedule in 1 s."""
         if self.event._p_oid in callbacks:
             del callbacks[self.event._p_oid]
 
@@ -247,13 +300,16 @@ class ConditionalEvent(EventKind):
             self._push_callback()
 
     def _push_callback(self):
+        """Schedule the next poll (1 s) through the after-commit hook."""
         push_event_callback_after_commit(self.event, self._callback, (), 1000)
 
     def stop(self):
+        """Cancel the scheduled callback through the reactor socket."""
         get_socket().send_pyobj(('stop', self.event._p_oid))
 
 
 class TerminateEvent(EventKind):
+    """Marker kind: the ``EndEvent`` ends the path without process cleanup."""
     pass
 
 
@@ -261,15 +317,22 @@ class TerminateEvent(EventKind):
 # http://learning-0mq-with-pyzmq.readthedocs.org/en/latest/pyzmq/multisocket/tornadoeventloop.html
 
 def get_signal_socket_url():
+    """Local PUB/SUB endpoint used by signal events."""
     return 'tcp://127.0.0.1:12346'
 
 
 class Listener(object):
+    """IOLoop-side zmq SUB stream delivering a signal to its ``EventJob``."""
     def __init__(self, job, identifier):
         self.job = job
         self.identifier = identifier
 
     def start(self):
+        """Subscribe to the signal socket; on message, close the stream and run
+        the job 2 s later (leaving the throwing transaction time to commit).
+        Runs in the event-loop thread: no ZODB access here, the job was built
+        beforehand.
+        """
         identifier = self.identifier
         job = self.job
         def execute_next(msg):
@@ -299,12 +362,15 @@ class Listener(object):
 
 class SignalEvent(EventKind):
 
+    """Kind thrown/caught by reference (``refSignal``) over zmq PUB/SUB."""
     _msg = None
 
     def validate(self):
+        """True when the received message matches ``refSignal(process)``."""
         return self.definition.refSignal(self.event.process) == self._msg
 
     def prepare_for_execution(self, restart=False):
+        """Commit (to get ``_p_oid``), then register a ``Listener`` via the reactor."""
         job = EventJob('system')
         transaction.commit()  # needed to have self.event._p_oid
         job.callable = self._callback
@@ -314,10 +380,12 @@ class SignalEvent(EventKind):
 
     def stop(self):
         # close ZMQStream
+        """Close the listening stream through the reactor socket."""
         get_socket().send_pyobj(('close', self.event._p_oid))
 
     def _callback(self, msg):
         # convert str (py27) / bytes (py34) to unicode (py27) or str (py34)
+        """Decode the message and fire the event when it matches."""
         self._msg = msg[0].decode('utf-8')
         if self.validate():
             wi = self.event._get_workitem()
@@ -327,6 +395,7 @@ class SignalEvent(EventKind):
                 self.event.stop()
 
     def execute(self):
+        """Broadcast ``refSignal(process)`` on the signal socket (throwing side)."""
         ref = self.definition.refSignal(self.event.process)
         ctx = get_zmq_context()
         s = ctx.socket(zmq.PUB)
@@ -339,6 +408,11 @@ class SignalEvent(EventKind):
 
 class TimerEvent(EventKind):
 
+    """Catching kind waiting for ``time_date`` or ``time_duration`` (both
+    computed by definition callables against the process; ``time_cycle`` is
+    not implemented). On application restart the stored value is reused
+    unless broken (``restart=True``).
+    """
     def __init__(self):
         super(TimerEvent, self).__init__()
         self.time_date = None
@@ -346,6 +420,7 @@ class TimerEvent(EventKind):
         self.time_cycle = None
 
     def _prepare_time(self, time, restart=False):
+        """Compute and store the time attribute (recompute unless restarting)."""
         time_attr = getattr(self, time, None)
         if is_broken(time_attr) or time_attr is None or not restart:
             setattr(self, time, getattr(self.definition, time)(self.event.process))#TODO
@@ -369,12 +444,15 @@ class TimerEvent(EventKind):
             raise TypeError("Unsupported deadline")
 
     def validate(self):
+        """Timers fire unconditionally at their deadline."""
         return True
 
     def prepare_for_execution(self, restart=False):
+        """Schedule the deadline callback (honouring restart)."""
         self._push_callback(restart)
 
     def _callback(self):
+        """Fire through the available work-item, else disarm."""
         if self.event._p_oid in callbacks:
             del callbacks[self.event._p_oid]
 
@@ -388,9 +466,11 @@ class TimerEvent(EventKind):
             self._push_callback()
 
     def _push_callback(self, restart=False):
+        """Compute the deadline and arm it through the after-commit hook."""
         deadline = self._start_time(restart)
         push_event_callback_after_commit(self.event, self._callback, (), deadline)
 
     def stop(self):
         # stop DelayedCallback
+        """Cancel the scheduled callback through the reactor socket."""
         get_socket().send_pyobj(('stop', self.event._p_oid))

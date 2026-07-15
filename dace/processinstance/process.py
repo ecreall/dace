@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Process instances and their execution context.
+
+``Process`` owns the runtime graph (nodes/transitions created from the
+definition by ``defineGraph``), the global path ``Transaction``, and the
+``ExecutionContext`` recording every entity involved in or created by
+the instance — the memory that feeds action targeting
+(``potential_contexts_ids``) and daceui's history rendering.
+"""
 import transaction
 from persistent.list import PersistentList
 from zope.interface import implementer
@@ -30,6 +38,16 @@ from dace import log
 
 class ExecutionContext(Object):
 
+    """Per-process memory of the collaboration.
+
+    Records *involved* and *created* entities and collections under a
+    name (a relation id), plus arbitrary named data, with history kept as
+    indexed properties. Naming grid of the accessors: bare accessors read
+    this context; ``get_*`` variants keep only entities still bound to
+    the process; ``find_*``/``*sub*`` variants also search the
+    sub-execution contexts (sub-processes). ``classified_involveds``
+    groups everything for display.
+    """
     createds = SharedMultipleProperty('createds', 'creator', False)
     involveds = SharedMultipleProperty('involveds', 'involvers', False)
     process = SharedUniqueProperty('process', 'execution_context', True)
@@ -640,6 +658,13 @@ class ExecutionContext(Object):
 @implementer(IProcess)
 class Process(Entity):
 
+    """A running process instance.
+
+    Composite relations: ``nodes``, ``transitions``, ``execution_context``.
+    ``global_transaction`` is the root of the path bookkeeping
+    (``Start``/``Find``/``Replay`` sub-transactions). ``attachedTo`` links
+    a sub-process instance back to the action that spawned it.
+    """
     nodes = CompositeMultipleProperty('nodes', 'process', True)
     transitions = CompositeMultipleProperty('transitions', 'process', True)
     execution_context = CompositeUniqueProperty('execution_context'
@@ -651,6 +676,10 @@ class Process(Entity):
     attachedTo = None
 
     def __init__(self, definition, startTransition, **kwargs):
+        """Create the instance shell (id/title from the definition), its
+        ``ExecutionContext``, and commit immediately so every event gets a
+        ``_p_oid`` (mail delivery does not support savepoints).
+        """
         super(Process, self).__init__(**kwargs)
         self.id = definition.id
         self.global_transaction = Transaction()
@@ -673,6 +702,7 @@ class Process(Entity):
         
 
     def defineGraph(self, definition):
+        """Instantiate the runtime nodes and transitions from the definition."""
         for nodedef in definition.nodes:
             node = nodedef.create()
             node.id = nodedef.id
@@ -688,6 +718,7 @@ class Process(Entity):
             transition._init_ends(self, transitiondef)
 
     def definition(self):
+        """Resolve the process definition from the definition container (by id)."""
         def_container = find_service('process_definition_container')
         pd = None
         if def_container is not None:
@@ -703,6 +734,7 @@ class Process(Entity):
 
     @property
     def isSubProcess(self):
+        """True when the definition is a sub-process definition."""
         return self.definition.isSubProcess
 
     def replay_path(self, decision, transaction):
@@ -740,6 +772,7 @@ class Process(Entity):
                 node.replay_path(decision, transaction)
 
     def getWorkItems(self):
+        """All valid work-items, keyed ``'process_id.node_id'``."""
         dace_catalog = find_catalog('dace')
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
@@ -763,6 +796,7 @@ class Process(Entity):
         return result
 
     def getAllWorkItems(self, node_id=None):
+        """All work-items of the instance (optionally for one node)."""
         dace_catalog = find_catalog('dace')
         process_inst_uid_index = dace_catalog['process_inst_uid']
         object_provides_index = dace_catalog['object_provides']
@@ -809,6 +843,10 @@ class Process(Entity):
                 break
 
     def play_transitions(self, node, transitions):
+        """Advance the process: prepare every target node (arming events), then
+        start each one under a fresh ``Start`` sub-transaction, stopping early
+        if the process finished.
+        """
         registry = get_current_registry()
         if transitions:
             for transition in transitions:
@@ -830,6 +868,10 @@ class Process(Entity):
 
     def execute_action(self, context, request, 
                        action_id, appstruct, ignor_validation=True):
+        """Convenience runner: find the work-item ``'process_id.action_id'``,
+        optionally validate, then run its first action. Returns True on
+        success, False on any failure.
+        """
         try:
             workitems = self.getWorkItems()
             workitem = workitems[self.id+'.'+action_id]
@@ -844,6 +886,7 @@ class Process(Entity):
             return False
 
     def get_actions(self, action_id):
+        """The actions of the work-item ``'process_id.action_id'`` (or [])."""
         try:
             workitems = self.getWorkItems()
             workitem = workitems[self.id+'.'+action_id]
