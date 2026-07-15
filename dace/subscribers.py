@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""The DaCE reactor: a tornado IOLoop thread plus a zmq-fed job consumer
+(``ConsumeTasks``), started on database opening and stopped on
+SIGINT/SIGTERM. Also re-arms pending intermediate (timer/conditional)
+catching events at startup and installs the 'dace' catalog and the
+system machine identity.
+
+Phase 3 replacement target: asyncio behind the same API surface.
+"""
 import pickle
 import signal
 import threading

@@ -19,3 +19,5 @@ repositories of the Nova-Ideo modernisation effort):
 | Document | English | French |
 |---|---|---|
 | Worklog / Fil de l'eau | [`en/worklog.md`](en/worklog.md) | [`fr/worklog.md`](fr/worklog.md) |
+| Architecture & design | [`en/architecture.md`](en/architecture.md) | [`fr/architecture.md`](fr/architecture.md) |
+| Usage scenarios / Scénarios d'utilisation | [`en/usage-scenarios.md`](en/usage-scenarios.md) | [`fr/usage-scenarios.md`](fr/usage-scenarios.md) |

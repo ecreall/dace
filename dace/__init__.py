@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""DaCE — data-centric workflow engine for Pyramid/substanced/ZODB.
+
+``includeme`` wires the engine into a Pyramid application (scan of the
+definitions and catalog adapters, reactor startup on database opening,
+evolve steps registration). The module also hosts the evolve steps used
+to migrate process definitions and catalogs on live sites — see
+docs/en/usage-scenarios.md, scenario 8.
+"""
 import logging
 import transaction
 from pyramid.i18n import TranslationStringFactory
@@ -18,6 +26,9 @@ _ =  TranslationStringFactory('dace')
 
 
 def update_process_definitions(root):
+    """Re-synchronise ``root['process_definition_container']`` with the
+    definitions registered in code (``DEFINITIONS``), replacing changed
+    ones and dropping broken leftovers."""
     from dace.objectofcollaboration.services import processdef_container
     def_container = root['process_definition_container']
     for definition in def_container.definitions:
@@ -38,6 +49,8 @@ def update_process_definitions(root):
 
 
 def remove_unique_process_instances_evolve(root, registry):
+    """Evolve step: purge instances of ``isUnique`` (singleton/system)
+    process definitions, which must be re-created from the new code."""
     runtime = root['runtime']
     processes = [p for p in list(runtime.processes)
                  if getattr(p.definition, 'isUnique', False)]
@@ -46,6 +59,9 @@ def remove_unique_process_instances_evolve(root, registry):
 
 
 def process_definitions_evolve(root, registry):
+    """Evolve step: update the stored process definitions from code, then
+    update and reindex the catalogs. An application restart is REQUIRED
+    afterwards (node_definition back-references are rebuilt at startup)."""
     request = get_current_request()
     request.root = root  # needed when executing the step via sd_evolve script
     update_process_definitions(root)
@@ -55,6 +71,8 @@ def process_definitions_evolve(root, registry):
 
 
 def update_catalogs_evolve(root, registry):
+    """Evolve step: update every catalog's indexes and reindex the new
+    ones (logic borrowed from substanced's on_startup subscriber)."""
     # commit first to be sure deferred indexing actions coming from previous
     # evolve steps are executed before we modify catalogs' indexes
     transaction.commit()
@@ -82,6 +100,7 @@ def update_catalogs_evolve(root, registry):
 
 
 def include_evolve_steps(config):
+    """Register DaCE's evolve steps with substanced's evolution service."""
     config.add_evolution_step(process_definitions_evolve)
     config.add_evolution_step(update_catalogs_evolve)
     config.add_evolution_step(remove_unique_process_instances_evolve)
@@ -89,6 +108,8 @@ def include_evolve_steps(config):
 
 
 def includeme(config):
+    """Pyramid inclusion hook: scan the package, start the reactor wiring
+    (``dace.system``) and register the evolve steps."""
     config.scan()
     config.include('.system')
     include_evolve_steps(config)

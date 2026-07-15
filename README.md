@@ -58,6 +58,8 @@ Documentation lives in [`docs/`](docs/):
 
 Audits, design documents and the worklog are maintained in both languages. See [`docs/README.md`](docs/README.md) for the documentation policy.
 
+Design documents: [architecture](docs/en/architecture.md) · [usage scenarios](docs/en/usage-scenarios.md) (English originals; French mirrors under [`docs/fr/`](docs/fr/)).
+
 ## Roadmap — planned updates
 
 The plan follows the Nova-Ideo modernisation audit (Logikascium, July 2026):

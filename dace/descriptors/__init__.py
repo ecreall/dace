@@ -3,6 +3,13 @@
 
 # licence: AGPL
 # author: Amen Souissi
+"""Declarative relation descriptors for collaboration objects.
+
+Four kinds — Composite/Shared x Unique/Multiple. *Composite* implies
+containment and lifecycle ownership; *shared* is a reference. Both
+maintain the opposite end automatically and are manipulated through
+``getproperty``/``setproperty``/``addtoproperty``/``delfromproperty``.
+"""
 from dace.descriptors.base import Descriptor
 from dace.descriptors.compositeunique import CompositeUniqueProperty
 from dace.descriptors.compositemultiple import CompositeMultipleProperty

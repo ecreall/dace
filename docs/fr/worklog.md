@@ -46,3 +46,24 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   backends bcrypt PyCA + hashlib, compatible hash pour hash avec le module
   deploye) est installee depuis son depot a la place ; `bcrypt`, `cffi` et
   `pycparser` epingles pour la cible Python 3.6.
+
+
+## 2026-07-15
+
+- Ouverture de la documentation de phase 2 du moteur (tranche 1) :
+  document de conception `architecture.md` (EN/FR — couches, diagrammes de
+  classes du métamodèle et du runtime en mermaid, séquence de découverte
+  des actions, flux du réacteur, relations/rôles, évolution, les trois
+  monkey-patches) et `usage-scenarios.md` (EN/FR — neuf scénarios, du
+  câblage Pyramid à l'évolution des définitions sur site en production ;
+  l'exemple de processus reprend la suite de tests du moteur).
+- Passe de docstrings sur les modules critiques pour l'orientation :
+  `patches.py` (les trois patches sont désormais auto-documentés),
+  `__init__.py` (étapes d'évolution), `system.py`, `subscribers.py`,
+  `descriptors/__init__.py`, et docstrings de paquet pour les trois
+  `__init__` vides des sous-paquets.
+- Ajout de `tools/doc_coverage.py` (`ast` de la stdlib, tourne en 3.6 et
+  3.12). Couverture : 7,8 % → 9,2 % (60 modules, 180 classes,
+  727 fonctions à couvrir). La métrique rythme les tranches suivantes :
+  2 = `processinstance/`, 3 = `processdefinition/` + `descriptors/` +
+  `relations/`, 4 = `objectofcollaboration/` + `catalog/` + `util.py`.

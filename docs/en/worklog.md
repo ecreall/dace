@@ -45,3 +45,23 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   PyCA bcrypt + hashlib backends, hash-compatible with the deployed module)
   is installed from its repository instead; `bcrypt`, `cffi` and `pycparser`
   pinned for the Python 3.6 target.
+
+
+## 2026-07-15
+
+- Opened the Phase 2 documentation of the engine (tranche 1):
+  design document `architecture.md` (EN/FR — layers, metamodel and runtime
+  class diagrams in mermaid, action-discovery sequence, reactor data flow,
+  relations/roles, evolution, the three monkey-patches) and
+  `usage-scenarios.md` (EN/FR — nine scenarios from Pyramid wiring to
+  live-site definition evolution; the process example mirrors the engine's
+  own test suite).
+- Docstring pass on the orientation-critical modules: `patches.py` (the
+  three patches are now self-documented), `__init__.py` (evolve steps),
+  `system.py`, `subscribers.py`, `descriptors/__init__.py`, and package
+  docstrings for the three empty sub-package `__init__` files.
+- Added `tools/doc_coverage.py` (stdlib `ast`, runs on 3.6 and 3.12).
+  Coverage: 7.8 % → 9.2 % (60 modules, 180 classes, 727 functions to
+  cover). The metric paces the next tranches: 2 = `processinstance/`,
+  3 = `processdefinition/` + `descriptors/` + `relations/`,
+  4 = `objectofcollaboration/` + `catalog/` + `util.py`.
