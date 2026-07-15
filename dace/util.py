@@ -4,6 +4,19 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""The engine's daily vocabulary: lookups, catalog queries and jobs.
+
+Three families live here. *Lookups*: ``getSite``/``get_obj``/
+``find_catalog``/``find_service``, user resolution, ``name_chooser``.
+*Catalog queries*: the ``subobjectsOf*`` helpers, ``find_entities`` and
+the action/work-item discovery (``getBusinessAction``,
+``getAllBusinessAction``, ``getWorkItem``...) — all against the 'dace'
+catalog, completed by the virtual start work-items of non-controlled
+definitions. *Reactor plumbing*: ``Job``/``EventJob`` (site and user
+re-established when run, ZODB-conflict retry), the zmq PUSH command
+socket (tcp://127.0.0.1:12345) and ``DelayedCallback``, plus the
+``@adapter``/``@utility`` venusian registration decorators.
+"""
 import sys
 import time
 import rwproperty
@@ -51,10 +64,12 @@ NAME_RE_MAPPING = {ord(c): '-' for c in STRING_PUNCTUATION}
 
 
 class RequestMemojito(object):
+    """Per-request memoisation (cache on the request; ``request.test``/``invalidate_cache`` bypass it)."""
     propname = '_memojito_'
 
     def request_memoize(self, func):
 
+        """Decorator memoising by (module, name, args, kwargs) on the request."""
         def memogetter(*args, **kwargs):
             request = get_current_request()
             cache = getattr(request, self.propname, _marker)
@@ -81,6 +96,11 @@ class BaseJob(object):
     # a job that examines the site and interaction participants when it is
     # created, and reestablishes them when run, tearing down as necessary.
 
+    """Reactor job: captures site id, database name and user at creation,
+    re-establishes them when called in the loop thread (fresh connection,
+    DummyRequest, threadlocals), retries once after 2 s on
+    ``ConflictError``, always tears down.
+    """
     args = ()
 
     def __init__(self, login=None):
@@ -94,6 +114,7 @@ class BaseJob(object):
         self.userid = get_oid(user)
 
     def retry(self):
+        """One attempt: begin, run the callable, commit."""
         transaction.begin()
         self.callable(*self.args)
         transaction.commit()
@@ -118,6 +139,7 @@ class BaseJob(object):
             self.tearDown(app)
 
     def setUp(self):
+        """Open a fresh connection, push registry/request threadlocals, restore the user."""
         registry = get_current_registry()
         db = registry._zodb_databases[self.database_name]
         app = db.open().root()[self.site_id]
@@ -129,12 +151,14 @@ class BaseJob(object):
         return app
 
     def tearDown(self, app):
+        """Pop the threadlocals and close the connection."""
         manager.pop()
         app._p_jar.close()
 
 
 class Job(BaseJob):
 
+    """Job around a direct callable; ``kwargs`` are stored by oid and re-resolved at run time."""
     def __init__(self, callable, login=None):
         super(Job, self).__init__(login)
         self.callable = callable
@@ -142,12 +166,14 @@ class Job(BaseJob):
 
     @rwproperty.setproperty
     def kwargs(self, value):
+        """Store keyword objects by ``_p_oid`` (resolved against the fresh connection)."""
         def get_value(obj):
             return getattr(obj, '_p_oid', obj)
 
         self._kwargs = {key: get_value(obj) for key, obj in value.items()}
 
     def retry(self):
+        """Resolve the stored kwargs in the current connection, then run/commit."""
         request = get_current_request()
         site = request.root
         def get_value(obj):
@@ -164,10 +190,12 @@ class Job(BaseJob):
 
 
 class EventJob(BaseJob):
+    """Job whose callable is an event-kind method, stored as (event oid, method name)."""
     _callable_oid = _callable_name = None
 
     @property
     def callable(self):
+        """Resolve the event in the current connection and return the bound kind method."""
         request = get_current_request()
         site = request.root
         callable_root = site._p_jar.get(self._callable_oid).eventKind
@@ -181,6 +209,7 @@ class EventJob(BaseJob):
 
 
 def get_system_request():
+    """The current request, dressed with ``application.url`` for system work (marked ``is_system_request``)."""
     request = get_current_request()
     if isinstance(request, DummyRequest) and \
        not hasattr(request, 'is_system_request'):
@@ -197,11 +226,13 @@ def get_system_request():
 
 
 def is_broken(resource):
+    """True for ZODB broken objects (missing class or wrapper)."""
     return isinstance(resource, BrokenWrapper) or \
            IBroken.providedBy(resource)
 
 
 def name_normalizer(name):
+    """ASCII fallback normalisation (NFKD, ignore errors)."""
     return unicodedata.normalize('NFKD',
                                  u''+name).encode('ascii',
                                                   'ignore').decode()
@@ -209,6 +240,10 @@ def name_normalizer(name):
 
 def name_chooser(container={}, name='default_name', local='default'):
     # remove characters that checkName does not allow
+    """Choose a free name in ``container``: normalise (via the registered
+    ``INormalizer`` utility), keep the extension, cap at 60 chars, then
+    suffix ``-2``, ``-3``... until free.
+    """
     try:
         name = str(name)
     except:
@@ -243,11 +278,13 @@ def name_chooser(container={}, name='default_name', local='default'):
 
 
 def getSite(resource=None):
+    """The application root (from ``resource`` or the current request)."""
     return find_root(resource) if resource else \
         getattr(get_current_request(), 'root', None)
 
 
 def get_obj(oid, only_exists=False):
+    """Resolve an oid through the objectmap (``only_exists`` filters unparented objects)."""
     root = getSite()
     objectmap = find_objectmap(root)
     obj = objectmap.object_for(oid)
@@ -258,14 +295,17 @@ def get_obj(oid, only_exists=False):
 
 
 def find_catalog(name):
+    """``root['catalogs'][name]``."""
     return get_current_request().root['catalogs'].get(name, None)
 
 
 def find_service(name):
+    """``root[name]`` (dace services live at the root)."""
     return get_current_request().root.get(name, None)
 
 
 def allSubobjectsOfType(root=None, interface=None):
+    """Catalog query: objects of exact type ``interface`` anywhere under ``root`` (``containers_oids``)."""
     root_oid = get_oid(root)
     site = getSite(root)
     if root is None or root is site:
@@ -284,6 +324,7 @@ def allSubobjectsOfType(root=None, interface=None):
 
 
 def allSubobjectsOfKind(root=None, interface=None):
+    """Catalog query: objects providing ``interface`` anywhere under ``root``."""
     root_oid = get_oid(root)
     site = getSite(root)
     if root is None or root is site:
@@ -302,6 +343,7 @@ def allSubobjectsOfKind(root=None, interface=None):
 
 
 def subobjectsOfType(root=None, interface=None):
+    """Catalog query: direct children of ``root`` of exact type ``interface`` (``container_oid``)."""
     root_oid = get_oid(root)
     site = getSite(root)
     if root is None or root is site:
@@ -320,6 +362,7 @@ def subobjectsOfType(root=None, interface=None):
 
 
 def subobjectsOfKind(root=None, interface=None):
+    """Catalog query: direct children of ``root`` providing ``interface``."""
     root_oid = get_oid(root)
     site = getSite(root)
     if root is None or root is site:
@@ -341,6 +384,7 @@ def find_entities(interfaces=None,
                   states=None,
                   all_states_relation=False,
                   not_any=False):
+    """Catalog query by interfaces and states (``any``/``all``/``notany`` combinations)."""
     if interfaces is None:
         interfaces = [IEntity]
 
@@ -362,6 +406,7 @@ def find_entities(interfaces=None,
 
 
 def get_current_process_uid(request):
+    """Oid of the process referenced by ``request.params['action_uid']``, if any."""
     action_uid = request.params.get('action_uid', None)
     if action_uid is not None:
         return get_oid(get_obj(int(action_uid)).process)
@@ -370,6 +415,7 @@ def get_current_process_uid(request):
 
 
 def always_false(context, request):
+    """Default validator stand-in for broken actions."""
     return False, _('Default validation')
 
 
@@ -381,6 +427,10 @@ def getBusinessAction(context,
                       behavior_id=None,
                       action_type=None,
                       validate=True):
+    """Actions of (process, node) applicable to ``context`` (memoised):
+    catalog query then validation, completed by the start work-item
+    actions of the (non-controlled) definition; ``None`` when empty.
+    """
     context_oid = str(get_oid(context))
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
@@ -423,6 +473,7 @@ def getBusinessAction(context,
 
 def getAllSystemActions(request=None,
                         action_type=None):
+    """Every system action: indexed ones plus those of the start work-items of all definitions."""
     if request is None:
         request = get_current_request()
 
@@ -451,6 +502,7 @@ def queryBusinessAction(context,
                         node_id,
                         behavior_id=None,
                         action_type=None):
+    """Historical alias of ``getBusinessAction`` (forced ``IBusinessAction`` type)."""
     return getBusinessAction(context, request,
                         process_id, node_id, behavior_id, IBusinessAction)
 
@@ -463,6 +515,12 @@ def getAllBusinessAction(context,
                          behavior_id=None,
                          process_discriminator=None,
                          action_type=None):
+    """The engine's core service (see docs/en/architecture.md §5): all
+    actions applicable to ``context`` — catalog query over the context's
+    interface IRO and potential contexts, optional filters (process(es),
+    node, automatic, discriminator, action type), validators run, then the
+    virtual start work-item actions of the eligible definitions.
+    """
     process_ids = process_id
     if process_id and not isinstance(process_id, (list, tuple)):
         process_ids = [process_id]
@@ -529,6 +587,7 @@ def getAllBusinessAction(context,
 @request_memoize
 def get_start_workitems_actions(pd, node_id, isautomatic, action_type):
     # node_id can be None, so we need to iterate on all wis
+    """Actions carried by the virtual start work-items of ``pd`` (memoised, filtered)."""
     wis = (wi for wi in pd.start_process(node_id).values() if wi)
     actions = []
     for wi in wis:
@@ -546,6 +605,11 @@ def getWorkItem(context, request, process_id, node_id):
     # If we previous call to getWorkItem was the same request
     # and returned a workitem from a gateway, search first in the
     # same gateway
+    """The valid work-item of (process, node): search the catalog (narrowed
+    to the process referenced by ``action_uid`` when present), else a
+    start work-item of the non-controlled definition; ``Forbidden`` when
+    none.
+    """
     dace_catalog = find_catalog('dace')
     process_id_index = dace_catalog['process_id']
     node_id_index = dace_catalog['node_id']
@@ -579,6 +643,7 @@ def getWorkItem(context, request, process_id, node_id):
 
 
 def queryWorkItem(context, request, process_id, node_id):
+    """``getWorkItem`` returning ``None`` instead of raising ``Forbidden``."""
     try:
         wi = getWorkItem(context, request,
             process_id, node_id)
@@ -589,12 +654,14 @@ def queryWorkItem(context, request, process_id, node_id):
 
 class Adapter(object):
 
+    """Minimal adapter base: stores the adapted ``context``."""
     def __init__(self, context):
         self.context = context
 
 
 class adapter(object):
 
+    """Venusian decorator registering the class as an adapter for ``context``."""
     def __init__(self, context, name=u''):
         self.context = context
         self.name = name
@@ -613,6 +680,7 @@ class adapter(object):
 
 class utility(object):
 
+    """Venusian decorator registering the class (or instance) as a named utility."""
     def __init__(self, name, provides=None, direct=False, **kw):
         self.name = name
         self.provides = provides
@@ -751,6 +819,7 @@ def copy(obj, container, new_name=None, shared_properties=False,
 
 def execute_callback(app, callback, login):
     # set site and interaction that will be memorized in job
+    """Run ``callback`` under (app, user) threadlocals — the reactor bootstrap helper."""
     request = DummyRequest()
     request.root = app
     registry = get_current_registry()
@@ -762,6 +831,7 @@ def execute_callback(app, callback, login):
 
 
 def _get_user_by_attr(attr, login, request=None):
+    """Resolve a user through the ``IUserLocator`` (default locator fallback)."""
     if request is None:
         request = get_current_request()
 
@@ -777,14 +847,17 @@ def _get_user_by_attr(attr, login, request=None):
 
 
 def get_user_by_login(login, request=None):
+    """User object for a login."""
     return _get_user_by_attr('get_user_by_login', login, request)
 
 
 def get_user_by_userid(login, request=None):
+    """User object for an oid."""
     return _get_user_by_attr('get_user_by_userid', login, request)
 
 
 def get_userid_by_login(login, request=None):
+    """Oid for a login."""
     user = get_user_by_login(login, request)
     return get_oid(user)
 
@@ -794,6 +867,7 @@ _socket = None
 
 
 def get_zmq_context():
+    """The process-wide zmq context (lazy)."""
     global _ctx
     if _ctx is None:
         _ctx = zmq.Context()
@@ -802,10 +876,12 @@ def get_zmq_context():
 
 
 def get_socket_url():
+    """The reactor's command endpoint (PUSH/PULL, tcp://127.0.0.1:12345)."""
     return 'tcp://127.0.0.1:12345'
 
 
 def get_socket():
+    """The lazy PUSH socket to the reactor (commands: start/stop/close/start_in_ioloop)."""
     global _socket
     if _socket is None:
         ctx = get_zmq_context()
@@ -832,6 +908,7 @@ class DelayedCallback(object):
         self._timeout = None
 
     def start(self):
+        """Hand the timer to the loop thread through the command socket."""
         s = get_socket()
         # first arg is the method name to call on second arg
         s.send_pyobj(('start_in_ioloop', self))
@@ -851,6 +928,10 @@ class DelayedCallback(object):
 
 
 def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):
+    """Generic sibling of the event variant: arm ``callback`` (kwargs stored
+    by oid) at ``deadline`` ms on the loop, only if the current transaction
+    commits.
+    """
     job = Job(callback, 'system')
     def after_commit_hook(status, *args, **kws):
         # status is true if the commit succeeded, or false if the commit aborted.

@@ -5,6 +5,16 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Definition-container lifecycle.
+
+Created with the root; synchronised at every application start:
+missing definitions are added (first worker wins, ``ConflictError``
+aborted on the others), and — with ``SUBSTANCED_CATALOGS_AUTOSYNC``
+(development) — changed ones are replaced and broken ones purged.
+The final loop re-points every behaviour class'
+``node_definition`` to the node instances currently in the ZODB: this
+is why a restart is mandatory after ``process_definitions_evolve``.
+"""
 import os
 from pyramid.events import ApplicationCreated, subscriber
 from pyramid.settings import asbool
@@ -22,6 +32,7 @@ from . import processdef_container
 
 @subscriber(RootAdded)
 def add_process_definition_container(event):
+    """Create the (initializing) definition container with the root."""
     root = event.object
     if hasattr(root, 'reindex'):
         root.reindex()
@@ -33,6 +44,11 @@ def add_process_definition_container(event):
 
 @subscriber(ApplicationCreated)
 def add_process_definitions(event):
+    """Synchronise ``DEFINITIONS`` into the container at startup (autosync
+    replaces/purges in development), then rewire every behaviour's
+    ``node_definition`` and finally notify ``DatabaseOpenedWithRoot``
+    (which starts the reactor).
+    """
     app = event.object
     registry = app.registry
     settings = getattr(registry, 'settings', {})

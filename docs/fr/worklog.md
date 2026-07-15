@@ -102,3 +102,27 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   et quelques petits utilitaires. Suite : tranche 4 =
   `objectofcollaboration/` + `catalog/` + modules racine (`util.py` en
   tête).
+
+
+- Tranche 4 — la dernière — de la passe de docstrings : la couche de
+  collaboration (`dace/objectofcollaboration/`), le catalogue 'dace'
+  (`dace/catalog/`) et les modules racine (`util.py` en tête, plus
+  `wosystem.py`, `testing.py`, `interfaces.py`, `i18n/`) —
+  164 docstrings après lecture intégrale. Fixé par écrit : le
+  rétablissement de contexte des Job/EventJob et le passage d'arguments
+  par oid, la socket de commande du réacteur (tcp://127.0.0.1:12345), le
+  modèle d'attribution des rôles (relations 'Role' avec miroir racine,
+  hiérarchie des supérieurs, clés d'accès `'<role>_<oid>'`), la
+  synchronisation des définitions au démarrage et le recâblage
+  `node_definition` qui rend le redémarrage obligatoire, la garde
+  « nouvelles transactions » du crawler système, et les deux contrats
+  d'adaptateurs derrière les 18 index du catalogue.
+- **Passe de docstrings de la phase 2 close** : 7,8 % → 67,6 % au
+  total — 60/60 modules, 163/180 classes, 432/727 fonctions. Le résidu
+  non couvert relève d'une politique assumée : constructeurs,
+  `__repr__`, souches de méthodes d'interface, et les grilles
+  d'accesseurs quasi jumeaux (ExecutionContext, les cinq adaptateurs de
+  recherche du catalogue) documentées au niveau classe. Prochains
+  candidats de l'effort de documentation : la relecture humaine des
+  quatre tranches, et l'extracteur BPMN→mermaid sur les 24 paquets de
+  processus des applications hôtes.

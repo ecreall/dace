@@ -4,6 +4,17 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""The 'dace' hypatia catalog.
+
+Eighteen indexes over two adapter contracts: ``IObjectProvides``
+(interfaces, type, states, title/description, containment oids) served
+by the default ``SearchableObject`` adapter for any object, and
+``ISearchableObject`` (process id/discriminator, node id, instance
+uid, context interfaces, automatic/system flags, potential contexts)
+served by dedicated adapters for work-items, business actions and
+processes. This is the machinery behind ``getAllBusinessAction`` and
+every discovery query of ``dace.util``.
+"""
 from zope.interface import Interface, Declaration, implementer, providedBy
 from pyramid.threadlocal import get_current_registry
 from substanced.util import get_oid
@@ -24,11 +35,17 @@ from dace.catalog.interfaces import IObjectProvides, ISearchableObject
 
 @indexview_defaults(catalog_name='dace')
 class DaceCatalogViews(object):
+    """The 'dace' catalog index views: every index delegates to the
+    resource's ``IObjectProvides`` (identity/containment) or
+    ``ISearchableObject`` (process vocabulary) adapter — falling back to
+    ``default`` when the resource has no adapter.
+    """
     def __init__(self, resource):
         self.resource = resource
 
     @indexview()
     def object_provides(self, default):
+        """Index view 'object_provides': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -37,6 +54,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def object_title(self, default):
+        """Index view 'object_title': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -45,6 +63,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def object_states(self, default):
+        """Index view 'object_states': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -53,6 +72,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def object_description(self, default):
+        """Index view 'object_description': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -61,6 +81,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def object_type(self, default):
+        """Index view 'object_type': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -69,6 +90,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def object_type_class(self, default):
+        """Index view 'object_type_class': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -77,6 +99,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def container_oid(self, default):
+        """Index view 'container_oid': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -85,6 +108,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def containers_oids(self, default):
+        """Index view 'containers_oids': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -93,6 +117,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def oid(self, default):
+        """Index view 'oid': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, IObjectProvides)
         if adapter is None:
             return default
@@ -101,6 +126,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def process_id(self, default):
+        """Index view 'process_id': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -109,6 +135,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def process_discriminator(self, default):
+        """Index view 'process_discriminator': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -117,6 +144,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def node_id(self, default):
+        """Index view 'node_id': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -125,6 +153,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def process_inst_uid(self, default):
+        """Index view 'process_inst_uid': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -133,6 +162,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def context_id(self, default):
+        """Index view 'context_id': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -141,6 +171,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def context_provides(self, default):
+        """Index view 'context_provides': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -149,6 +180,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def isautomatic(self, default):
+        """Index view 'isautomatic': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -157,6 +189,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def issystem(self, default):
+        """Index view 'issystem': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -165,6 +198,7 @@ class DaceCatalogViews(object):
 
     @indexview()
     def potential_contexts_ids(self, default):
+        """Index view 'potential_contexts_ids': delegated to the resource's adapter."""
         adapter = get_current_registry().queryAdapter(self.resource, ISearchableObject)
         if adapter is None:
             return default
@@ -175,6 +209,7 @@ class DaceCatalogViews(object):
 @catalog_factory('dace')
 class DaceIndexes(object):
 
+    """Declaration of the 18 indexes of the dace catalog."""
     object_provides = Keyword()
     object_type = Field()
     object_type_class = Field()
@@ -202,15 +237,19 @@ class SearchableObject(Adapter):
     """
 
     def object_provides(self):
+        """Identifiers of every provided interface (flattened)."""
         return [i.__identifier__ for i in providedBy(self.context).flattened()]
 
     def object_title(self):
+        """The object's title."""
         return getattr(self.context, 'title', '')
 
     def object_description(self):
+        """The object's description."""
         return getattr(self.context, 'description', '')
 
     def object_states(self):
+        """Lowercased states (['none'] when stateless)."""
         states = list(getattr(self.context, 'state', []))
         if not states:
             return ['none']
@@ -218,12 +257,14 @@ class SearchableObject(Adapter):
         return [s.lower() for s in states]
 
     def object_type(self):
+        """Identifier of the first declared interface."""
         if providedBy(self.context).declared:
             return providedBy(self.context).declared[0].__identifier__
 
         return ''
 
     def object_type_class(self):
+        """The class name (used by the ``action_type`` filters)."""
         return self.context.__class__.__name__
 
     def containers_oids(self):
@@ -264,6 +305,7 @@ class SearchableObject(Adapter):
 @implementer(ISearchableObject)
 class StartWorkItemSearch(Adapter):
 
+    """Process vocabulary of a *virtual* start work-item (its actions rule automatic/system)."""
     def process_id(self):
         return self.context.process_id
 
@@ -309,6 +351,7 @@ class StartWorkItemSearch(Adapter):
 @implementer(ISearchableObject)
 class DecisionWorkItemSearch(Adapter):
 
+    """Process vocabulary of a decision work-item."""
     def process_id(self):
         return self.context.process_id
 
@@ -354,6 +397,7 @@ class DecisionWorkItemSearch(Adapter):
 @implementer(ISearchableObject)
 class WorkItemSearch(Adapter):
 
+    """Process vocabulary of a concrete work-item."""
     def process_id(self):
         return self.context.process_id
 
@@ -399,6 +443,7 @@ class WorkItemSearch(Adapter):
 @implementer(ISearchableObject)
 class BusinessActionSearch(Adapter):
 
+    """Process vocabulary of a business action (incl. its ``potential_contexts_ids``)."""
     def process_id(self):
         return self.context.process_id
 
@@ -432,6 +477,7 @@ class BusinessActionSearch(Adapter):
 @implementer(ISearchableObject)
 class ProcessSearch(Adapter):
 
+    """Process vocabulary of a process instance."""
     def process_id(self):
         return self.context.id
 

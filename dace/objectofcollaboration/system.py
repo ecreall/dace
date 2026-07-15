@@ -4,6 +4,15 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""The system crawler: executes the pending system actions.
+
+``run`` wakes every 2 s (``run_crawler`` re-arms a ``DelayedCallback``
+through the reactor), but only works when the ZODB has *new
+transactions* since the last visit (per machine): it then collects the
+system actions (``getAllSystemActions``) bound to a process or offered
+by a start work-item, and executes each in its own transaction against
+its ``get_potential_context()``.
+"""
 import transaction
 
 from substanced.util import get_oid
@@ -19,6 +28,7 @@ last_transaction_by_machine = {}
 
 
 def _call_action(action):
+    """Execute one system action against its potential context (own transaction)."""
     transaction.begin()
     try:
         context = action.get_potential_context()
@@ -36,11 +46,13 @@ def _call_action(action):
 
 
 def _get_cache_key():
+    """Per-machine key of the last-seen ZODB transaction id."""
     request = get_system_request()
     return str(get_oid(request.user))
 
 
 def run():
+    """One crawler pass (see module docstring), then re-arm."""
     request = get_system_request()
     if request.user is None:
         # in test, db connection closed

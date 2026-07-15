@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Role declarations.
+
+Roles are classes registered by the ``@role`` venusian decorator into
+``DACE_ROLES``; the decorator wires the superior/lower hierarchy both
+ways and computes ``all_superiors`` transitively. ``islocal`` marks
+context-local roles (``Owner``). Built-ins: Admin, Collaborator,
+System, Anonymous, Owner.
+"""
 import venusian
 
 DACE_ROLES = {}
@@ -11,6 +19,7 @@ DACE_ROLES = {}
 
 class role(object):
 
+    """Venusian decorator declaring a role and wiring its hierarchy into ``DACE_ROLES``."""
     def __init__(self, 
                  name='', 
                  superiors=[], 
@@ -59,6 +68,7 @@ class role(object):
 
 
 class Role(object):
+    """Base role: ``name``, hierarchy (``superiors``/``all_superiors``), ``islocal``."""
     name = NotImplemented
     superiors = []
     all_superiors = []
@@ -67,25 +77,30 @@ class Role(object):
 
 @role(name='Admin')
 class Administrator(Role):
+    """'Admin' — implicit superior of every non-local role, granted to the sd admin."""
     pass
 
 
 @role(name='Collaborator', superiors=[Administrator])
 class Collaborator(Role):
+    """'Collaborator' — ordinary member role."""
     pass
     
 
 @role(name='System', superiors=[Administrator])
 class System(Role):
+    """'System' — the reactor's role."""
     pass
 
 
 @role(name='Anonymous', superiors=[Administrator])
 class Anonymous(Role):
+    """'Anonymous' — unauthenticated visitors."""
     pass
 
 
 @role(name='Owner', islocal=True)
 class Owner(Role):
+    """'Owner' — context-local role (granted per object)."""
     pass
 

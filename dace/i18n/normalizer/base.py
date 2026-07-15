@@ -1,4 +1,5 @@
 
+"""Base normalisation primitives (unidecode with a replacement mapping)."""
 import unidecode
 
 

@@ -6,6 +6,7 @@
 # author: Amen Souissi
 
 
+"""Events contract of the definition container."""
 from zope.interface.interfaces import IObjectEvent
 
 

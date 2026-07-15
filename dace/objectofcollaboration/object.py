@@ -4,6 +4,17 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""The base collaboration object.
+
+``Object`` marries the substanced ``Folder`` with the relation
+descriptors: kwargs matching a descriptor are routed to it at
+construction; ``getproperty``/``setproperty``/``addtoproperty``/
+``delfromproperty`` are the uniform manipulation API; ``move``/
+``rename``/``__delitem__`` are property-aware (they follow
+``__property__``). ``set_data``/``get_data`` bridge colander
+appstructs; ``dynamic_properties_def`` re-installs per-instance
+descriptors at unpickling time (``__setstate__``).
+"""
 import datetime
 import pytz
 
@@ -26,6 +37,7 @@ _marker = object()
 @implementer(IObject)
 class Object(Folder):
 
+    """Folder with declarative relation properties (see module docstring)."""
     title = ''
     description = ''
 
@@ -64,6 +76,7 @@ class Object(Folder):
             self.remove(name)
 
     def _init_property(self, name, propertydef):
+        """Install a dynamic descriptor described by ``(kind, opposite, isunique)``."""
         descriptor = getattr(self.__class__, name, _marker)
         if descriptor is _marker:
             op = __properties__[propertydef[0]]
@@ -72,6 +85,7 @@ class Object(Folder):
             setattr(self.__class__, name, op(name, opposite, isunique))
 
     def __setstate__(self, state):
+        """Re-install the dynamic property descriptors after unpickling."""
         super(Object, self).__setstate__(state)
         if not hasattr(self, 'dynamic_properties_def'):
             return
@@ -80,6 +94,7 @@ class Object(Folder):
             self._init_property(name, propertydef)
 
     def choose_name(self, name, object):
+        """Pick a free name (from ``name``, the object's title or class)."""
         if not name:
             name = getattr(object, 'title', object.__class__.__name__)
             if not name:
@@ -93,6 +108,7 @@ class Object(Folder):
 
     def add(self, name, other, send_events=True, reserved_names=(),
             duplicating=None, moving=None, loading=False, registry=None):
+        """Folder add with automatic name choice."""
         name = self.choose_name(name, other)
         super(Object, self).add(name, other, send_events, reserved_names,
                 duplicating, moving, loading, registry)
@@ -156,6 +172,7 @@ class Object(Folder):
             self.move(oldname, self, newname, registry)
 
     def set_data(self, appstruct, omit=('_csrf_token_', '__objectoid__')):
+        """Apply a colander appstruct (skip unchanged values; notify when modified)."""
         if not is_nonstr_iter(omit):
             omit = (omit,)
 
@@ -190,18 +207,23 @@ class Object(Folder):
         return result
 
     def getproperty(self, name):
+        """Read a relation property by name."""
         return getattr(self, name)
 
     def setproperty(self, name, value):
+        """Replace a relation property by name."""
         setattr(self, name, value)
 
     def addtoproperty(self, name, value, moving=None):
+        """Add a value to a (multiple) relation property."""
         getattr(self.__class__, name).add(self, value, moving=moving)
 
     def delfromproperty(self, name, value, moving=None):
+        """Remove a value from a relation property."""
         getattr(self.__class__, name).remove(self, value, moving=moving)
 
     def reindex(self):
+        """Notify ``ObjectModified`` so the catalogs re-index this object."""
         event = ObjectModified(self)
         registry = get_current_registry()
         registry.subscribers((event, self), None)

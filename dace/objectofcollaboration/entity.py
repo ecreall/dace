@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Entities: stateful collaboration objects.
+
+``Entity`` adds the multi-valued ``state`` (a ``PersistentList``), the
+dynamic ``actions`` (catalog-computed ``ActionCall``s), annotations
+(the ``process_history`` store) and the ``creator``/``involvers``
+properties, resolved through the execution contexts to the processes
+that created/involved the entity.
+"""
 from BTrees.OOBTree import OOBTree
 from zope.interface import implementer
 from persistent.list import PersistentList
@@ -16,6 +24,7 @@ from dace.util import getAllBusinessAction
 
 class ActionCall(object):
 
+    """A (business action, context) pair ready for the UI."""
     def __init__(self, action, context):
         super(ActionCall, self).__init__()
         self.context = context
@@ -25,11 +34,13 @@ class ActionCall(object):
 
     @property
     def url(self):
+        """The action's URL on the context."""
         return self.action.url(self.context)
 
 
 class ProcessSharedUniqueProperty(SharedUniqueProperty):
 
+    """Shared to-one resolved to the process of the referenced execution context."""
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
@@ -43,6 +54,7 @@ class ProcessSharedUniqueProperty(SharedUniqueProperty):
 
 class ProcessSharedMultipleProperty(SharedMultipleProperty):
 
+    """Shared to-many resolved to the processes of the referenced execution contexts."""
     def __get__(self, obj, objtype=None):
         if obj is None:
             return self
@@ -54,6 +66,7 @@ class ProcessSharedMultipleProperty(SharedMultipleProperty):
 @implementer(IEntity)
 class Entity(Object):
 
+    """Collaboration object with state, actions and annotations."""
     creator = ProcessSharedUniqueProperty('creator', 'createds', True)
     involvers = ProcessSharedMultipleProperty('involvers', 'involveds', True)
 
@@ -63,18 +76,22 @@ class Entity(Object):
         self.__property__ = None
 
     def init_annotations(self):
+        """Create the annotations BTree (``process_history`` lives here)."""
         self.annotations = OOBTree()
 
     @property
     def state_or_none(self):
+        """The states, or ``[None]`` when empty (catalog convenience)."""
         return self.state if self.state else [None]
 
     @property
     def actions(self):
+        """All applicable business actions, as ``ActionCall``s (catalog-driven)."""
         allactions = getAllBusinessAction(self)
         return [ActionCall(a, self) for a in allactions]
 
     def setstate(self, state):
+        """Replace the state list (single value accepted)."""
         if not isinstance(state, (list, tuple)):
             state = [state]
 

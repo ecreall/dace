@@ -1,5 +1,6 @@
 # -*- coding: UTF-8 -*-
 
+"""The default registered normalizer (French oe ligature mapping)."""
 from zope.interface import implementer
 
 from dace.i18n.normalizer.interfaces import INormalizer

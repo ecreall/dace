@@ -4,6 +4,11 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""The public contracts of the engine (zope interfaces): collaboration
+objects, principals, processes and their definitions, work-items,
+business actions and engine events. Mostly self-documenting;
+implementation notes live in the implementing modules.
+"""
 from zope.interface import Interface, Attribute as SourceAttribute
 from substanced.interfaces import IPrincipal, IFolder, IRoot
 

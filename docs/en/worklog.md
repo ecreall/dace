@@ -98,3 +98,25 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   Residue: constructors, `__repr__`s and a handful of small helpers.
   Next: tranche 4 = `objectofcollaboration/` + `catalog/` + root
   modules (`util.py` chiefly).
+
+
+- Tranche 4 — the last — of the docstring pass: the collaboration layer
+  (`dace/objectofcollaboration/`), the 'dace' catalog (`dace/catalog/`)
+  and the root modules (`util.py` chiefly, plus `wosystem.py`,
+  `testing.py`, `interfaces.py`, `i18n/`) — 164 docstrings from a full
+  read. Fixed in writing: the Job/EventJob re-establishment and
+  oid-based argument passing, the reactor command socket
+  (tcp://127.0.0.1:12345), the role-grant model (Role relations with a
+  root mirror, superior hierarchy, access keys
+  `'<role>_<oid>'`), the startup synchronisation of process definitions
+  and the `node_definition` rewiring that makes the restart mandatory,
+  the system crawler's new-transactions gate, and the two adapter
+  contracts behind the 18 catalog indexes.
+- **Phase-2 docstring pass closed**: 7.8 % → 67.6 % overall — 60/60
+  modules, 163/180 classes, 432/727 functions. The uncovered residue is
+  deliberate policy: constructors, `__repr__`, interface method stubs,
+  and the near-duplicate accessor grids (ExecutionContext, the five
+  catalog search adapters) documented at class level. Next candidates
+  for the documentation effort: human review of the four tranches, and
+  the BPMN→mermaid extractor over the host applications' 24 process
+  packages.

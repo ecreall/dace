@@ -4,6 +4,14 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""Functional test harness.
+
+``FunctionalTests`` builds a real Pyramid app (substanced + dace) on a
+temporary file ZODB, applies the request extensions so
+``request.user`` works, creates alice/bob, logs in as admin and
+exposes ``def_container``; ``tearDown`` stops the reactor and removes
+the database.
+"""
 import unittest
 
 from pyramid.config import Configurator
@@ -27,6 +35,7 @@ def main(global_config, **settings):
 
 
 def login(login):
+    """Point the test authentication policy at the user of ``login``."""
     request = get_current_request()
     userid = get_userid_by_login(login, request)
     _registerAuthenticationPolicy(request.registry, userid)
@@ -35,7 +44,9 @@ def login(login):
 
 class FunctionalTests(unittest.TestCase):
 
+    """Base class of the functional layers (see module docstring)."""
     def setUp(self):
+        """Build the throwaway app and log in as admin."""
         import tempfile
         import os.path
         self.tmpdir = tempfile.mkdtemp()
@@ -84,6 +95,7 @@ class FunctionalTests(unittest.TestCase):
         self.def_container = self.app['process_definition_container']
 
     def tearDown(self):
+        """Stop the reactor, tear down, delete the temporary database."""
         stop_ioloop()
         import shutil
         testing.tearDown()

@@ -4,11 +4,13 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
+"""The two adapter contracts feeding the dace catalog indexes."""
 from zope.interface import Interface
 
 
 class IObjectProvides(Interface):
 
+    """Identity/containment vocabulary of any object."""
     def object_provides():
         pass
 
@@ -27,6 +29,7 @@ class IObjectProvides(Interface):
 
 class ISearchableObject(Interface):
 
+    """Process vocabulary of engine objects (work-items, actions, processes)."""
     def process_id():
         pass
 

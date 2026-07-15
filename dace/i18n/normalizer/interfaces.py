@@ -1,3 +1,4 @@
+"""Contract of the normalizers."""
 from zope.interface import Interface
 
 

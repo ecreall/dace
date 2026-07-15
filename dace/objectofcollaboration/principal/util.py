@@ -4,6 +4,15 @@
 # licence: AGPL
 # author: Amen Souissi
 
+"""Role queries and grants (over the relation catalog).
+
+Grants are ``RelationValue``s of reftype 'Role' from the principal to
+the context (plus a mirror grant on the root for non-root contexts,
+which powers the global queries). ``has_role``/``has_any_roles``
+honour the superior hierarchy and the user's groups; the substanced
+``admin`` user is implicitly Admin. ``get_access_keys`` pre-computes
+the ``'<role>_<context_oid>'`` keys the visibility filters index.
+"""
 import datetime
 import random
 
@@ -28,6 +37,7 @@ _marker = object()
 
 
 class Anonymous(object):
+    """Stand-in principal for unauthenticated requests (fixed oid)."""
     __name__ = 'Anonymous'
     name = 'Anonymous'
     locale = 'fr'
@@ -35,6 +45,7 @@ class Anonymous(object):
 
 
 def anonymous_oid_generator():
+    """Date-based oid generator for anonymous principals (historical)."""
     date_tuple = datetime.datetime.timetuple(datetime.datetime.today())
     descriminator = random.choice(range(100))
     oid = int(''.join([str(element) for element in date_tuple if element >= 0]))
@@ -42,6 +53,7 @@ def anonymous_oid_generator():
 
 
 def get_current(request=None):
+    """The request user, or an ``Anonymous`` stand-in."""
     if request is None:
         request = get_current_request()
 
@@ -55,6 +67,7 @@ def get_current(request=None):
 
 def get_roles(user=None, obj=None,
               root=None, ignore_groups=False):
+    """The role ids of ``user`` on ``obj`` (root by default), groups included; ['Anonymous'] for anonymous."""
     if user is None:
         user = get_current()
 
@@ -87,6 +100,10 @@ def get_roles(user=None, obj=None,
 
 
 def grant_roles(user=None, roles=(), root=None):
+    """Grant declared roles (strings normalised to ``(role, root)``): create
+    the 'Role' relation(s) — plus the root mirror for non-root contexts —
+    then reindex the user (access keys).
+    """
     if not roles:
         return
 
@@ -122,6 +139,7 @@ def grant_roles(user=None, roles=(), root=None):
 
 
 def revoke_roles(user=None, roles=(), root=None):
+    """Remove the matching role relations (root mirrors included) and reindex."""
     if not roles:
         return
 
@@ -160,11 +178,13 @@ def revoke_roles(user=None, roles=(), root=None):
 
 
 def _get_allsuperiors(role_id, root):
+    """The transitive superiors of a role, as ``(name, root)`` pairs."""
     return [(r.name, root) for r in getattr(DACE_ROLES.get(role_id, _marker),
                                             'all_superiors', [])]
 
 
 def has_role(role, user=None, ignore_superiors=False, root=None):
+    """Does ``user`` (or a group) hold ``role`` — or a superior — on its context?"""
     if root is None:
         root = getSite()
 
@@ -208,6 +228,7 @@ def has_any_roles(user=None,
                   roles=(),
                   ignore_superiors=False,
                   root=None):
+    """True when any of ``roles`` (superiors included) is held."""
     if not roles:
         return True
 
@@ -256,6 +277,7 @@ def has_all_roles(user=None,
                   roles=(), 
                   ignore_superiors=False, 
                   root=None):
+    """True when every one of ``roles`` is held."""
     if not roles:
         return True
 
@@ -284,6 +306,7 @@ def has_all_roles(user=None,
 
 
 def get_users_with_role(role=None, root=None):
+    """The users granted ``role`` (groups expanded to their members)."""
     if role is None:
         return []
 
@@ -306,6 +329,7 @@ def get_users_with_role(role=None, root=None):
 
 
 def get_objects_with_role(user=None, role=None, root=None):
+    """The contexts on which ``user`` (or a group) holds ``role`` (root excluded)."""
     if role is None:
         return []
 
@@ -336,6 +360,10 @@ def get_objects_with_role(user=None, role=None, root=None):
 
 
 def get_access_keys(user, root=None, to_exclude=[]):
+    """The visibility keys of ``user``: ``'<role>_<target_oid>'`` for every
+    grant (lowercased), the admin pair for the sd admin, ``['anonymous']``
+    for anonymous users.
+    """
     if isinstance(user, Anonymous):
         return ['anonymous']
 
