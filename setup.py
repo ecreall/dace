@@ -11,20 +11,18 @@ requires = [
     'pyramid',
     'pyramid_tm',
     'pyzmq',
-    'rwproperty',
     'substanced',
-    'tornado < 4',
     'zope.processlifetime',
     ]
 
 setup(name='ecreall_dace',
-      version='1.1.1.dev0',
+      version='2.0.0.dev0',
       description='Data-centric workflow engine (maintained fork)',
       long_description=README + '\n\n' + CHANGES,
       long_description_content_type='text/markdown',
       classifiers=[
         "Programming Language :: Python",
-        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.12",
         "Framework :: Pyramid",
         "Topic :: Internet :: WWW/HTTP",
         "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",

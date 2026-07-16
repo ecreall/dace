@@ -120,3 +120,30 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   for the documentation effort: human review of the four tranches, and
   the BPMN→mermaid extractor over the host applications' 24 process
   packages.
+
+
+## 2026-07-16 — Phase 3 / M1
+
+- **dace is green on Python 3.12: 88 tests, 0 failures, 0 errors**, on
+  the first full run after the reactor port. Modern stack: substanced
+  resurrected from upstream git (installs as 1.0b1 on 3.12 — the
+  Appendix-A surface imports clean, shrinking the fork to "lift the
+  pyramid<2 pin later"); pyramid held at 1.10.8 by that pin; ZODB 6.3,
+  BTrees 6.4, pyzmq 27, hypatia 0.5 (`constraints-modern.txt`).
+- Reactor step A as planned: asyncio loop thread, same zmq command
+  transport and pickled `(method, obj)` protocol; `DelayedCallback`
+  uses `call_later` (thread-safe `stop`), the signal `Listener` is an
+  asyncio task on a `zmq.asyncio` SUB socket, `ConsumeTasks` owns a
+  private loop per instance (cleaner test isolation than the historical
+  `IOLoop.instance()` singleton). The tornado poll-timeout monkey-patch
+  is removed; the two substanced patches are verified present on 1.0b1.
+- Removals/fixes: `rwproperty` → property setters; `pyramid.compat`
+  fallback; the harness's `pyramid.tests` import replaced by a local
+  authentication policy (modern wheels ship no tests).
+- Dual-stack strategy: master is now 3.12; the 3.6 proof lives on the
+  `legacy-golden-master` tag (legacy CI job pinned to it; KuneAgi's
+  buildout pins the three library checkouts by revision). tox `py312`
+  and a required `py312-tests` CI job added. A dedicated
+  crawler/repoll cadence test is deferred: the existing timer,
+  conditional and signal tests exercise the ported scheduling end to
+  end.

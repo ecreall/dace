@@ -20,7 +20,14 @@ import pytz
 
 from zope.interface import implementer
 import colander
-from pyramid.compat import is_nonstr_iter
+try:
+    from pyramid.compat import is_nonstr_iter
+except ImportError:     # pyramid >= 2
+    def is_nonstr_iter(v):
+        """``pyramid.compat.is_nonstr_iter`` fallback (pyramid 2 removed it)."""
+        if isinstance(v, str):
+            return False
+        return hasattr(v, '__iter__')
 from pyramid.threadlocal import get_current_registry
 
 from substanced.folder import Folder

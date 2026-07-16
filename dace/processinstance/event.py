@@ -9,7 +9,7 @@
 ``Event`` nodes (throwing/catching, start/intermediate/end) drive the
 process through the reactor: catching kinds arm themselves through
 ``push_event_callback_after_commit`` (an after-commit hook scheduling an
-``EventJob`` on the IOLoop), so an event only exists once the data that
+``EventJob`` on the reactor loop), so an event only exists once the data that
 created it is durably committed. ``TimerEvent`` waits for a
 date/duration, ``ConditionalEvent`` re-polls its predicate every second,
 ``SignalEvent`` broadcasts/listens over a local zmq PUB/SUB socket, and
@@ -21,8 +21,8 @@ import datetime
 
 from pyramid.threadlocal import get_current_registry
 
+import asyncio
 import zmq
-from zmq.eventloop.zmqstream import ZMQStream
 
 from .core import FlowNode, BehavioralFlowNode, ProcessFinished
 from dace.util import (
@@ -30,6 +30,7 @@ from dace.util import (
     get_socket,
     DelayedCallback,
     get_zmq_context,
+    get_async_zmq_context,
     EventJob,
     is_broken)
 from dace import log
@@ -322,10 +323,16 @@ def get_signal_socket_url():
 
 
 class Listener(object):
-    """IOLoop-side zmq SUB stream delivering a signal to its ``EventJob``."""
+    """Loop-side zmq SUB subscription delivering a signal to its ``EventJob``.
+
+    Picklable (sent over the command socket); the socket and the asyncio
+    task are only created in ``start``, inside the reactor loop thread.
+    """
     def __init__(self, job, identifier):
         self.job = job
         self.identifier = identifier
+        self._sock = None
+        self._task = None
 
     def start(self):
         """Subscribe to the signal socket; on message, close the stream and run
@@ -351,13 +358,29 @@ class Listener(object):
             dc = DelayedCallback(job, 2000)
             dc.start()
 
-        ctx = get_zmq_context()
-        s = ctx.socket(zmq.SUB)
-        s.setsockopt_string(zmq.SUBSCRIBE, u'')
-        s.connect(get_signal_socket_url())
-        stream = ZMQStream(s)
-        callbacks[identifier] = stream
-        stream.on_recv(execute_next)
+        ctx = get_async_zmq_context()
+        sock = ctx.socket(zmq.SUB)
+        sock.setsockopt_string(zmq.SUBSCRIBE, u'')
+        sock.connect(get_signal_socket_url())
+        self._sock = sock
+
+        async def listen():
+            msg = await sock.recv_multipart()
+            execute_next(msg)
+
+        # register ourselves (the consumer registered the object it
+        # unpickled — that is this Listener), then wait for one message
+        callbacks[identifier] = self
+        self._task = asyncio.get_event_loop().create_task(listen())
+
+    def close(self):
+        """Cancel the subscription (reactor loop thread)."""
+        if self._task is not None:
+            self._task.cancel()
+            self._task = None
+        if self._sock is not None:
+            self._sock.close(0)
+            self._sock = None
 
 
 class SignalEvent(EventKind):

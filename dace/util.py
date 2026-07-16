@@ -19,14 +19,13 @@ socket (tcp://127.0.0.1:12345) and ``DelayedCallback``, plus the
 """
 import sys
 import time
-import rwproperty
 import unicodedata
 import venusian
 import zope.copy
 import transaction
 import zmq
 import string
-from zmq.eventloop.ioloop import IOLoop
+import asyncio
 from zope.interface import providedBy, implementedBy, Interface
 from ZODB.interfaces import IBroken
 from ZODB.POSException import ConflictError
@@ -164,7 +163,12 @@ class Job(BaseJob):
         self.callable = callable
         self._kwargs = {}
 
-    @rwproperty.setproperty
+    @property
+    def kwargs(self):
+        """The stored (oid-keyed) keyword mapping."""
+        return self._kwargs
+
+    @kwargs.setter
     def kwargs(self, value):
         """Store keyword objects by ``_p_oid`` (resolved against the fresh connection)."""
         def get_value(obj):
@@ -202,8 +206,9 @@ class EventJob(BaseJob):
         call = getattr(callable_root, self._callable_name)
         return call
 
-    @rwproperty.setproperty
+    @callable.setter
     def callable(self, value):
+        """Store the bound kind method as (event oid, method name)."""
         self._callable_oid = value.__self__.event._p_oid
         self._callable_name = value.__name__
 
@@ -863,6 +868,7 @@ def get_userid_by_login(login, request=None):
 
 
 _ctx = None
+_async_ctx = None
 _socket = None
 
 
@@ -873,6 +879,16 @@ def get_zmq_context():
         _ctx = zmq.Context()
 
     return _ctx
+
+
+def get_async_zmq_context():
+    """The reactor-thread ``zmq.asyncio`` context (lazy; loop-thread only)."""
+    global _async_ctx
+    if _async_ctx is None:
+        import zmq.asyncio
+        _async_ctx = zmq.asyncio.Context()
+
+    return _async_ctx
 
 
 def get_socket_url():
@@ -914,17 +930,16 @@ class DelayedCallback(object):
         s.send_pyobj(('start_in_ioloop', self))
 
     def start_in_ioloop(self):
-        """Start the timer."""
-        ioloop = IOLoop.current()
-        self._timeout = ioloop.add_timeout(
-            ioloop.time() + self.callback_time / 1000.0, self.callback)
+        """Start the timer (runs in the reactor loop thread)."""
+        self._loop = asyncio.get_event_loop()
+        self._timeout = self._loop.call_later(
+            self.callback_time / 1000.0, self.callback)
 
     def stop(self):
-        """Stop the timer."""
+        """Stop the timer (safe from any thread)."""
         if self._timeout is not None:
-            ioloop = IOLoop.current()
-            ioloop.remove_timeout(self._timeout)
-            self._timeout = None
+            timeout, self._timeout = self._timeout, None
+            self._loop.call_soon_threadsafe(timeout.cancel)
 
 
 def push_callback_after_commit(callback, deadline, identifier=None, **kwargs):

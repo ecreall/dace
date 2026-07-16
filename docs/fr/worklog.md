@@ -126,3 +126,34 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   candidats de l'effort de documentation : la relecture humaine des
   quatre tranches, et l'extracteur BPMN→mermaid sur les 24 paquets de
   processus des applications hôtes.
+
+
+## 16/07/2026 — Phase 3 / M1
+
+- **dace est vert sur Python 3.12 : 88 tests, 0 échec, 0 erreur**, au
+  premier run complet après le portage du réacteur. Pile moderne :
+  substanced ressuscité depuis le git amont (s'installe en 1.0b1 sur
+  3.12 — la surface de l'annexe A s'importe proprement, réduisant le
+  fork à « lever le pin pyramid<2 plus tard ») ; pyramid tenu à 1.10.8
+  par ce pin ; ZODB 6.3, BTrees 6.4, pyzmq 27, hypatia 0.5
+  (`constraints-modern.txt`).
+- Étape A du réacteur conforme au plan : fil de boucle asyncio, même
+  transport de commandes zmq et même protocole picklé `(method, obj)` ;
+  `DelayedCallback` sur `call_later` (`stop` thread-safe), le
+  `Listener` des signaux est une tâche asyncio sur une socket SUB
+  `zmq.asyncio`, `ConsumeTasks` possède une boucle privée par instance
+  (isolation des tests plus propre que le singleton historique
+  `IOLoop.instance()`). Le monkey-patch tornado du poll-timeout est
+  supprimé ; les deux patches substanced sont vérifiés présents sur
+  1.0b1.
+- Suppressions/corrections : `rwproperty` → setters de propriété ;
+  repli `pyramid.compat` ; l'import `pyramid.tests` du harnais remplacé
+  par une politique d'authentification locale (les wheels modernes ne
+  livrent plus les tests).
+- Stratégie bi-pile : master est désormais 3.12 ; la preuve 3.6 vit sur
+  le tag `legacy-golden-master` (job CI legacy épinglé dessus ; le
+  buildout de KuneAgi épingle les trois checkouts de bibliothèques par
+  révision). tox `py312` et job CI `py312-tests` requis ajoutés. Le
+  test dédié de cadence crawler/repoll est différé : les tests
+  existants de timers, conditionnels et signaux exercent de bout en
+  bout l'ordonnancement porté.

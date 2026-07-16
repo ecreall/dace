@@ -1,5 +1,5 @@
 """Reactor bootstrap: subscribe ``start_ioloop`` to
-``IDatabaseOpenedWithRoot`` so the tornado IOLoop and the zmq job
+``IDatabaseOpenedWithRoot`` so the asyncio reactor loop and the zmq job
 consumer start as soon as the ZODB is opened (see
 docs/en/architecture.md, section 6).
 """

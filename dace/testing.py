@@ -18,7 +18,7 @@ from pyramid.config import Configurator
 from pyramid.testing import DummyRequest
 from pyramid.interfaces import IRequestExtensions
 from pyramid import testing
-from pyramid.tests.test_security import _registerAuthenticationPolicy
+from pyramid.interfaces import IAuthenticationPolicy
 from pyramid.threadlocal import get_current_request
 
 from substanced.db import root_factory
@@ -34,11 +34,39 @@ def main(global_config, **settings):
     return config.make_wsgi_app()
 
 
+class _TestingAuthenticationPolicy(object):
+    """Minimal authentication policy for the harness.
+
+    Replaces ``pyramid.tests.test_security._registerAuthenticationPolicy``,
+    which modern pyramid wheels no longer ship (Phase 3): every request
+    authenticates as the configured ``userid``.
+    """
+
+    def __init__(self, userid):
+        self.userid = userid
+
+    def authenticated_userid(self, request):
+        return self.userid
+
+    def unauthenticated_userid(self, request):
+        return self.userid
+
+    def effective_principals(self, request):
+        return [self.userid]
+
+    def remember(self, request, userid, **kw):
+        return []
+
+    def forget(self, request):
+        return []
+
+
 def login(login):
     """Point the test authentication policy at the user of ``login``."""
     request = get_current_request()
     userid = get_userid_by_login(login, request)
-    _registerAuthenticationPolicy(request.registry, userid)
+    request.registry.registerUtility(
+        _TestingAuthenticationPolicy(userid), IAuthenticationPolicy)
     # request.authenticated_userid will now return the oid of the user object
 
 

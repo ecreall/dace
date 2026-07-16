@@ -1,6 +1,37 @@
 # Changelog
 
+- Phase 3 / M1: Python 3.12 support on the modern stack (pyramid 1.10.8
+  held by substanced's pin, substanced 1.0b1 from upstream git, ZODB 6,
+  pyzmq 27) — 88/88 tests green; see `constraints-modern.txt`.
+- The reactor is ported from the tornado IOLoop to an **asyncio** loop
+  thread (porting-plan step A): same public API, same zmq command
+  transport and pickled `(method, obj)` protocol; `DelayedCallback` and
+  the signal `Listener` are asyncio-based and remain picklable.
+- Dependencies dropped: `tornado` (reactor) and `rwproperty` (replaced
+  by standard property setters). `pyramid.compat.is_nonstr_iter` gets a
+  pyramid-2-ready fallback; the test harness no longer imports
+  `pyramid.tests` (removed from modern wheels).
+- Python 3.6 support moves to the `legacy-golden-master` tag, consumed
+  by the pinned KuneAgi golden master and the legacy CI job.
+
 ## Unreleased
+
+### Phase 3 / M1 — 2026-07-16 (Python 3.12)
+
+- Python 3.12 support on the modern stack (pyramid 1.10.8
+  held by substanced's pin, substanced 1.0b1 from upstream git, ZODB 6,
+  pyzmq 27) — 88/88 tests green; see `constraints-modern.txt`.
+- The reactor is ported from the tornado IOLoop to an **asyncio** loop
+  thread (porting-plan step A): same public API, same zmq command
+  transport and pickled `(method, obj)` protocol; `DelayedCallback` and
+  the signal `Listener` are asyncio-based and remain picklable.
+- Dependencies dropped: `tornado` (reactor) and `rwproperty` (replaced
+  by standard property setters). `pyramid.compat.is_nonstr_iter` gets a
+  pyramid-2-ready fallback; the test harness no longer imports
+  `pyramid.tests` (removed from modern wheels). Version bumped to
+  2.0.0.dev0.
+- Python 3.6 support moves to the `legacy-golden-master` tag, consumed
+  by the pinned KuneAgi golden master and the legacy CI job.
 
 ### Fork maintenance — 2026-07-13 (`michaellaunay/dace`)
 

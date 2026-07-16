@@ -4,20 +4,23 @@
 # licence: AGPL
 # author: Vincent Fretin, Amen Souissi
 
-"""The DaCE reactor: a tornado IOLoop thread plus a zmq-fed job consumer
-(``ConsumeTasks``), started on database opening and stopped on
+"""The DaCE reactor: an asyncio event-loop thread plus a zmq-fed job
+consumer (``ConsumeTasks``), started on database opening and stopped on
 SIGINT/SIGTERM. Also re-arms pending intermediate (timer/conditional)
 catching events at startup and installs the 'dace' catalog and the
 system machine identity.
 
-Phase 3 replacement target: asyncio behind the same API surface.
+Ported from the historical tornado IOLoop in Phase 3 (step A of the
+porting plan: same public API, same zmq command transport). The command
+protocol is unchanged: pickled ``(method, obj)`` pairs on the PULL
+socket — ``obj`` is a ``DelayedCallback``/``Listener`` to register and
+invoke, or an identifier for ``stop``/``close``/``ack``.
 """
+import asyncio
 import pickle
 import signal
 import threading
 import zmq
-from zmq.eventloop.ioloop import IOLoop
-from zmq.eventloop.zmqstream import ZMQStream
 
 import transaction
 from pyramid.events import subscriber
@@ -36,103 +39,104 @@ from dace.processinstance.event import (
 from dace.objectofcollaboration.principal import Machine
 from dace.objectofcollaboration.principal.util import grant_roles
 from dace.objectofcollaboration.system import run_crawler
-from dace.util import execute_callback, find_catalog, get_socket_url
+from dace.util import (
+    execute_callback, find_catalog, get_async_zmq_context, get_socket_url)
 from dace.processinstance import event as event_mod
 
 
 class ConsumeTasks(threading.Thread):
+    """The reactor thread: an asyncio loop consuming the command socket."""
+
     terminated = False
+
     def __init__(self, registry, event):
         threading.Thread.__init__(self)
         self.registry = registry
         self.event = event
+        self.loop = None
 
     def run(self):
         if self.terminated:
             return
 
         manager.push({'registry': self.registry, 'request': None})
-        loop = IOLoop.instance()
-        ctx = zmq.Context()
-        def callback():
-            s = ctx.socket(zmq.PULL)
-            s.setsockopt(zmq.LINGER, 0)
-            s.bind(get_socket_url())
-            def execute_next(action):
-                # action is a list with one pickle
-                method, obj = pickle.loads(action[0])
-                # obj can be the DelayedCallback (dc)/Listener object or just
-                # the identifier (event._p_oid) in case of the stop/close
-                # method respectively.
-                if method in ('stop', 'close', 'ack'):
-                    # obj is actually here the identifier which was used to
-                    # register the DelayedCallback/Listener
-                    # (identifier attribute on the object)
-                    identifier = obj
-                    dc_or_listener = event_mod.callbacks.get(identifier, None)
-                    if dc_or_listener is not None:
-                        # stop DelayedCallback or close Listener
-                        if method != 'ack':
-                            getattr(dc_or_listener, method)()
+        self.loop = loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        ctx = get_async_zmq_context()
+        sock = ctx.socket(zmq.PULL)
+        sock.setsockopt(zmq.LINGER, 0)
+        sock.bind(get_socket_url())
 
-                        del event_mod.callbacks[identifier]
-                else:
-                    # system crawler doesn't have an identifier
-                    # and so the DelayedCallback started from a SignalEvent
-                    if obj.identifier is not None:
-                        event_mod.callbacks[obj.identifier] = obj
+        def execute_next(action):
+            # action is a list with one pickle
+            method, obj = pickle.loads(action[0])
+            # obj can be the DelayedCallback (dc)/Listener object or just
+            # the identifier (event._p_oid) in case of the stop/close
+            # method respectively.
+            if method in ('stop', 'close', 'ack'):
+                # obj is actually here the identifier which was used to
+                # register the DelayedCallback/Listener
+                # (identifier attribute on the object)
+                identifier = obj
+                dc_or_listener = event_mod.callbacks.get(identifier, None)
+                if dc_or_listener is not None:
+                    # stop DelayedCallback or close Listener
+                    if method != 'ack':
+                        getattr(dc_or_listener, method)()
 
-                    # mainly some_delayed_callback.start_in_ioloop()
-                    getattr(obj, method)()
+                    del event_mod.callbacks[identifier]
+            else:
+                # system crawler doesn't have an identifier
+                # and so the DelayedCallback started from a SignalEvent
+                if obj.identifier is not None:
+                    event_mod.callbacks[obj.identifier] = obj
 
-            self.stream = ZMQStream(s)
-            self.stream.on_recv(execute_next)
+                # mainly some_delayed_callback.start_in_ioloop()
+                getattr(obj, method)()
 
-        # It's ok to not use loop.add_callback
-        # (the only method that is thread safe)
-        # because the loop as not started yet
-        loop.add_timeout(loop.time() + 2, callback)
+        async def consume():
+            while True:
+                parts = await sock.recv_multipart()
+                try:
+                    execute_next(parts)
+                except Exception:   # keep the reactor alive
+                    log.exception('reactor: command failed')
+
+        consumer = loop.create_task(consume())
 
         db = self.event.database
         root = db.open().root()['app_root']
         start_intermediate_events(root)
         root._p_jar.close()
         try:
-            loop.start()
-        except zmq.ZMQError:
-            # only needed for tests isolation
-            # we go here only if we try to close the stream in the stop method
-            # below
-            loop._callbacks = []
-            loop._timeouts = []
-            raise
+            loop.run_forever()
+        finally:
+            consumer.cancel()
+            try:
+                loop.run_until_complete(
+                    asyncio.gather(consumer, return_exceptions=True))
+            except Exception:   # pragma: no cover
+                pass
+            sock.close(0)
+            loop.close()
 
     def stop(self):
         self.terminated = True
-        loop = IOLoop.instance()
-        with loop._callback_lock:
-            for timeout in loop._timeouts:
-                timeout.callback = None
+        loop = self.loop
+        if loop is None:
+            return
 
-        for dc_or_stream in event_mod.callbacks.values():
-            if hasattr(dc_or_stream, 'close'):
-                def close_stream_callback(stream):
-                    stream.close()
+        def _shutdown():
+            for dc_or_stream in list(event_mod.callbacks.values()):
+                if hasattr(dc_or_stream, 'close'):
+                    dc_or_stream.close()
+                else:
+                    dc_or_stream.stop()
 
-                loop.add_callback(close_stream_callback, dc_or_stream)
-            else:
-                dc_or_stream.stop()
+            event_mod.callbacks = {}
+            loop.stop()
 
-        event_mod.callbacks = {}
-
-#        if getattr(self, 'stream', None) is not None:
-#            self.stream.close()
-
-        with loop._callback_lock:
-            for timeout in loop._timeouts:
-                timeout.callback = None
-
-        loop.stop()
+        loop.call_soon_threadsafe(_shutdown)
 
 
 consumetasks = None

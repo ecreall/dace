@@ -28,7 +28,12 @@ jobs:
   legacy-tests:
     runs-on: ubuntu-latest
     steps:
+      # master moved to Python 3.12 at Phase 3 / M1: the legacy proof
+      # now lives on the frozen tag (create it before pushing M1):
+      #   git tag legacy-golden-master <pre-M1 sha> && git push origin legacy-golden-master
       - uses: actions/checkout@v5
+        with:
+          ref: legacy-golden-master
       - name: Run test suite in a Python 3.6 container
         run: |
           docker run --rm -v "$PWD":/src -w /src python:3.6-buster bash -ec "
@@ -42,3 +47,15 @@ jobs:
             pip install --no-cache-dir -c constraints-legacy.txt -e '.[test]' &&
             python setup.py test
           "
+
+  py312-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run the test suite on the modern stack
+        run: |
+          pip install -c constraints-modern.txt zope.testrunner -e .[test]
+          python -m zope.testrunner --test-path=. -s dace

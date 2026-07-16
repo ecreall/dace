@@ -9,20 +9,17 @@
 Exactly three patches, all performance/latency motivated (see
 docs/en/architecture.md, section 8):
 
-1. ``tornado.ioloop._POLL_TIMEOUT`` lowered to 0.2 s so that timer and
-   conditional events fire with sub-second reactivity.
+1. (removed in Phase 3: the tornado poll-timeout patch — the asyncio
+   reactor schedules with ``call_later`` and needs no polling knob.)
 2. ``substanced.objectmap.ObjectMap._find_resource`` replaced by a direct
    BTree walk: the original went through ``pyramid.traversal`` and created
    a Request object per lookup, which dominated profiles on large sites.
 3. ``substanced.locking._get_lock_service`` short-circuited through
    dace's ``find_service`` for the same reason.
 
-These patches assume substanced 1.0a1 internals and must be re-evaluated
+These patches assume substanced 1.0a1/1.0b1 internals (verified on 1.0b1) and must be re-evaluated
 when the maintained substanced fork lands (Phase 3 of the roadmap).
 """
-import tornado.ioloop
-tornado.ioloop._POLL_TIMEOUT = 0.2
-
 from dace.util import find_service
 
 # The original ObjectMap._find_resource used pyramid.traversal.find_resource which uses pyramid.traversal.traverse which create a Request object...
