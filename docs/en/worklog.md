@@ -147,3 +147,7 @@ Version française : [`../fr/worklog.md`](../fr/worklog.md).
   crawler/repoll cadence test is deferred: the existing timer,
   conditional and signal tests exercise the ported scheduling end to
   end.
+
+- **Documentation refresh.** README states the dual-stack reality
+  (88/88 on both stacks); architecture gains the modern-stack section
+  (asyncio reactor step A, shims, substanced from upstream git).

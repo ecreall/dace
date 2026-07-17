@@ -157,3 +157,8 @@ English version: [`../en/worklog.md`](../en/worklog.md).
   test dédié de cadence crawler/repoll est différé : les tests
   existants de timers, conditionnels et signaux exercent de bout en
   bout l'ordonnancement porté.
+
+- **Rafraîchissement documentaire.** Le README énonce la réalité
+  bi-pile (88/88 sur les deux piles) ; l'architecture gagne la section
+  pile moderne (réacteur asyncio étape A, shims, substanced depuis le
+  git amont).

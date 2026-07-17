@@ -6,7 +6,11 @@ DaCE is a data-centric workflow engine for the [Pyramid](https://trypyramid.com)
 
 This repository is a **maintained fork** of [`ecreall/dace`](https://github.com/ecreall/dace) (original development by Ecréall, 2014–2017), forked in July 2026 and maintained by Michaël Launay ([Logikascium](https://github.com/michaellaunay)). Ecréall's intellectual property was acquired by Logikascium in 2024; the license is unchanged: **AGPL v3+**.
 
-This fork is part of the modernisation effort of the [Nova-Ideo](https://github.com/ecreall/nova-ideo) / [KuneAgi](https://github.com/ecreall/KuneAgi) participatory-innovation platform. The `master` branch currently reflects the **legacy state** of the engine (Python 3.6 era); see the [roadmap](#roadmap--planned-updates) below and `CHANGES.md` for what comes next.
+This fork is part of the modernisation effort of the [Nova-Ideo](https://github.com/ecreall/nova-ideo) / [KuneAgi](https://github.com/ecreall/KuneAgi) participatory-innovation platform. The `master` branch is **dual-stack**: the engine runs on the
+certified legacy stack (tag `legacy-golden-master`, 88/88) and on
+**Python 3.12** (asyncio reactor, step A — same API, same zmq
+transport; phase 3 / M1, 88/88). See `CHANGES.md` and the modern-stack
+section of [`docs/en/architecture.md`](docs/en/architecture.md).
 
 ## Features
 

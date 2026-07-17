@@ -230,3 +230,22 @@ On application restart, `start_intermediate_events` re-arms the pending catching
 | the reactor | `subscribers.py`, `processinstance/event.py`, `util.py` (`Job`/`EventJob`), `patches.py` |
 | domain objects & relations | `objectofcollaboration/object.py`, `entity.py`, `descriptors/` |
 | roles & visibility | `objectofcollaboration/principal/util.py`, `catalog/__init__.py` |
+
+## The modern stack (phase 3 / M1, 2026-07)
+
+The engine runs unchanged in behaviour on Python 3.12:
+
+- **Reactor, step A**: the Tornado/zmq event loop is replaced by an
+  asyncio implementation behind the SAME API — same pickled zmq
+  transport, `DelayedCallback` on `call_later`, the Listener as an
+  asyncio task, one private loop per `ConsumeTasks`. Step B (dropping
+  zmq) is a separate, later decision.
+- **Compatibility shims**: `pyramid.compat` (removed upstream) and a
+  local authentication policy replacing the `pyramid.tests` imports;
+  `rwproperty` idioms replaced by plain setters.
+- **substanced** comes from the upstream git (1.0b1 era surface —
+  usage measured in the porting plan, annex A); pyramid is held at
+  1.10.8 by its pin. A substanced fork for pyramid 2 remains a
+  separate, later milestone.
+- The suite (88 tests) is the arbiter on BOTH stacks; the legacy tag
+  `legacy-golden-master` pins the certified state.

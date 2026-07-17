@@ -230,3 +230,23 @@ Au redémarrage de l'application, `start_intermediate_events` réarme les évén
 | le réacteur | `subscribers.py`, `processinstance/event.py`, `util.py` (`Job`/`EventJob`), `patches.py` |
 | objets du domaine et relations | `objectofcollaboration/object.py`, `entity.py`, `descriptors/` |
 | rôles et visibilité | `objectofcollaboration/principal/util.py`, `catalog/__init__.py` |
+
+## La pile moderne (phase 3 / M1, 07/2026)
+
+Le moteur tourne à comportement inchangé sur Python 3.12 :
+
+- **Réacteur, étape A** : la boucle Tornado/zmq est remplacée par une
+  implémentation asyncio derrière la MÊME API — même transport zmq
+  picklé, `DelayedCallback` sur `call_later`, le Listener en tâche
+  asyncio, une boucle privée par `ConsumeTasks`. L'étape B (abandon de
+  zmq) reste une décision ultérieure distincte.
+- **Shims de compatibilité** : `pyramid.compat` (retiré en amont) et
+  une politique d'authentification locale remplaçant les imports de
+  `pyramid.tests` ; les idiomes `rwproperty` remplacés par de simples
+  setters.
+- **substanced** vient du git amont (surface d'usage 1.0b1 — mesurée
+  dans le plan de portage, annexe A) ; pyramid est tenu à 1.10.8 par
+  son pin. Un fork substanced pour pyramid 2 reste un jalon ultérieur
+  distinct.
+- La suite (88 tests) est l'arbitre sur LES DEUX piles ; le tag
+  `legacy-golden-master` épingle l'état certifié.
